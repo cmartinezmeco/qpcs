@@ -1,0 +1,11 @@
+qiskit==1.0.2
+qiskit-aer==0.13.3
+numpy==1.26.4
+scipy==1.13.0
+matplotlib==3.8.4
+seaborn==0.13.2
+liboqs-python==0.14.1
+cryptography==42.0.5
+streamlit==1.33.0
+numba==0.59.1
+pytest==7.4.4
