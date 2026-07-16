@@ -1,0 +1,19 @@
+# requirements-qkd.txt
+#
+# Subconjunto MINIMO de requirements.txt para que la CI del modulo 1 (QKD)
+# sea rapida y no dependa de compilar liboqs (ver discusion en PR de la tarea
+# 1.1, 2026-07-16). NO instala liboqs-python, cryptography, streamlit ni numba.
+#
+# IMPORTANTE - dos obligaciones mientras este fichero exista:
+#   1. Si subes una version de qiskit/numpy/scipy/matplotlib/pytest en
+#      requirements.txt, sube la MISMA version aqui. No se sincronizan solas.
+#   2. Este fichero es temporal. En cuanto exista codigo real del modulo 2
+#      (liboqs/PQC) hay que migrar la CI a construir y testear dentro del
+#      Dockerfile (la Opcion 3 que descartamos ahora por prematura) y borrar
+#      este fichero. Ver issue "migrar CI a Docker" (tag: future).
+qiskit==1.0.2
+qiskit-aer==0.13.3
+numpy==1.26.4
+scipy==1.13.0
+matplotlib==3.8.4
+pytest==7.4.4
