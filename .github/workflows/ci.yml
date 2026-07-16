@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # NOTA: instalamos requirements-qkd.txt (minimo), NO requirements.txt.
+      # Ver el comentario al principio de requirements-qkd.txt para el porque
+      # y para la migracion pendiente cuando exista el modulo 2.
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-qkd.txt
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Ruff (lint)
+        run: ruff check src/ tests/
+
+      - name: Black (format check)
+        run: black --check src/ tests/
+
+      - name: Mypy (strict types)
+        run: mypy --strict src/qkd
+
+      - name: Pytest (fast suite)
+        run: pytest tests/ -v -m "not slow"
