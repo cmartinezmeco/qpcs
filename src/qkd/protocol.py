@@ -6,6 +6,8 @@ from typing import Literal
 
 import numpy as np
 
+from .bb84 import run_bb84
+from .qber import estimate_qber
 from .types import ProtocolResult, QberEstimate
 
 
@@ -31,5 +33,15 @@ def run_until_qber(
     """Version corta de la cadena, solo hasta la estimacion del QBER.
 
     La usan los tests de la tarea 1.4, que no necesitan llegar hasta Cascade.
+    Usa siempre el backend numpy: es el unico donde Eve (intercept-resend)
+    esta modelada, y el unico viable en tiempo para los barridos de 40 000
+    fotones que hacen estos tests (ver run_bb84 en bb84.py).
     """
-    raise NotImplementedError
+    sifted = run_bb84(
+        n_photons=n_photons,
+        rng=rng,
+        eve_rate=eve_rate,
+        noise=noise,
+        backend="numpy",
+    )
+    return estimate_qber(sifted, sample_fraction, rng)
