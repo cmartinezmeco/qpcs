@@ -28,4 +28,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
+# Instala el paquete qkd (src/qkd) en el entorno del contenedor, igual que
+# hace la CI: sin esto, "from qkd.protocol import ..." falla en el
+# dashboard y en pytest dentro del contenedor.
+RUN pip install --no-cache-dir -e .
+
 CMD ["python", "main.py"]
