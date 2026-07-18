@@ -244,11 +244,11 @@ with col_fig:
         fmt="o",
         ms=4,
         capsize=3,
-        label="QBER simulado ($\\pm 3\\sigma$)",
+        label="QBER simulado (±3σ)",
         zorder=3,
     )
     ps_arr = np.asarray(ps)
-    ax.plot(ps_arr, ps_arr / 4, "-", label="teoria: $Q = p/4$", zorder=2)
+    ax.plot(ps_arr, ps_arr / 4, "-", label="teoria: Q = p/4", zorder=2)
     ax.axhline(QBER_THRESHOLD, ls="--", color="gray", lw=1)
     ax.axhspan(QBER_THRESHOLD, 0.30, color="red", alpha=0.08, zorder=1)
     # Marcador de la ejecucion actual: rojo si aborto, verde si hay clave
@@ -259,10 +259,10 @@ with col_fig:
         "D",
         ms=9,
         color="#d62728" if r.aborted else "#2ca02c",
-        label=f"ejecucion actual ($p$ = {p:.2f})",
+        label=f"ejecucion actual (p = {p:.2f})",
         zorder=4,
     )
-    ax.set_xlabel("fraccion interceptada por Eve, $p$")
+    ax.set_xlabel("fraccion interceptada por Eve, p")
     ax.set_ylabel("QBER")
     ax.set_xlim(-0.02, 1.02)
     ax.set_ylim(0, 0.30)
