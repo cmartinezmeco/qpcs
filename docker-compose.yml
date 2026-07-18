@@ -1,0 +1,25 @@
+# docker-compose.yml — tarea 1.9 (Carlos), descrito en la seccion 5.1.4 de
+# la guia de Fase 1: dos servicios sobre la MISMA imagen del Dockerfile.
+#
+#   docker compose up            -> levanta el dashboard en localhost:8501
+#                                   (el servicio test corre pytest y sale)
+#   docker compose run --rm test -> solo la suite de tests
+services:
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    # --server.address=0.0.0.0 es OBLIGATORIO: con el localhost por defecto
+    # el contenedor escucha solo dentro de si mismo y desde el navegador del
+    # anfitrion no se ve nada aunque el puerto este publicado (la causa del
+    # 90% de los "a mi no me funciona el dashboard", seccion 5.9 de la guia).
+    command: >
+      streamlit run dashboard/qkd_app.py
+      --server.address=0.0.0.0
+      --server.port=8501
+      --server.headless=true
+
+  test:
+    build: .
+    # La suite rapida, igual que la CI (los tests slow solo en main).
+    command: pytest tests/ -m "not slow"
