@@ -11,12 +11,10 @@ def test_forma_y_dominio():
     assert bits.dtype == np.uint8
     assert set(np.unique(bits)) <= {0, 1}
 
-
 def test_longitud_no_multiplo_del_bloque():
-    """Caso borde clásico: n no divisible por qubits_per_circuit."""
+    """Caso borde clasico: n no divisible por qubits_per_circuit."""
     assert QRNG(qubits_per_circuit=16, seed=1).random_bits(17).shape == (17,)
     assert QRNG(seed=1).random_bits(0).shape == (0,)
-
 
 def test_monobit_dentro_de_4_sigma():
     """Test monobit del NIST: z = (ceros - unos) / sqrt(n) ~ N(0,1)."""
@@ -24,7 +22,6 @@ def test_monobit_dentro_de_4_sigma():
     bits = QRNG(seed=7).random_bits(n)
     z = abs(2 * bits.sum() - n) / np.sqrt(n)
     assert z < 4.0, f"sesgo detectado: z={z:.2f}"
-
 
 def test_reproducible_con_semilla():
     a = QRNG(seed=123).random_bits(500)
