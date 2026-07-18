@@ -8,6 +8,7 @@ from .types import Bits
 
 from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator
+from typing import Literal
 
 class QRNG: # Para importar esta clase, utilizar "from .qrng import QRNG"
     """Generador de bits aleatorios por medida de |+> en la base Z.
@@ -15,16 +16,27 @@ class QRNG: # Para importar esta clase, utilizar "from .qrng import QRNG"
     uniforme: P(0) = P(1) = 1/2 por la regla de Born.
     """
 
-    def __init__(self, qubits_per_circuit: int = 16, seed: int | None = None) -> None:
+    def __init__(
+        self, 
+        qubits_per_circuit: int = 16, 
+        seed: int | None = None,
+        backend: Literal["qiskit", "numpy"] = "numpy" # <- Añadimos el selector de backend para la velocidad de procesamiento.
+    ) -> None:
         """Por defecto, se lanza un circuito de 16 qubits por cada llamada a random_bits. Se puede cambiar con qubits_per_circuit.
         El generador de números aleatorios de la simulación se puede volver determinista cambiando el seed.
         """
 
         self._k = qubits_per_circuit # Número de qubits por circuito. Se lanza un circuito de k qubits por cada llamada a random_bits. Se almacena en self._k, que es una variable interna de la clase.
+        self._backend_type = backend
+        
+        # Inicializamos los motores correspondientes
+        if self._backend_type == "qiskit":
+            self._backend = AerSimulator(seed_simulator=seed)  # Inicializa el backend de simulación de Qiskit con un generador de números aleatorios determinista si se proporciona un seed.
+            self._circuit = self._build(self._k)  # Construye un circuito de k qubits que prepara el estado |+> y lo mide en la base Z llamando a la función _build.
+        else:
+            # Creamos un generador clásico aislado y reproducible con la semilla
+            self._rng = np.random.default_rng(seed)
 
-        self._backend = AerSimulator(seed_simulator=seed) # Inicializa el backend de simulación de Qiskit con un generador de números aleatorios determinista si se proporciona un seed.
-
-        self._circuit = self._build(self._k) # Construye un circuito de k qubits que prepara el estado |+> y lo mide en la base Z llamando a la función _build.
 
     @staticmethod # Indica que el método no depende de la instancia de la clase, sino que es un método estático que se puede llamar sin crear una instancia de QRNG.
     def _build(k: int) -> QuantumCircuit: # crea un chip cuántico virtual de 16 cables, les aplica el azar cuántico (Hadamard) a todos y les conecta un medidor al final.
@@ -37,14 +49,18 @@ class QRNG: # Para importar esta clase, utilizar "from .qrng import QRNG"
         """Devuelve n bits. Lanza ceil(n/k) shots de un circuito de k qubits. Ver docs/theory/qkd.md."""
         if n == 0:
             return np.empty(0, dtype=np.uint8) # Para que no pierda el tiempo encendiendo el simulador de Qiskit.
+        
+        # CAMINO RÁPIDO: NumPy para las gráficas de Carlos
+        if self._backend_type == "numpy":
+            return self._rng.integers(0, 2, size=n, dtype=np.uint8)
             
+        # CAMINO CUÁNTICO: Qiskit para tests de física y demostraciones
         shots = -(-n // self._k)  # Techo de la división (ceil) sin necesidad de importar math.
         result = self._backend.run(
             self._circuit, 
             shots=shots, 
             memory=True  # Necesario para obtener la secuencia exacta de disparos
         ).result()
-        
         # get_memory() -> ['0110...', '1001...'] con k caracteres por shot
         raw = "".join(result.get_memory()) # Une todos los resultados de los disparos en una sola cadena de bits.
         bits = np.frombuffer(raw.encode(), dtype=np.uint8) - ord("0") # Convierte la cadena de bits en un array de enteros (0 y 1) restando el valor ASCII de '0'.
