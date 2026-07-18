@@ -18,13 +18,23 @@ def intercept_resend(
     Eve NUNCA usa alice_bases para elegir su base: ver la linea de eve_bases.
     """
     n = alice_bits.size
-    intercepted = rng.random(n) < rate # Máscara booleana de los fotones interceptados por Eve. Se genera un número en el intervalo [0, 1) y si es menor que rate, se considera interceptado. Esto asegura que la fracción de fotones interceptados sea aproximadamente rate.
-    eve_bases = rng.integers(0, 2, size=n, dtype=np.uint8) # <- al azar, sin conocer alice_bases. Esto es lo que hace que el ataque sea imperfecto y genere errores.
-    
-    same = alice_bases == eve_bases # Posiciones donde las bases de Alice y Eve coinciden. En estas posiciones, Eve medirá el mismo bit que Alice. En las posiciones donde no coinciden, Eve medirá un bit aleatorio.
+    # Mascara booleana de los fotones interceptados por Eve: se genera un
+    # numero en [0, 1) y si es menor que rate, se considera interceptado.
+    # Asegura que la fraccion interceptada sea aproximadamente rate.
+    intercepted = rng.random(n) < rate
+    # Al azar, sin conocer alice_bases: esto hace que el ataque sea
+    # imperfecto y genere errores.
+    eve_bases = rng.integers(0, 2, size=n, dtype=np.uint8)
+
+    # Posiciones donde las bases de Alice y Eve coinciden. Ahi Eve mide el
+    # mismo bit que Alice; donde no coinciden, Eve mide un bit aleatorio.
+    same = alice_bases == eve_bases
     coin = rng.integers(0, 2, size=n, dtype=np.uint8)
-    eve_results = np.where(same, alice_bits, coin).astype(np.uint8) # En las posiciones donde las bases coinciden, Eve obtiene el bit de Alice; donde no, obtiene un bit aleatorio (simulando la medida en la base equivocada). Esto es lo que genera errores en el protocolo BB84 cuando Eve intercepta y reenvía los fotones.
-    
+    # Si las bases coinciden, Eve obtiene el bit de Alice; si no, un bit
+    # aleatorio (mide en la base equivocada). Esto genera los errores del
+    # protocolo BB84 cuando Eve intercepta y reenvia los fotones.
+    eve_results = np.where(same, alice_bits, coin).astype(np.uint8)
+
     # Donde intercepta, Bob recibe (bit de Eve, base de Eve); donde no, el original
     out_bits = np.where(intercepted, eve_results, alice_bits).astype(np.uint8)
     out_bases = np.where(intercepted, eve_bases, alice_bases).astype(np.uint8)

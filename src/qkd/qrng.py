@@ -2,70 +2,99 @@
 
 from __future__ import annotations
 
-import numpy as np  # noqa: F401 - se usara al implementar random_bits (parte 1.2)
+from typing import Literal
+
+import numpy as np
+from qiskit import QuantumCircuit
+from qiskit_aer import AerSimulator
 
 from .types import Bits
 
-from qiskit import QuantumCircuit
-from qiskit_aer import AerSimulator
-from typing import Literal
 
-class QRNG: # Para importar esta clase, utilizar "from .qrng import QRNG"
+class QRNG:  # Importar con "from .qrng import QRNG"
     """Generador de bits aleatorios por medida de |+> en la base Z.
-    Cada bit procede de una medida proyectiva sobre un estado en superposición
+    Cada bit procede de una medida proyectiva sobre un estado en superposicion
     uniforme: P(0) = P(1) = 1/2 por la regla de Born.
     """
 
     def __init__(
-        self, 
-        qubits_per_circuit: int = 16, 
+        self,
+        qubits_per_circuit: int = 16,
         seed: int | None = None,
-        backend: Literal["qiskit", "numpy"] = "numpy" # <- Añadimos el selector de backend para la velocidad de procesamiento.
+        # Selector de backend para la velocidad de procesamiento.
+        backend: Literal["qiskit", "numpy"] = "numpy",
     ) -> None:
-        """Por defecto, se lanza un circuito de 16 qubits por cada llamada a random_bits. Se puede cambiar con qubits_per_circuit.
-        El generador de números aleatorios de la simulación se puede volver determinista cambiando el seed.
+        """Por defecto, se lanza un circuito de 16 qubits por cada llamada a
+        random_bits. Se puede cambiar con qubits_per_circuit. El generador
+        de numeros aleatorios de la simulacion se puede volver determinista
+        cambiando el seed.
         """
-
-        self._k = qubits_per_circuit # Número de qubits por circuito. Se lanza un circuito de k qubits por cada llamada a random_bits. Se almacena en self._k, que es una variable interna de la clase.
+        # Numero de qubits por circuito: se lanza un circuito de k qubits
+        # por cada llamada a random_bits. Variable interna de la clase.
+        self._k = qubits_per_circuit
         self._backend_type = backend
-        
+
         # Inicializamos los motores correspondientes
         if self._backend_type == "qiskit":
-            self._backend = AerSimulator(seed_simulator=seed)  # Inicializa el backend de simulación de Qiskit con un generador de números aleatorios determinista si se proporciona un seed.
-            self._circuit = self._build(self._k)  # Construye un circuito de k qubits que prepara el estado |+> y lo mide en la base Z llamando a la función _build.
+            # Backend de simulacion de Qiskit con un generador de numeros
+            # aleatorios determinista si se proporciona un seed.
+            self._backend = AerSimulator(seed_simulator=seed)
+            # Circuito de k qubits que prepara el estado |+> y lo mide en
+            # la base Z, construido por _build.
+            self._circuit = self._build(self._k)
         else:
-            # Creamos un generador clásico aislado y reproducible con la semilla
+            # Generador clasico aislado y reproducible con la semilla
             self._rng = np.random.default_rng(seed)
 
-
-    @staticmethod # Indica que el método no depende de la instancia de la clase, sino que es un método estático que se puede llamar sin crear una instancia de QRNG.
-    def _build(k: int) -> QuantumCircuit: # crea un chip cuántico virtual de 16 cables, les aplica el azar cuántico (Hadamard) a todos y les conecta un medidor al final.
-        qc = QuantumCircuit(k, k) # El primer argumento es el número de qubits, el segundo es el número de bits clásicos para almacenar los resultados de la medida.
-        qc.h(range(k))  # |0...0> -> |+...+>, aplica la puerta Hadamard a cada qubit para crear superposición uniforme.
-        qc.measure(range(k), range(k)) # Mide cada qubit en la base Z y almacena el resultado en el bit clásico correspondiente.
+    @staticmethod
+    def _build(k: int) -> QuantumCircuit:
+        """Crea un circuito de k qubits: azar cuantico (Hadamard) a todos
+        y un medidor al final.
+        """
+        # k qubits y k bits clasicos para almacenar los resultados.
+        qc = QuantumCircuit(k, k)
+        # |0...0> -> |+...+>: puerta Hadamard a cada qubit, superposicion
+        # uniforme.
+        qc.h(range(k))
+        # Mide cada qubit en la base Z y almacena el resultado en el bit
+        # clasico correspondiente.
+        qc.measure(range(k), range(k))
         return qc
-    
+
     def random_bits(self, n: int) -> Bits:
-        """Devuelve n bits. Lanza ceil(n/k) shots de un circuito de k qubits. Ver docs/theory/qkd.md."""
+        """Devuelve n bits. Lanza ceil(n/k) shots de un circuito de k
+        qubits. Ver docs/theory/qkd.md.
+        """
         if n == 0:
-            return np.empty(0, dtype=np.uint8) # Para que no pierda el tiempo encendiendo el simulador de Qiskit.
-        
-        # CAMINO RÁPIDO: NumPy para las gráficas de Carlos
+            # Para no encender el simulador de Qiskit sin necesidad.
+            return np.empty(0, dtype=np.uint8)
+
+        # CAMINO RAPIDO: NumPy para las graficas de Carlos
         if self._backend_type == "numpy":
             return self._rng.integers(0, 2, size=n, dtype=np.uint8)
-            
-        # CAMINO CUÁNTICO: Qiskit para tests de física y demostraciones
-        shots = -(-n // self._k)  # Techo de la división (ceil) sin necesidad de importar math.
+
+        # CAMINO CUANTICO: Qiskit para tests de fisica y demostraciones
+        # Techo de la division (ceil) sin necesidad de importar math.
+        shots = -(-n // self._k)
         result = self._backend.run(
-            self._circuit, 
-            shots=shots, 
-            memory=True  # Necesario para obtener la secuencia exacta de disparos
+            self._circuit,
+            shots=shots,
+            memory=True,  # Necesario para la secuencia exacta de disparos
         ).result()
         # get_memory() -> ['0110...', '1001...'] con k caracteres por shot
-        raw = "".join(result.get_memory()) # Une todos los resultados de los disparos en una sola cadena de bits.
-        bits = np.frombuffer(raw.encode(), dtype=np.uint8) - ord("0") # Convierte la cadena de bits en un array de enteros (0 y 1) restando el valor ASCII de '0'.
-        return bits[:n].copy() # Devuelve solo los primeros n bits (los que realmente se pidieron y se modificaron al hacer el "ceil") y hace una copia.
+        # Une todos los resultados de los disparos en una sola cadena.
+        raw = "".join(result.get_memory())
+        # Convierte la cadena en un array de 0/1 restando el ASCII de "0".
+        # astype fuerza uint8: la resta con un int de Python promociona
+        # el resultado a un entero con signo (contrato roto en types.py).
+        bits = (np.frombuffer(raw.encode(), dtype=np.uint8) - ord("0")).astype(np.uint8)
+        # Los primeros n bits (los pedidos; sobran los del "ceil"), copiados.
+        return bits[:n].copy()
 
     def random_bases(self, n: int) -> Bits:
-        """Bases: 0 = Z (rectilínea), 1 = X (diagonal). Misma distribución, significado distinto."""
-        return self.random_bits(n) # Reutiliza la función random_bits para generar bases aleatorias, ya que la distribución es la misma, solo cambia la interpretación de los bits generados.
+        """Bases: 0 = Z (rectilinea), 1 = X (diagonal). Misma distribucion,
+        significado distinto.
+        """
+        # Reutiliza random_bits: misma distribucion, solo cambia la
+        # interpretacion de los bits generados.
+        return self.random_bits(n)
