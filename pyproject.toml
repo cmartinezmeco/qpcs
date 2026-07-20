@@ -35,8 +35,10 @@ warn_unused_ignores = true
 # eso no rompe mypy porque los tipos de las firmas ya son correctos.
 
 [[tool.mypy.overrides]]
-# scipy se anade en la tarea 1.6 (matmul_toeplitz): no publica stubs de tipos.
-module = ["qiskit.*", "qiskit_aer.*", "scipy.*"]
+# Librerias sin stubs de tipos publicados. scipy se anadio en la tarea 1.6
+# (matmul_toeplitz); oqs (liboqs-python) en la Fase 2 (modulo pqc: kem.py y
+# sig.py lo importan para ML-KEM / ML-DSA en crudo).
+module = ["qiskit.*", "qiskit_aer.*", "scipy.*", "oqs.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
