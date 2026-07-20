@@ -410,7 +410,7 @@ Simulation of the **BB84 protocol**, a quantum random number generator, and an i
 
 ### 🛡️ Module 2 — Post-Quantum Cryptography
 
-Performance comparison between classical cryptography (**RSA/ECC**) and post-quantum cryptography (**Kyber/Dilithium**), plus a **Shor's algorithm** demo using Qiskit.
+Performance comparison between classical cryptography (**RSA/ECC**) and post-quantum cryptography (**ML-KEM/ML-DSA**, the NIST-standardized successors of Kyber/Dilithium), plus a **Shor's algorithm** demo using Qiskit.
 
 ### 🌀 Module 3 — Deterministic chaos
 

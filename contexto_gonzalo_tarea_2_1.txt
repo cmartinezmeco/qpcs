@@ -1,0 +1,183 @@
+========================================================================
+CONTEXTO PARA GONZALO  -  Tarea 2.1 hecha (Carlos)
+Fase 2, Modulo 2: PQC + Shor  ->  andamiaje de src/pqc/ + CI en Docker
+========================================================================
+
+Resumen en una linea: ya existe el esqueleto del modulo pqc (todas las firmas
+tipadas con NotImplementedError y sus docstrings) y la CI ahora construye y
+testea DENTRO de Docker. Todo verificado en verde. Nada commiteado (ver el
+ultimo punto sobre git).
+
+
+------------------------------------------------------------------------
+1. QUE HICE EXACTAMENTE (ficheros)
+------------------------------------------------------------------------
+
+CREADOS (src/pqc/, el modulo nuevo):
+  - src/pqc/__init__.py    API publica del modulo con __all__ (mismo patron
+                           que src/qkd/__init__.py).
+  - src/pqc/types.py       Contratos del modulo (dataclasses frozen): Medida,
+                           Tamanos, MensajeCifrado, ResultadoFirma,
+                           FactorizacionShor, y los Literal Familia/Operacion.
+  - src/pqc/classical.py   (tarea 2.4, Marco) RSA-OAEP/PSS + ECC X25519/Ed25519
+                           sobre la libreria `cryptography`. Solo firmas.
+  - src/pqc/kem.py         (tarea 2.5, Marco) ML-KEM en crudo via liboqs. Solo
+                           firmas.
+  - src/pqc/hybrid.py      (tarea 2.5, Marco) cifrado hibrido KEM+HKDF+AES-GCM.
+                           Solo firmas.
+  - src/pqc/sig.py         (tarea 2.6, Marco) ML-DSA en crudo via liboqs. Solo
+                           firmas.
+  - src/pqc/shor.py        (tareas 2.2/2.3, TU PARTE) Shor para N=15. Solo
+                           firmas + docstrings. Ver seccion 4.
+  - src/pqc/benchmark.py   (tarea 2.7, Carlos) medidas de tiempo/tamano. Solo
+                           firmas.
+
+CREADOS (tests/pqc/):
+  - tests/pqc/__init__.py       vacio (paquete de tests, como tests/qkd/).
+  - tests/pqc/conftest.py       fixture rng() con semilla fija (SOLO para la
+                                parte Shor; la cripto real NO se siembra, ver
+                                el comentario del fichero).
+  - tests/pqc/test_scaffold.py  dos tests: (a) la API publica de pqc existe;
+                                (b) liboqs trae ML-KEM-768 y ML-DSA-65.
+
+EDITADOS:
+  - .github/workflows/ci.yml    migrada a Docker (ver seccion 2).
+  - Dockerfile                  ahora instala tambien requirements-dev.txt
+                                (ruff/black/mypy) para que la CI corra el lint
+                                y los tipos DENTRO del contenedor.
+  - pyproject.toml              anadido "oqs.*" a los overrides de mypy que
+                                ignoran stubs ausentes (junto a qiskit/scipy).
+  - README.md                   corregido "Kyber/Dilithium" -> "ML-KEM/ML-DSA"
+                                (nomenclatura NIST, FIPS 203/204).
+
+BORRADO:
+  - requirements-qkd.txt        ya no hace falta (la CI no instala nada en el
+                                runner; el Dockerfile es la fuente de verdad).
+                                Se quitaron todas las referencias que quedaban.
+
+Verificado en verde, en local y DENTRO de la imagen de CI:
+  - ruff check src/ tests/
+  - black --check src/ tests/
+  - mypy --strict src/qkd src/pqc
+  - docker build -t qpcs:ci .
+  - docker run --rm qpcs:ci pytest tests/ -m "not slow"   (53 passed)
+
+
+------------------------------------------------------------------------
+2. LA CI AHORA CORRE DENTRO DE DOCKER (y por que)
+------------------------------------------------------------------------
+
+Antes la CI instalaba requirements-qkd.txt (un subconjunto minimo) en el
+runner de GitHub para no tener que compilar liboqs. Con el modulo 2 eso ya no
+vale: liboqs es una libreria en C SIN wheel, hay que COMPILARLA. Replicar ese
+build en el runner duplicaria la logica del Dockerfile y acabaria divergiendo.
+
+Asi que la CI ahora hace `docker build -t qpcs:ci .` y corre ruff/black/mypy/
+pytest con `docker run` sobre esa imagen. El Dockerfile ya es "la fuente de
+verdad" del proyecto ("si funciona en Docker, funciona") e instala
+requirements.txt + requirements-dev.txt completos (liboqs-python, cryptography,
+qiskit, ruff/black/mypy...). Por eso desaparece requirements-qkd.txt.
+
+Para ti esto significa: si tu codigo/tests pasan con
+  docker run --rm qpcs:ci pytest tests/ -m "not slow"
+pasan en CI. No dependas del venv local para dar algo por bueno.
+
+
+------------------------------------------------------------------------
+3. QUE TE TOCA A TI: tareas 2.2 y 2.3 (Shor)
+------------------------------------------------------------------------
+
+Rama sugerida: feature/pqc-shor-core
+
+Dependen de que este andamiaje exista: YA EXISTE. src/pqc/shor.py tiene las
+seis firmas con NotImplementedError y un docstring cada una explicando que debe
+hacer. Tu trabajo es rellenar los cuerpos SIN cambiar las firmas (son la
+frontera del modulo; si cambias una, avisa al equipo, igual que con qkd).
+
+Las seis funciones (ver docstrings completos en el fichero):
+  - qft_dagger(n) -> QuantumCircuit
+  - c_amod15(a, power) -> Gate
+  - circuito_orden_15(a, n_count=8) -> QuantumCircuit
+  - medir_fase_15(a, rng, n_count=8, shots=1) -> float
+  - orden_desde_fase(fase, n=15) -> int
+  - factorizar_15(rng, n=15, intentos=10) -> FactorizacionShor
+
+Convencion que hay que respetar (ya asumida en las firmas):
+  - Todo lo estocastico recibe un np.random.Generator EXPLICITO (aqui: la
+    eleccion de la base `a` y el muestreo de shots). Nunca aleatoriedad global.
+  - mypy --strict, Black 88, Ruff (E,F,I,UP,B). qiskit ya esta en los overrides
+    de mypy, no tienes que tocar nada para importar qiskit/qiskit.circuit.
+
+Tus tests: los creas TU en tests/pqc/test_shor.py (ese fichero NO lo he creado
+yo). En tests/pqc/conftest.py ya tienes la fixture `rng()` con semilla fija 42
+lista para usar (misma politica anti-parpadeo que la suite qkd: semilla fija
+siempre, tolerancias derivadas, prohibido el retry).
+
+
+------------------------------------------------------------------------
+4. EL CONTRATO QUE DEBE DEVOLVER factorizar_15
+------------------------------------------------------------------------
+
+En src/pqc/types.py (NO lo cambies sin avisar):
+
+    @dataclass(frozen=True)
+    class FactorizacionShor:
+        n: int                      # el N factorizado
+        factores: tuple[int, int]   # (p, q) con p*q == N (o (1, N) si fracasa)
+        a: int                      # la base que funciono (o la ultima probada)
+        orden: int                  # el orden r hallado
+        intentos: int               # cuantas iteraciones costo
+        fase_medida: float          # la fase de la iteracion con exito
+        ok: bool                    # True si p*q == N con p,q no triviales
+
+Es un dataclass frozen: se construye una vez y no se muta. Devuelve SIEMPRE una
+instancia (tambien en el caso de fracaso, con ok=False y factores=(1, N)), no
+None: asi el dashboard y los tests pueden inspeccionar por que fallo.
+
+
+------------------------------------------------------------------------
+5. N=15 REQUISITO DURO, N=21 OBJETIVO FIRME
+------------------------------------------------------------------------
+
+N=15 es requisito duro de la tarea (es el caso didactico historico, primer
+Shor experimental). N=21 es objetivo firme CON plan B documentado: si N=21 se
+complica, hay via de escape acordada, no hace falta que te bloquees en el. La
+firma de factorizar_15 ya lleva `n=15` por defecto y `c_amod15` esta acotada a
+N=15 a proposito; el salto a N=21 sera trabajo aparte.
+
+
+------------------------------------------------------------------------
+6. NOTA sobre nomenclatura liboqs (para el review de todos)
+------------------------------------------------------------------------
+
+Al montar el test de mecanismos comprobe algo que conviene que sepa el equipo:
+liboqs 0.14.0 (la que compila nuestro Dockerfile) SIGUE exponiendo los nombres
+pre-estandarizacion "Kyber768" y "Dilithium3" como ALIAS, conviviendo con los
+nombres NIST "ML-KEM-768"/"ML-DSA-65". O sea: liboqs NO nos obliga a usar la
+nomenclatura correcta. Que en nuestro codigo aparezca solo ML-KEM-*/ML-DSA-*
+(FIPS 203/204) y nunca Kyber/Dilithium (salvo como nota historica puntual) es
+una regla de REVIEW, no algo que un test pueda derivar de liboqs. El test de
+test_scaffold.py comprueba que los nombres NIST estan presentes y lo documenta
+en un comentario. No afecta a tu parte (Shor no usa liboqs), pero por si lo ves
+en el review.
+
+
+------------------------------------------------------------------------
+7. GIT: NO he tocado nada (importante)
+------------------------------------------------------------------------
+
+No he tocado git en absoluto: ni ramas, ni add, ni commit, ni push, ni PR.
+Todo esto esta en el arbol de trabajo SIN commitear. `git status` lo muestra
+como modified/untracked:
+
+    modified:  .github/workflows/ci.yml, Dockerfile, README.md, pyproject.toml
+    deleted:   requirements-qkd.txt
+    untracked: src/pqc/, tests/pqc/
+
+src/qkd/ y tests/qkd/ estan intactos (Fase 1 cerrada, no se toca).
+
+Si quieres partir de esto para tu feature/pqc-shor-core, hay que decidir COMO
+se integra el scaffold (rama nueva encima de estos cambios, o que Carlos
+commitee primero el scaffold y tu ramifiques desde ahi, etc.). Eso lo hablamos
+aparte entre nosotros: no lo decido yo por mi cuenta.
+========================================================================

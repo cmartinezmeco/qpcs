@@ -22,9 +22,15 @@ ENV OQS_INSTALL_PATH=/opt/_oqs
 
 WORKDIR /app
 
-COPY requirements.txt .
+# requirements-dev.txt (ruff/black/mypy) entra en la imagen a partir de la
+# Fase 2: la CI ya no instala nada en el runner, corre el lint y los tipos
+# DENTRO del contenedor (ver .github/workflows/ci.yml), asi que las
+# herramientas tienen que vivir aqui. Es la misma imagen que usa el dashboard;
+# el peso extra de las herramientas de dev es despreciable.
+COPY requirements.txt requirements-dev.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements-dev.txt
 
 COPY . .
 

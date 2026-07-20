@@ -12,29 +12,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      # NOTA: instalamos requirements-qkd.txt (minimo), NO requirements.txt.
-      # Ver el comentario al principio de requirements-qkd.txt para el porque
-      # y para la migracion pendiente cuando exista el modulo 2.
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements-qkd.txt
-          pip install -r requirements-dev.txt
-          pip install -e .
+      # MIGRACION A DOCKER (Fase 2, tarea 2.1). Hasta ahora la CI instalaba
+      # requirements-qkd.txt (un subconjunto minimo) en el runner para no tener
+      # que compilar liboqs. El modulo 2 (PQC) depende de liboqs, que es una
+      # libreria en C SIN wheel: hay que compilarla. Replicar ese build en el
+      # runner duplicaria la logica del Dockerfile y acabaria divergiendo de
+      # el. El Dockerfile ya es la fuente de verdad del proyecto ("si funciona
+      # en Docker, funciona") e instala requirements.txt + requirements-dev.txt
+      # completos (liboqs-python, cryptography, qiskit, ruff/black/mypy...), asi
+      # que la CI ahora construye esa imagen y corre TODO dentro de ella. Por
+      # eso desaparece requirements-qkd.txt.
+      - name: Build image
+        run: docker build -t qpcs:ci .
 
       - name: Ruff (lint)
-        run: ruff check src/ tests/
+        run: docker run --rm qpcs:ci ruff check src/ tests/
 
       - name: Black (format check)
-        run: black --check src/ tests/
+        run: docker run --rm qpcs:ci black --check src/ tests/
 
       - name: Mypy (strict types)
-        run: mypy --strict src/qkd
+        run: docker run --rm qpcs:ci mypy --strict src/qkd src/pqc
 
       - name: Pytest (fast suite)
-        run: pytest tests/ -v -m "not slow"
+        run: docker run --rm qpcs:ci pytest tests/ -v -m "not slow"
