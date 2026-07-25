@@ -4,7 +4,7 @@ numpy==1.26.4
 scipy==1.13.0
 matplotlib==3.8.4
 seaborn==0.13.2
-liboqs-python==0.14.1
+liboqs-python==0.16.0
 cryptography==42.0.5
 streamlit==1.33.0
 # pyarrow es dependencia transitiva de streamlit; sin pinear, pip resolvia

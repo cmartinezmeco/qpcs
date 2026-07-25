@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Compilar liboqs 0.14.0 (la versión que SÍ existe como tag, evitando
 # el desajuste con liboqs-python==0.14.1)
-RUN git clone --branch 0.14.0 --depth=1 https://github.com/open-quantum-safe/liboqs /opt/liboqs && \
+RUN git clone --branch 0.16.0 --depth=1 https://github.com/open-quantum-safe/liboqs /opt/liboqs && \
     mkdir /opt/liboqs/build && cd /opt/liboqs/build && \
     cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/opt/_oqs -GNinja .. && \
     ninja install && \
