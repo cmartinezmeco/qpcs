@@ -412,6 +412,25 @@ Simulation of the **BB84 protocol**, a quantum random number generator, and an i
 
 Performance comparison between classical cryptography (**RSA/ECC**) and post-quantum cryptography (**ML-KEM/ML-DSA**, the NIST-standardized successors of Kyber/Dilithium), plus a **Shor's algorithm** demo using Qiskit.
 
+> This half is **not a simulation**: ML-KEM and ML-DSA run for real on `liboqs`, the same code that protects production systems today.
+
+A real message encrypted with **ML-KEM-768** (KEM → HKDF-SHA256 → AES-256-GCM) and signed with **ML-DSA-65** — sample run, keys are freshly generated on every call and never seeded:
+
+```text
+message         : La criptografia post-cuantica protege esto en 2035.
+kem_ciphertext  : 1088 B -> 52f550b7a56f6ad45b22db1627db6711 ...
+nonce           :   12 B -> e0e6580fe247bbe131e509fb          (fresh per message)
+aead_ciphertext :   67 B -> 0f949829636ec755bcd6293ecb65d5d9 ...
+decrypted       : La criptografia post-cuantica protege esto en 2035.   ✅
+
+signed          : comunicado oficial QPCS
+public key      : 1952 B
+signature       : 3309 B -> c644797e421aacfc8cd89cfc6be513a6 ...
+verifies        : True    ✅  (flip one bit of the message → False)
+```
+
+The honest trade-off in one line: an **Ed25519** signature takes 64 bytes, an **ML-DSA-65** one takes 3309 — about 50× more. That cost in bytes, not in CPU, is what migrating actually buys you. Round-trips, tamper detection and sizes are pinned by tests: `tests/pqc/test_hybrid.py`, `tests/pqc/test_sig.py`, `tests/pqc/test_classical.py`.
+
 ### 🌀 Module 3 — Deterministic chaos
 
 Image encryption using **chaotic attractors** (Lorenz / Logistic Map), with entropy and pixel-correlation tests proving no statistical information leaks.
