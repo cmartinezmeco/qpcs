@@ -20,13 +20,34 @@ logger = logging.getLogger(__name__)
 # reconciliacion ideal (f = 1) queda clave destilable.
 QBER_THRESHOLD = 0.11
 
+# Bits objetivo de muestra publica para estimar el QBER cuando no se pide
+# una sample_fraction concreta. 800 basta para estabilizar la sigma
+# binomial sin sacrificar demasiada clave final con N grandes (Gonzalo,
+# tarea 2.x). Acotado entre 2% (N masivo) y 40% (N pequeño).
+_MUESTRA_QBER_OBJETIVO = 800
+_MUESTRA_FRACCION_MIN = 0.02
+_MUESTRA_FRACCION_MAX = 0.40
+
+
+def _fraccion_muestra_optima(sifted_len: int) -> float:
+    """Fraccion de muestra que apunta a ~_MUESTRA_QBER_OBJETIVO bits.
+
+    Se usa SOLO cuando el llamador no especifica sample_fraction: nunca
+    sustituye un valor pedido explicitamente (lo necesitan intactos
+    test_muestra_vacia_lanza_error y el slider del dashboard).
+    """
+    if sifted_len == 0:
+        return 0.0
+    fraccion = _MUESTRA_QBER_OBJETIVO / sifted_len
+    return float(np.clip(fraccion, _MUESTRA_FRACCION_MIN, _MUESTRA_FRACCION_MAX))
+
 
 def run_protocol(
     n_photons: int,
     rng: np.random.Generator,
     eve_rate: float = 0.0,
     noise: float = 0.0,
-    sample_fraction: float = 0.2,
+    sample_fraction: float | None = None,
     backend: Literal["qiskit", "numpy"] = "numpy",
 ) -> ProtocolResult:
     """Recorre la cadena completa: QRNG -> BB84 -> QBER -> Cascade -> privacidad.
@@ -48,8 +69,15 @@ def run_protocol(
     )
     sifted_len = int(sifted.alice.size)
 
-    # --- 4. Estimacion del QBER sacrificando una muestra publica ---
-    est = estimate_qber(sifted, sample_fraction, rng)
+    # --- 4. Estimacion del QBER: si no se especifica sample_fraction, se
+    # calcula automaticamente (ver _fraccion_muestra_optima); si se
+    # especifica, se respeta tal cual.
+    fraccion = (
+        sample_fraction
+        if sample_fraction is not None
+        else _fraccion_muestra_optima(sifted_len)
+    )
+    est = estimate_qber(sifted, fraccion, rng)
 
     def _abort(reason: str) -> ProtocolResult:
         """Resultado de aborto homogeneo: sin clave, con motivo legible."""
@@ -112,7 +140,7 @@ def run_until_qber(
     rng: np.random.Generator,
     eve_rate: float = 0.0,
     noise: float = 0.0,
-    sample_fraction: float = 0.2,
+    sample_fraction: float | None = None,
 ) -> QberEstimate:
     """Version corta de la cadena, solo hasta la estimacion del QBER.
 
@@ -120,6 +148,9 @@ def run_until_qber(
     Usa siempre el backend numpy: es el unico donde Eve (intercept-resend)
     esta modelada, y el unico viable en tiempo para los barridos de 40 000
     fotones que hacen estos tests (ver run_bb84 en bb84.py).
+
+    Si no se especifica sample_fraction, se calcula automaticamente (ver
+    _fraccion_muestra_optima); si se especifica, se respeta tal cual.
     """
     sifted = run_bb84(
         n_photons=n_photons,
@@ -128,4 +159,10 @@ def run_until_qber(
         noise=noise,
         backend="numpy",
     )
-    return estimate_qber(sifted, sample_fraction, rng)
+    sifted_len = int(sifted.alice.size)
+    fraccion = (
+        sample_fraction
+        if sample_fraction is not None
+        else _fraccion_muestra_optima(sifted_len)
+    )
+    return estimate_qber(sifted, fraccion, rng)

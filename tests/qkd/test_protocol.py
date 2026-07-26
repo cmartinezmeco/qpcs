@@ -29,7 +29,7 @@ def test_cadena_completa_con_eve_aborta():
     assert "QBER" in r.abort_reason
 
 
-@pytest.mark.parametrize("p", [0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+@pytest.mark.parametrize("p", [0.0, 0.2, 0.42, 0.6, 0.8, 1.0])
 def test_barrido_de_eve(p):
     """Q(p) = p/4, y el protocolo aborta exactamente cuando no puede
     destilar clave.
@@ -37,11 +37,20 @@ def test_barrido_de_eve(p):
     Nota honesta para el equipo (difiere de la version idealizada de la
     guia): el umbral del 11% asume reconciliacion IDEAL (f = 1). Con el
     f_EC real de Cascade (~1.15-1.2 medido en test_eficiencia_razonable),
-    en p = 0.4 (Q ~ 10%, justo bajo el umbral) la formula
-    ell = n(1 - h(Q)) - leak_ec - 2 log2(1/eps) sale <= 0 y el protocolo
-    aborta por longitud de clave, no por QBER. Es el comportamiento
-    correcto: la formula absorbe la ineficiencia de la reconciliacion sin
-    mentir (misma logica que el plan B de la seccion 5.5.7 de la guia).
+    justo bajo el umbral la formula
+    ell = n(1 - h(Q)) - leak_ec - 2 log2(1/eps) puede salir <= 0 y el
+    protocolo aborta por longitud de clave, no por QBER. Es el
+    comportamiento correcto: la formula absorbe la ineficiencia de la
+    reconciliacion sin mentir (misma logica que el plan B de la seccion
+    5.5.7 de la guia).
+
+    p = 0.42 (no 0.4) desde la optimizacion de sample_fraction (tarea
+    2.x, Gonzalo): al sacrificar menos bits en la muestra del QBER (~800
+    en vez de 0.2*sifted_len), queda mas clave real disponible y el caso
+    limite se desplaza. Se comprobo con un barrido fino (0.38 a 0.46,
+    misma semilla) que en p = 0.4 y 0.38 ya SALE clave (ell > 0) y que
+    el aborto por longitud reaparece a partir de p ~ 0.42; es una
+    consecuencia esperada de la mejora, no una regresion.
     """
     r = run_protocol(
         n_photons=40_000, eve_rate=p, noise=0.0, rng=np.random.default_rng(1)
@@ -54,8 +63,8 @@ def test_barrido_de_eve(p):
         assert r.aborted
         assert "QBER" in (r.abort_reason or "")
         assert r.final_key is None
-    elif p == 0.4:
-        # Zona limite (Q ~ 10%): aborta por ell <= 0, con motivo legible
+    elif p == 0.42:
+        # Zona limite (Q ~ 9%): aborta por ell <= 0, con motivo legible
         # que lo distingue del aborto por umbral.
         assert r.aborted
         assert "clave" in (r.abort_reason or "")
