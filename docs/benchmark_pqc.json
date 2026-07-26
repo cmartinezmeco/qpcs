@@ -1,0 +1,319 @@
+{
+  "entorno": {
+    "python": "3.11.15",
+    "plataforma": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "procesador": "x86_64",
+    "liboqs": "0.16.0",
+    "liboqs_python": "0.16.0",
+    "medido_utc": "2026-07-26T22:24:56+00:00"
+  },
+  "medidas": [
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072",
+      "operacion": "keygen",
+      "repeticiones": 50,
+      "media_ms": 212.37619857998652,
+      "sigma_ms": 98.05312535009209,
+      "p50_ms": 199.08249899981456
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072",
+      "operacion": "encrypt",
+      "repeticiones": 50,
+      "media_ms": 0.07144800003516139,
+      "sigma_ms": 0.014560953584283443,
+      "p50_ms": 0.06603800011362182
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072",
+      "operacion": "decrypt",
+      "repeticiones": 50,
+      "media_ms": 2.727965099911671,
+      "sigma_ms": 0.4090351338532667,
+      "p50_ms": 2.708616000290931
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072",
+      "operacion": "sign",
+      "repeticiones": 50,
+      "media_ms": 2.395794999974896,
+      "sigma_ms": 0.21181310673536094,
+      "p50_ms": 2.3041145000206598
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072",
+      "operacion": "verify",
+      "repeticiones": 50,
+      "media_ms": 0.09721648004415329,
+      "sigma_ms": 0.04853198371404608,
+      "p50_ms": 0.07070650008245138
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "X25519",
+      "operacion": "keygen",
+      "repeticiones": 50,
+      "media_ms": 0.042292159942007856,
+      "sigma_ms": 0.002016502161108296,
+      "p50_ms": 0.041736499952094164
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "X25519",
+      "operacion": "decaps",
+      "repeticiones": 50,
+      "media_ms": 0.047002820028865244,
+      "sigma_ms": 0.005471847123662809,
+      "p50_ms": 0.04519600042840466
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "Ed25519",
+      "operacion": "keygen",
+      "repeticiones": 50,
+      "media_ms": 0.044535359975270694,
+      "sigma_ms": 0.005320420905103933,
+      "p50_ms": 0.042594000206008786
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "Ed25519",
+      "operacion": "sign",
+      "repeticiones": 50,
+      "media_ms": 0.04296029997931328,
+      "sigma_ms": 0.00272021604948329,
+      "p50_ms": 0.04197350017420831
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "Ed25519",
+      "operacion": "verify",
+      "repeticiones": 50,
+      "media_ms": 0.14348761991641368,
+      "sigma_ms": 0.057144372967491495,
+      "p50_ms": 0.12775349932780955
+    },
+    {
+      "familia": "ML-KEM",
+      "mecanismo": "ML-KEM-768",
+      "operacion": "keygen",
+      "repeticiones": 200,
+      "media_ms": 0.019347010015735577,
+      "sigma_ms": 0.0027001468731092377,
+      "p50_ms": 0.018517499938752735
+    },
+    {
+      "familia": "ML-KEM",
+      "mecanismo": "ML-KEM-768",
+      "operacion": "encaps",
+      "repeticiones": 200,
+      "media_ms": 0.025121624994426384,
+      "sigma_ms": 0.013551139383693196,
+      "p50_ms": 0.020566500097629614
+    },
+    {
+      "familia": "ML-KEM",
+      "mecanismo": "ML-KEM-768",
+      "operacion": "decaps",
+      "repeticiones": 200,
+      "media_ms": 0.023174555053628865,
+      "sigma_ms": 0.003884323512778657,
+      "p50_ms": 0.022048499886295758
+    },
+    {
+      "familia": "ML-DSA",
+      "mecanismo": "ML-DSA-65",
+      "operacion": "keygen",
+      "repeticiones": 200,
+      "media_ms": 0.06259188995500153,
+      "sigma_ms": 0.013424962841755714,
+      "p50_ms": 0.05721599973185221
+    },
+    {
+      "familia": "ML-DSA",
+      "mecanismo": "ML-DSA-65",
+      "operacion": "sign",
+      "repeticiones": 200,
+      "media_ms": 0.21138694999081054,
+      "sigma_ms": 0.13879583497477851,
+      "p50_ms": 0.17012599937515915
+    },
+    {
+      "familia": "ML-DSA",
+      "mecanismo": "ML-DSA-65",
+      "operacion": "verify",
+      "repeticiones": 200,
+      "media_ms": 0.05913488504575071,
+      "sigma_ms": 0.007735181481582629,
+      "p50_ms": 0.054838500091136666
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072 +carga",
+      "operacion": "keygen",
+      "repeticiones": 50,
+      "media_ms": 254.81019669998204,
+      "sigma_ms": 153.3903688260901,
+      "p50_ms": 211.62275200003933
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072 +carga",
+      "operacion": "encrypt",
+      "repeticiones": 50,
+      "media_ms": 0.0903126999764936,
+      "sigma_ms": 0.02258102982222651,
+      "p50_ms": 0.0793179992797377
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072 +carga",
+      "operacion": "decrypt",
+      "repeticiones": 50,
+      "media_ms": 154.74762807993102,
+      "sigma_ms": 4.855269855132076,
+      "p50_ms": 153.85665900021195
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072 +carga",
+      "operacion": "sign",
+      "repeticiones": 50,
+      "media_ms": 155.01589676001458,
+      "sigma_ms": 4.681671998118596,
+      "p50_ms": 153.95446950014957
+    },
+    {
+      "familia": "RSA",
+      "mecanismo": "RSA-3072 +carga",
+      "operacion": "verify",
+      "repeticiones": 50,
+      "media_ms": 0.08962587999121752,
+      "sigma_ms": 0.009802755590060762,
+      "p50_ms": 0.08417849994657445
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "X25519 +carga",
+      "operacion": "keygen",
+      "repeticiones": 50,
+      "media_ms": 0.05247081995548797,
+      "sigma_ms": 0.004535693179516953,
+      "p50_ms": 0.04985200030205306
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "X25519 +carga",
+      "operacion": "decaps",
+      "repeticiones": 50,
+      "media_ms": 0.10415463997560437,
+      "sigma_ms": 0.02532022235591836,
+      "p50_ms": 0.09407549987372477
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "Ed25519 +carga",
+      "operacion": "keygen",
+      "repeticiones": 50,
+      "media_ms": 0.05521206005141721,
+      "sigma_ms": 0.012352976714947886,
+      "p50_ms": 0.052111500281171175
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "Ed25519 +carga",
+      "operacion": "sign",
+      "repeticiones": 50,
+      "media_ms": 0.10958029999528662,
+      "sigma_ms": 0.006935522489363068,
+      "p50_ms": 0.10712399989643018
+    },
+    {
+      "familia": "ECC",
+      "mecanismo": "Ed25519 +carga",
+      "operacion": "verify",
+      "repeticiones": 50,
+      "media_ms": 0.1688783400277316,
+      "sigma_ms": 0.023622204898350443,
+      "p50_ms": 0.1635915000406385
+    },
+    {
+      "familia": "ML-KEM",
+      "mecanismo": "ML-KEM-768 +carga",
+      "operacion": "keygen",
+      "repeticiones": 200,
+      "media_ms": 0.027536735010471602,
+      "sigma_ms": 0.004381371012364247,
+      "p50_ms": 0.026083499960805057
+    },
+    {
+      "familia": "ML-KEM",
+      "mecanismo": "ML-KEM-768 +carga",
+      "operacion": "encaps",
+      "repeticiones": 200,
+      "media_ms": 0.03326540002035472,
+      "sigma_ms": 0.01844573690582102,
+      "p50_ms": 0.027262500225333497
+    },
+    {
+      "familia": "ML-KEM",
+      "mecanismo": "ML-KEM-768 +carga",
+      "operacion": "decaps",
+      "repeticiones": 200,
+      "media_ms": 0.03357076000156667,
+      "sigma_ms": 0.01256307491437823,
+      "p50_ms": 0.03088450012000976
+    },
+    {
+      "familia": "ML-DSA",
+      "mecanismo": "ML-DSA-65 +carga",
+      "operacion": "verify",
+      "repeticiones": 200,
+      "media_ms": 0.08981634002793726,
+      "sigma_ms": 0.03599488609550335,
+      "p50_ms": 0.07851750024201465
+    }
+  ],
+  "tamanos": [
+    {
+      "mecanismo": "RSA-3072",
+      "clave_publica": 422,
+      "clave_privada": 1792,
+      "texto_cifrado": 384,
+      "firma": 384
+    },
+    {
+      "mecanismo": "X25519",
+      "clave_publica": 32,
+      "clave_privada": 32,
+      "texto_cifrado": 32,
+      "firma": 0
+    },
+    {
+      "mecanismo": "Ed25519",
+      "clave_publica": 32,
+      "clave_privada": 32,
+      "texto_cifrado": 0,
+      "firma": 64
+    },
+    {
+      "mecanismo": "ML-KEM-768",
+      "clave_publica": 1184,
+      "clave_privada": 2400,
+      "texto_cifrado": 1088,
+      "firma": 0
+    },
+    {
+      "mecanismo": "ML-DSA-65",
+      "clave_publica": 1952,
+      "clave_privada": 4032,
+      "texto_cifrado": 0,
+      "firma": 3309
+    }
+  ]
+}
