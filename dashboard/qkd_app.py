@@ -1,4 +1,4 @@
-"""dashboard/qkd_app.py — tarea 1.9 (Carlos). Dashboard Streamlit.
+"""dashboard/qkd_app.py — tareas 1.9 y 2.9 (Carlos). Dashboard Streamlit.
 
 Arranque local:
 
@@ -13,18 +13,54 @@ navegador del anfitrion no se ve nada aunque el puerto este publicado):
     #   --server.address=0.0.0.0 --server.port=8501
 
 Este fichero NO reimplementa logica de protocolo: consume run_protocol,
-run_until_qber y run_bb84 tal y como los exporta el paquete qkd. La unica
-excepcion documentada es la tabla de sifting, que reproduce los tres
-sorteos iniciales de run_bb84 para poder ensenar los fotones descartados
-(ver _datos_sifting).
+run_until_qber y run_bb84 tal y como los exporta el paquete qkd, y las
+funciones de `pqc` (shor, kem, hybrid, sig, benchmark) tal y como las exporta
+el paquete pqc. Las dos excepciones documentadas son la tabla de sifting, que
+reproduce los tres sorteos iniciales de run_bb84 para poder ensenar los fotones
+descartados (ver _datos_sifting), y el histograma de fases de Shor, que ejecuta
+el circuito publico con muchos shots porque medir_fase_15 devuelve una sola
+fase por llamada (ver _muestrear_fases).
+
+UN SOLO FICHERO, DOS MODULOS (tarea 2.9)
+----------------------------------------
+El panel del modulo 2 (PQC + Shor) vive aqui dentro, en su propia pestana, y no
+en un dashboard/pqc_app.py aparte. La alternativa -pasar a una app multipagina
+de Streamlit- obliga a mover ficheros a un directorio pages/ y a cambiar el
+comando de arranque, y el criterio de cierre de la Fase 1 dice que el dashboard
+arranca con `docker compose up`: no se toca. Con st.tabs los dos modulos
+conviven sin que el de QKD cambie de comportamiento.
+
+CUIDADO CON MATHTEXT (aprendido en la Fase 1)
+--------------------------------------------
+En las figuras de este fichero NO se usa notacion LaTeX de Matplotlib
+($\\sigma$ y compania): la cache LRU de mathtext no es thread-safe y revienta
+cuando Streamlit renderiza en un hilo de servidor. Se usan caracteres Unicode
+(±, σ, μ). En las figuras generadas por script (scripts/make_pqc_plots.py) si
+se puede usar mathtext, porque ahi no hay Streamlit.
 """
 
 from __future__ import annotations
+
+from dataclasses import asdict
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
+from cryptography.exceptions import InvalidTag
+from pqc.benchmark import (
+    RUTA_JSON,
+    SUFIJO_CAPA_API,
+    cargar_json,
+    entorno_del_json,
+)
+from pqc.hybrid import cifrar_mensaje, descifrar_mensaje
+from pqc.kem import kem_generar
+from pqc.shor import circuito_orden_15, factorizar_15
+from pqc.sig import firmar, verificar
+from pqc.types import FactorizacionShor, MensajeCifrado, ResultadoFirma
+from qiskit import transpile
+from qiskit_aer import AerSimulator
 from qkd.bb84 import run_bb84
 from qkd.privacy import binary_entropy
 from qkd.protocol import QBER_THRESHOLD, run_protocol, run_until_qber
@@ -41,8 +77,20 @@ plt.switch_backend("Agg")
 # infinito.
 N_FILAS_TABLA = 40
 
-st.set_page_config(page_title="QPCS - BB84", layout="wide")
-st.title("QKD: distribucion cuantica de claves (BB84)")
+# --- Constantes del modulo 2 (tarea 2.9) -----------------------------------
+# Mecanismos que ofrece el desplegable. Nomenclatura NIST obligatoria (FIPS
+# 203/204): nunca "Kyber"/"Dilithium". El indice 1 es el nivel NIST 3, el
+# recomendado y el que mide el benchmark.
+MECANISMOS_KEM = ("ML-KEM-512", "ML-KEM-768", "ML-KEM-1024")
+MECANISMOS_SIG = ("ML-DSA-44", "ML-DSA-65", "ML-DSA-87")
+MENSAJE_DEMO = "La criptografia post-cuantica protege esto en 2035."
+# Shots del histograma de fases de Shor. 2048 dan picos estables y el circuito
+# de 12 qubits tarda unas decimas de segundo en el simulador.
+SHOTS_FASE = 2048
+# Cuantos bytes en hexadecimal se ensenan de cada artefacto binario.
+BYTES_PREVIA = 16
+
+st.set_page_config(page_title="QPCS - QKD + PQC", layout="wide")
 
 
 # ---------------------------------------------------------------------------
@@ -172,11 +220,76 @@ def _colorea_fila(fila: pd.Series) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Controles
+# Modulo 2: Shor y PQC, tambien cacheados. Aqui el motivo es distinto y hay
+# dos:
+#   - Shor cuesta unas decimas de segundo por ejecucion (transpilar y simular
+#     12 qubits): sin cache se relanzaria al tocar cualquier control de la otra
+#     pestana, porque Streamlit reejecuta el script entero.
+#   - El cifrado y la firma son rapidisimos, pero NO son deterministas (nonce
+#     fresco y par de claves nuevo en cada llamada). Sin cache, el hexadecimal
+#     que se ensena cambiaria en cada interaccion y la demo seria imposible de
+#     seguir. Cachear por (mensaje, mecanismos) la congela hasta que el usuario
+#     cambia algo de verdad.
+# ---------------------------------------------------------------------------
+
+
+@st.cache_data
+def _factorizar(semilla: int) -> FactorizacionShor:
+    """Shor sobre N=15 con semilla explicita (reproducible, ver src/pqc/shor.py)."""
+    return factorizar_15(np.random.default_rng(semilla))
+
+
+@st.cache_data
+def _muestrear_fases(a: int, semilla: int) -> tuple[list[float], list[int]]:
+    """Histograma de la fase medida: ejecuta el circuito con SHOTS_FASE shots.
+
+    Excepcion documentada a "el dashboard no reimplementa logica del modulo":
+    `shor.medir_fase_15` devuelve UNA fase por llamada (shots=1, que es lo que
+    necesita la factorizacion) y para un histograma hacen falta los counts de
+    una sola ejecucion con muchos shots. Se usa el circuito publico
+    `circuito_orden_15`, sin tocar nada de src/pqc/shor.py.
+
+    El transpile antes del run NO es opcional: AerSimulator no sabe ejecutar
+    las puertas personalizadas de c_amod15 sin descomponerlas primero.
+    """
+    backend = AerSimulator(seed_simulator=semilla)
+    circuito = circuito_orden_15(a, 8)
+    counts = backend.run(transpile(circuito, backend), shots=SHOTS_FASE).result()
+    histograma = counts.get_counts()
+    fases = [int(bits, 2) / 2**8 for bits in histograma]
+    veces = [int(v) for v in histograma.values()]
+    return fases, veces
+
+
+@st.cache_data
+def _cifrar_y_firmar(
+    mensaje: str, mecanismo_kem: str, mecanismo_sig: str
+) -> tuple[bytes, MensajeCifrado, ResultadoFirma]:
+    """Cifra con ML-KEM y firma con ML-DSA el mismo mensaje.
+
+    Devuelve tambien la clave privada del KEM porque el receptor de la demo la
+    necesita para descifrar. Las claves viven en memoria durante la ejecucion y
+    nada mas: la gestion de claves persistente esta explicitamente fuera de la
+    Fase 2.
+    """
+    clave_publica, clave_privada = kem_generar(mecanismo_kem)
+    sobre = cifrar_mensaje(clave_publica, mensaje.encode(), mecanismo_kem)
+    firma = firmar(mensaje.encode(), mecanismo_sig)
+    return clave_privada, sobre, firma
+
+
+def _hex_previa(datos: bytes) -> str:
+    """Los primeros bytes en hexadecimal, para ensenar un artefacto binario."""
+    return datos[:BYTES_PREVIA].hex() + (" ..." if len(datos) > BYTES_PREVIA else "")
+
+
+# ---------------------------------------------------------------------------
+# Controles del modulo 1 (barra lateral)
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
     st.header("Parametros")
+    st.caption("Estos controles son de la pestana **QKD (BB84)**.")
     n = st.select_slider(
         "Fotones", options=[1_000, 5_000, 10_000, 50_000], value=10_000
     )
@@ -192,109 +305,420 @@ with st.sidebar:
 
 r = _simular(int(n), float(p), float(noise), float(sample_fraction), seed)
 
-# ---------------------------------------------------------------------------
-# Metricas grandes
-# ---------------------------------------------------------------------------
-
-# f_EC calculada aqui con binary_entropy porque la property
-# ReconciliationResult.efficiency del contrato sigue sin implementar (y tal
-# y como esta declarada no puede: el dataclass no almacena Q).
-f_ec: float | None = None
-if r.reconciliation is not None:
-    h = binary_entropy(r.qber.qber)
-    if h > 0.0 and r.reconciliation.bob.size > 0:
-        f_ec = r.reconciliation.leak_ec / (r.reconciliation.bob.size * h)
-
-c1, c2, c3, c4 = st.columns(4)
-c1.metric(
-    "QBER medido",
-    f"{r.qber.qber:.2%}",
-    f"± {r.qber.sigma:.2%} (1 sigma)",
-    delta_color="off",
+tab_qkd, tab_pqc = st.tabs(
+    ["Modulo 1 · QKD (BB84)", "Modulo 2 · PQC (ML-KEM / ML-DSA) + Shor"]
 )
-c2.metric(
-    "Clave final",
-    "0 bits" if r.final_key is None else f"{r.final_key.size} bits",
-)
-c3.metric("Rendimiento", f"{r.secret_fraction:.1%}")
-c4.metric("f_EC (Cascade)", "—" if f_ec is None else f"{f_ec:.2f}")
 
-# --- El semaforo -----------------------------------------------------------
+# ===========================================================================
+# PESTANA 1 - Modulo QKD (Fase 1, tarea 1.9). Contenido intacto: lo unico que
+# cambia respecto a la Fase 1 es que ahora vive dentro de su pestana.
+# ===========================================================================
 
-if r.aborted:
-    st.error(f"PROTOCOLO ABORTADO — {r.abort_reason}.")
-else:
-    assert r.final_key is not None
-    st.success(f"Clave segura destilada: {r.final_key.size} bits.")
+with tab_qkd:
+    st.title("QKD: distribucion cuantica de claves (BB84)")
 
-# ---------------------------------------------------------------------------
-# Figura Q(p) recalculada + tabla del sifting
-# ---------------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    # Metricas grandes
+    # -----------------------------------------------------------------------
 
-col_fig, col_tabla = st.columns([3, 2])
+    # f_EC calculada aqui con binary_entropy porque la property
+    # ReconciliationResult.efficiency del contrato sigue sin implementar (y tal
+    # y como esta declarada no puede: el dataclass no almacena Q).
+    f_ec: float | None = None
+    if r.reconciliation is not None:
+        h = binary_entropy(r.qber.qber)
+        if h > 0.0 and r.reconciliation.bob.size > 0:
+            f_ec = r.reconciliation.leak_ec / (r.reconciliation.bob.size * h)
 
-with col_fig:
-    st.subheader("QBER frente a la intensidad de Eve")
-    ps, qs, sigmas = _barrido_qber(int(n), float(noise), float(sample_fraction), seed)
-    fig, ax = plt.subplots(figsize=(6.5, 4))
-    ax.errorbar(
-        ps,
-        qs,
-        yerr=3 * np.asarray(sigmas),
-        fmt="o",
-        ms=4,
-        capsize=3,
-        label="QBER simulado (±3σ)",
-        zorder=3,
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric(
+        "QBER medido",
+        f"{r.qber.qber:.2%}",
+        f"± {r.qber.sigma:.2%} (1 sigma)",
+        delta_color="off",
     )
-    ps_arr = np.asarray(ps)
-    ax.plot(ps_arr, ps_arr / 4, "-", label="teoria: Q = p/4", zorder=2)
-    ax.axhline(QBER_THRESHOLD, ls="--", color="gray", lw=1)
-    ax.axhspan(QBER_THRESHOLD, 0.30, color="red", alpha=0.08, zorder=1)
-    # Marcador de la ejecucion actual: rojo si aborto, verde si hay clave
-    # (colores de estado, reservados para eso).
-    ax.plot(
-        [p],
-        [r.qber.qber],
-        "D",
-        ms=9,
-        color="#d62728" if r.aborted else "#2ca02c",
-        label=f"ejecucion actual (p = {p:.2f})",
-        zorder=4,
+    c2.metric(
+        "Clave final",
+        "0 bits" if r.final_key is None else f"{r.final_key.size} bits",
     )
-    ax.set_xlabel("fraccion interceptada por Eve, p")
-    ax.set_ylabel("QBER")
-    ax.set_xlim(-0.02, 1.02)
-    ax.set_ylim(0, 0.30)
-    ax.grid(alpha=0.25, lw=0.5)
-    ax.legend(fontsize=8)
-    fig.tight_layout()
-    st.pyplot(fig)
-    plt.close(fig)
-    st.caption(
-        "La recta teorica no es un ajuste: esta dibujada de la formula "
-        "Q = p/4. El sombreado marca la zona por encima del umbral de "
-        "seguridad del 11% (Shor-Preskill)."
-    )
+    c3.metric("Rendimiento", f"{r.secret_fraction:.1%}")
+    c4.metric("f_EC (Cascade)", "—" if f_ec is None else f"{f_ec:.2f}")
 
-with col_tabla:
-    st.subheader(f"Sifting: primeros {N_FILAS_TABLA} fotones")
-    df = _datos_sifting(int(n), float(p), float(noise), seed)
-    if df is None:
-        st.warning(
-            "Tabla desactivada: el orden de sorteo interno de run_bb84 ha "
-            "cambiado y la reconstruccion ya no coincide con la simulacion "
-            "real. Revisar _datos_sifting en dashboard/qkd_app.py."
-        )
+    # --- El semaforo -------------------------------------------------------
+
+    if r.aborted:
+        st.error(f"PROTOCOLO ABORTADO — {r.abort_reason}.")
     else:
-        st.dataframe(
-            df.style.apply(_colorea_fila, axis=1),
-            hide_index=True,
-            height=520,
-            use_container_width=True,
+        assert r.final_key is not None
+        st.success(f"Clave segura destilada: {r.final_key.size} bits.")
+
+    # -----------------------------------------------------------------------
+    # Figura Q(p) recalculada + tabla del sifting
+    # -----------------------------------------------------------------------
+
+    col_fig, col_tabla = st.columns([3, 2])
+
+    with col_fig:
+        st.subheader("QBER frente a la intensidad de Eve")
+        ps, qs, sigmas = _barrido_qber(
+            int(n), float(noise), float(sample_fraction), seed
+        )
+        fig, ax = plt.subplots(figsize=(6.5, 4))
+        ax.errorbar(
+            ps,
+            qs,
+            yerr=3 * np.asarray(sigmas),
+            fmt="o",
+            ms=4,
+            capsize=3,
+            label="QBER simulado (±3σ)",
+            zorder=3,
+        )
+        ps_arr = np.asarray(ps)
+        ax.plot(ps_arr, ps_arr / 4, "-", label="teoria: Q = p/4", zorder=2)
+        ax.axhline(QBER_THRESHOLD, ls="--", color="gray", lw=1)
+        ax.axhspan(QBER_THRESHOLD, 0.30, color="red", alpha=0.08, zorder=1)
+        # Marcador de la ejecucion actual: rojo si aborto, verde si hay clave
+        # (colores de estado, reservados para eso).
+        ax.plot(
+            [p],
+            [r.qber.qber],
+            "D",
+            ms=9,
+            color="#d62728" if r.aborted else "#2ca02c",
+            label=f"ejecucion actual (p = {p:.2f})",
+            zorder=4,
+        )
+        ax.set_xlabel("fraccion interceptada por Eve, p")
+        ax.set_ylabel("QBER")
+        ax.set_xlim(-0.02, 1.02)
+        ax.set_ylim(0, 0.30)
+        ax.grid(alpha=0.25, lw=0.5)
+        ax.legend(fontsize=8)
+        fig.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+        st.caption(
+            "La recta teorica no es un ajuste: esta dibujada de la formula "
+            "Q = p/4. El sombreado marca la zona por encima del umbral de "
+            "seguridad del 11% (Shor-Preskill)."
+        )
+
+    with col_tabla:
+        st.subheader(f"Sifting: primeros {N_FILAS_TABLA} fotones")
+        df = _datos_sifting(int(n), float(p), float(noise), seed)
+        if df is None:
+            st.warning(
+                "Tabla desactivada: el orden de sorteo interno de run_bb84 ha "
+                "cambiado y la reconstruccion ya no coincide con la simulacion "
+                "real. Revisar _datos_sifting en dashboard/qkd_app.py."
+            )
+        else:
+            st.dataframe(
+                df.style.apply(_colorea_fila, axis=1),
+                hide_index=True,
+                height=520,
+                use_container_width=True,
+            )
+            st.caption(
+                "Sobreviven las filas con bases iguales (~la mitad). Las filas "
+                "en rojo son errores: aparecen al subir a Eve o el ruido. En "
+                "las descartadas el resultado de Bob se tira sin publicarse."
+            )
+
+# ===========================================================================
+# PESTANA 2 - Modulo PQC + Shor (Fase 2, tarea 2.9). Tres sub-pestanas: la
+# amenaza (Shor), la defensa (cripto real) y su coste medido (benchmark), que
+# es el arco entero del modulo 2.
+# ===========================================================================
+
+with tab_pqc:
+    st.title("PQC: la amenaza (Shor) y su defensa (ML-KEM / ML-DSA)")
+    sub_shor, sub_real, sub_bench = st.tabs(
+        ["Shor: la amenaza", "PQC real: la defensa", "Benchmark: el coste"]
+    )
+
+    # -----------------------------------------------------------------------
+    # Shor: factorizacion por busqueda de orden
+    # -----------------------------------------------------------------------
+
+    with sub_shor:
+        col_ctrl, col_res = st.columns([1, 3])
+
+        with col_ctrl:
+            n_shor = st.selectbox("Numero a factorizar (N)", options=[15, 21])
+            semilla_shor = int(
+                st.number_input("Semilla de Shor", value=42, step=1, key="semilla_shor")
+            )
+            st.caption(
+                "Shor SI se siembra: es una simulacion Qiskit/NumPy "
+                "determinista. Misma semilla, misma factorizacion."
+            )
+
+        if n_shor == 21:
+            # Limitacion conocida, y se dice en la interfaz en vez de esconder
+            # la opcion: factorizar 21 necesita su propio oraculo compilado
+            # (c_amod21, 5 qubits de trabajo). Queda documentado como trabajo
+            # pendiente en el README, igual que la guia decidio en la tarea 2.3.
+            with col_res:
+                st.info(
+                    "**N = 21 no esta implementado.** El oraculo de "
+                    "exponenciacion modular esta compilado A MANO para cada "
+                    "par (a, N): el de N=15 usa 4 qubits de trabajo y unas "
+                    "puertas SWAP/X; el de N=21 necesita 5 qubits y su propio "
+                    "c_amod21. Es una limitacion conocida y documentada, no un "
+                    "fallo: N=15 es el requisito duro del modulo."
+                )
+        else:
+            res = _factorizar(semilla_shor)
+            fases, veces = _muestrear_fases(int(res.a), semilla_shor)
+
+            with col_res:
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric(
+                    "Factores de 15",
+                    f"{res.factores[0]} × {res.factores[1]}" if res.ok else "—",
+                )
+                m2.metric("Orden r hallado", res.orden)
+                m3.metric("Base a usada", res.a)
+                m4.metric("Intentos", res.intentos)
+                if res.ok:
+                    st.success(
+                        f"15 = {res.factores[0]} × {res.factores[1]} por "
+                        f"busqueda de orden cuantica (fase medida "
+                        f"{res.fase_medida:.3f} ≈ s/r con r = {res.orden})."
+                    )
+                else:
+                    st.error(
+                        "Shor no encontro factores en el numero maximo de "
+                        "intentos (orden impar o a^(r/2) ≡ -1 en todos)."
+                    )
+
+            col_hist, col_texto = st.columns([3, 2])
+
+            with col_hist:
+                st.subheader(f"Fase medida con a = {res.a} ({SHOTS_FASE} shots)")
+                fig_shor, ax_shor = plt.subplots(figsize=(6.5, 4))
+                # Las lineas de referencia van en los multiplos de 1/r con el r
+                # que hallo la ejecucion: no son un ajuste, son la prediccion.
+                for k in range(res.orden):
+                    ax_shor.axvline(
+                        k / res.orden, ls="--", color="gray", lw=1, zorder=1
+                    )
+                    ax_shor.text(
+                        k / res.orden,
+                        SHOTS_FASE * 0.34,
+                        f"s/r = {k}/{res.orden}",
+                        rotation=90,
+                        fontsize=8,
+                        color="gray",
+                        ha="right",
+                        va="bottom",
+                    )
+                # Sin mathtext: en Streamlit la cache de mathtext de Matplotlib
+                # no es thread-safe (ver el docstring del modulo).
+                ax_shor.bar(fases, veces, width=0.012, color="C0", zorder=3)
+                ax_shor.set_xlabel("fase medida y/2⁸ (adimensional)")
+                ax_shor.set_ylabel(f"veces medida (de {SHOTS_FASE} shots)")
+                ax_shor.set_xlim(-0.05, 1.0)
+                ax_shor.set_ylim(0, SHOTS_FASE * 0.5)
+                ax_shor.grid(axis="y", alpha=0.25, lw=0.5)
+                fig_shor.tight_layout()
+                st.pyplot(fig_shor)
+                plt.close(fig_shor)
+                st.caption(
+                    f"Los picos caen en los multiplos de 1/r con r = "
+                    f"{res.orden}: eso es lo que las fracciones continuas "
+                    "convierten en el orden, y de ahi salen los factores."
+                )
+
+            with col_texto:
+                st.subheader("Que se esta viendo")
+                st.markdown(
+                    f"""
+1. **Estimacion de fase.** El circuito ({8} qubits de conteo + 4 de trabajo)
+   mide una fase y/2⁸ ≈ s/r del operador |y⟩ → |{res.a}·y mod 15⟩.
+2. **Fracciones continuas.** El denominador del mejor convergente da el orden
+   **r = {res.orden}** (clasico, instantaneo).
+3. **Reduccion clasica.** gcd({res.a}^(r/2) ± 1, 15) →
+   **{res.factores[0]} y {res.factores[1]}**.
+
+Esto es un **modelo de amenaza sobre numeros de juguete**, no una herramienta
+que rompa nada en produccion: el oraculo esta compilado a mano para (a, N) y
+factorizar RSA-2048 necesitaria del orden de miles de qubits logicos con
+correccion de errores, que no existen.
+"""
+                )
+
+    # -----------------------------------------------------------------------
+    # PQC real: cifrar y firmar un mensaje de verdad
+    # -----------------------------------------------------------------------
+
+    with sub_real:
+        col_ctrl, col_estado = st.columns([2, 3])
+
+        with col_ctrl:
+            mensaje = st.text_input("Mensaje a cifrar y firmar", MENSAJE_DEMO)
+            mecanismo_kem = st.selectbox("Mecanismo KEM (FIPS 203)", MECANISMOS_KEM, 1)
+            mecanismo_sig = st.selectbox(
+                "Mecanismo de firma (FIPS 204)", MECANISMOS_SIG, 1
+            )
+            # Un toggle y no un boton: el boton no sobrevive al rerun de
+            # Streamlit sin session_state, y aqui interesa poder comparar el
+            # antes y el despues sin que la demo se reinicie.
+            manipular = st.toggle("Manipular un byte en transito", value=False)
+            st.caption(
+                "Estas claves NO se siembran: liboqs las genera con su propio "
+                "CSPRNG y deben ser impredecibles. Cambiar el mensaje o el "
+                "mecanismo genera un par nuevo."
+            )
+
+        clave_privada, sobre, firma = _cifrar_y_firmar(
+            mensaje, mecanismo_kem, mecanismo_sig
+        )
+
+        # El "byte en transito" se altera sobre una COPIA reconstruida: los
+        # dataclasses del contrato son frozen=True y no se mutan.
+        if manipular:
+            sobre_recibido = MensajeCifrado(
+                sobre.kem_ciphertext,
+                sobre.nonce,
+                bytes([sobre.aead_ciphertext[0] ^ 0x01]) + sobre.aead_ciphertext[1:],
+                sobre.mecanismo,
+            )
+            firma_recibida = ResultadoFirma(
+                firma.mensaje,
+                bytes([firma.firma[0] ^ 0x01]) + firma.firma[1:],
+                firma.clave_publica,
+                firma.mecanismo,
+            )
+        else:
+            sobre_recibido, firma_recibida = sobre, firma
+
+        with col_estado:
+            st.subheader("Lo que recibe el destinatario")
+            try:
+                descifrado = descifrar_mensaje(clave_privada, sobre_recibido).decode()
+                st.success(f"Descifrado con {sobre.mecanismo}: “{descifrado}”")
+            except InvalidTag:
+                # No es un fallo del programa: es exactamente lo que tiene que
+                # pasar. AES-GCM no devuelve texto en claro si el tag no cuadra.
+                st.error(
+                    "InvalidTag: AES-GCM ha detectado la manipulacion y NO "
+                    "devuelve ni un byte de texto en claro."
+                )
+            if verificar(firma_recibida):
+                st.success(f"Firma {firma.mecanismo} valida: el mensaje es autentico.")
+            else:
+                st.error(
+                    f"Firma {firma.mecanismo} INVALIDA: la verificacion "
+                    "devuelve False (nunca lanza: el caso negativo es un "
+                    "resultado legitimo de la operacion)."
+                )
+
+        st.subheader("Los artefactos, con sus tamanos reales")
+        t1, t2, t3, t4 = st.columns(4)
+        t1.metric("kem_ciphertext", f"{len(sobre.kem_ciphertext)} B")
+        t2.metric("nonce (AES-GCM)", f"{len(sobre.nonce)} B")
+        t3.metric("clave publica de firma", f"{len(firma.clave_publica)} B")
+        t4.metric("firma", f"{len(firma.firma)} B")
+
+        st.code(
+            f"mecanismo       : {sobre.mecanismo}  (KEM → HKDF-SHA256 → AES-256-GCM)\n"
+            f"mensaje         : {mensaje}\n"
+            f"kem_ciphertext  : {len(sobre.kem_ciphertext):>5} B -> "
+            f"{_hex_previa(sobre.kem_ciphertext)}\n"
+            f"nonce           : {len(sobre.nonce):>5} B -> "
+            f"{_hex_previa(sobre.nonce)}   (fresco en cada cifrado)\n"
+            f"aead_ciphertext : {len(sobre_recibido.aead_ciphertext):>5} B -> "
+            f"{_hex_previa(sobre_recibido.aead_ciphertext)}"
+            f"{'   <- BYTE MANIPULADO' if manipular else ''}\n"
+            f"firma           : {len(firma_recibida.firma):>5} B -> "
+            f"{_hex_previa(firma_recibida.firma)}"
+            f"{'   <- BYTE MANIPULADO' if manipular else ''}",
+            language="text",
         )
         st.caption(
-            "Sobreviven las filas con bases iguales (~la mitad). Las filas "
-            "en rojo son errores: aparecen al subir a Eve o el ruido. En "
-            "las descartadas el resultado de Bob se tira sin publicarse."
+            "Un KEM no cifra el mensaje: transporta un secreto de 32 bytes del "
+            "que HKDF-SHA256 deriva la clave AES-256-GCM que si lo cifra. "
+            "Firmar no oculta nada, autentica: el mensaje viaja en claro junto "
+            "a la firma."
         )
+
+    # -----------------------------------------------------------------------
+    # Benchmark: la tabla medida (no se mide aqui, se lee del JSON)
+    # -----------------------------------------------------------------------
+
+    with sub_bench:
+        st.subheader("Coste medido: clasico vs post-cuantico")
+        if not RUTA_JSON.exists():
+            st.info(
+                f"No hay medidas todavia ({RUTA_JSON.name} no existe). "
+                "Generalas con `python scripts/make_pqc_plots.py --medir` "
+                "DENTRO del contenedor, que es donde las cifras son "
+                "comparables."
+            )
+        else:
+            # El dashboard NO mide: medir el benchmark cuesta ~1 min de CPU y
+            # Streamlit reejecuta el script en cada interaccion. Se lee el JSON
+            # versionado que produjo scripts/make_pqc_plots.py --medir.
+            medidas, tamanos = cargar_json()
+            con_carga = st.toggle(
+                "Ensenar tambien la capa que (de)serializa la clave "
+                f"(«{SUFIJO_CAPA_API.strip()}»)",
+                value=False,
+            )
+            filas = [
+                asdict(m)
+                for m in medidas
+                if con_carga or not m.mecanismo.endswith(SUFIJO_CAPA_API)
+            ]
+            df_medidas = pd.DataFrame(filas)[
+                [
+                    "operacion",
+                    "familia",
+                    "mecanismo",
+                    "media_ms",
+                    "sigma_ms",
+                    "p50_ms",
+                    "repeticiones",
+                ]
+            ]
+            col_t, col_s = st.columns([3, 2])
+            with col_t:
+                st.dataframe(
+                    df_medidas.style.format(
+                        {"media_ms": "{:.3f}", "sigma_ms": "{:.3f}", "p50_ms": "{:.3f}"}
+                    ),
+                    hide_index=True,
+                    height=430,
+                    use_container_width=True,
+                )
+                st.caption(
+                    "media ± σ y mediana (p50), en milisegundos. La σ es la de "
+                    "la muestra, DERIVADA de las repeticiones: una media sin "
+                    "barra de error no es una medida, es una anecdota. La "
+                    "mediana esta para detectar contaminacion del planificador."
+                )
+            with col_s:
+                st.dataframe(
+                    pd.DataFrame([asdict(t) for t in tamanos]),
+                    hide_index=True,
+                    height=430,
+                    use_container_width=True,
+                )
+                st.caption(
+                    "Tamanos en bytes (0 = no aplica). Sin barras de error: "
+                    "son deterministas, los fija el estandar. El compromiso en "
+                    "una linea: la PQC gana en tiempo y pierde en bytes."
+                )
+
+            datos_entorno = entorno_del_json()
+            st.caption(
+                "Medido en: "
+                f"{datos_entorno['plataforma']} · {datos_entorno['procesador']} · "
+                f"Python {datos_entorno['python']} · "
+                f"liboqs {datos_entorno['liboqs']} · "
+                f"{datos_entorno['medido_utc']}. Otra maquina da otras cifras: "
+                "por eso el entorno viaja con las medidas."
+            )

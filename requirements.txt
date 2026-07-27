@@ -4,6 +4,11 @@ numpy==1.26.4
 scipy==1.13.0
 matplotlib==3.8.4
 seaborn==0.13.2
+# pylatexenc (Fase 2, tarea 2.9): dependencia OPCIONAL del dibujante
+# matplotlib de Qiskit. Sin ella, qc.draw("mpl") -el circuito de Shor de la
+# figura 3 y del README- revienta con MissingOptionalLibraryError. Es Python
+# puro, no compila nada, y Qiskit no la arrastra por defecto.
+pylatexenc==2.10
 liboqs-python==0.16.0
 cryptography==42.0.5
 streamlit==1.33.0

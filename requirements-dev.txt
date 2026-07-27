@@ -2,3 +2,8 @@ black==24.4.2
 ruff==0.4.4
 mypy==1.10.0
 pytest==8.4.0
+# pytest-cov (Fase 2, tarea 2.8): el criterio de cierre pide coverage de
+# src/pqc > 85%, y se mide dentro del contenedor como todo lo demas. Va aqui y
+# no en requirements.txt porque es herramienta de desarrollo, igual que
+# ruff/mypy: el dashboard no la necesita para funcionar.
+pytest-cov==5.0.0

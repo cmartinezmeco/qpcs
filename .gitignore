@@ -8,6 +8,8 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+# pytest-cov (tarea 2.8) deja este fichero de datos al medir coverage.
+.coverage
 
 # Jupyter
 .ipynb_checkpoints/

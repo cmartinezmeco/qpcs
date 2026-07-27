@@ -431,6 +431,69 @@ verifies        : True    ✅  (flip one bit of the message → False)
 
 The honest trade-off in one line: an **Ed25519** signature takes 64 bytes, an **ML-DSA-65** one takes 3309 — about 50× more. That cost in bytes, not in CPU, is what migrating actually buys you. Round-trips, tamper detection and sizes are pinned by tests: `tests/pqc/test_hybrid.py`, `tests/pqc/test_sig.py`, `tests/pqc/test_classical.py`.
 
+#### 📊 The benchmark — what migrating actually costs
+
+Measured **inside the container** with `time.perf_counter` (never `time.time`: it jumps with NTP), **200 repetitions** per post-quantum operation and **50** per classical one — a single RSA-3072 keygen already costs ~0.2 s. Every row carries the **σ of its own sample**: a mean without an error bar is not a measurement, it's an anecdote. Raw numbers, plus the machine and the `liboqs` build they came from: [`docs/benchmark_pqc.json`](docs/benchmark_pqc.json).
+
+| Operation | Mechanism | Mean (ms) | σ (ms) | p50 (ms) | Reps | + key load (ms) | Artifact |
+|---|---|---:|---:|---:|---:|---:|---|
+| `keygen` | RSA-3072 | 212.376 | 98.053 | 199.082 | 50 | 254.810 | pk 422 B |
+| `keygen` | X25519 | 0.042 | 0.002 | 0.042 | 50 | 0.052 | pk 32 B |
+| `keygen` | Ed25519 | 0.045 | 0.005 | 0.043 | 50 | 0.055 | pk 32 B |
+| `keygen` | **ML-KEM-768** | 0.019 | 0.003 | 0.019 | 200 | 0.028 | pk 1184 B |
+| `keygen` | **ML-DSA-65** | 0.063 | 0.013 | 0.057 | 200 | — | pk 1952 B |
+| `encrypt` | RSA-3072 | 0.071 | 0.015 | 0.066 | 50 | 0.090 | ct 384 B |
+| `encaps` | **ML-KEM-768** | 0.025 | 0.014 | 0.021 | 200 | 0.033 | ct 1088 B |
+| `decrypt` | RSA-3072 | 2.728 | 0.409 | 2.709 | 50 | 154.748 | — |
+| `decaps` | X25519 | 0.047 | 0.005 | 0.045 | 50 | 0.104 | — |
+| `decaps` | **ML-KEM-768** | 0.023 | 0.004 | 0.022 | 200 | 0.034 | — |
+| `sign` | RSA-3072 | 2.396 | 0.212 | 2.304 | 50 | 155.016 | sig 384 B |
+| `sign` | Ed25519 | 0.043 | 0.003 | 0.042 | 50 | 0.110 | sig 64 B |
+| `sign` | **ML-DSA-65** | 0.211 | 0.139 | 0.170 | 200 | — | sig 3309 B |
+| `verify` | RSA-3072 | 0.097 | 0.049 | 0.071 | 50 | 0.090 | — |
+| `verify` | Ed25519 | 0.143 | 0.057 | 0.128 | 50 | 0.169 | — |
+| `verify` | **ML-DSA-65** | 0.059 | 0.008 | 0.055 | 200 | 0.090 | — |
+
+> An X25519 exchange is reported as `decaps`: it is the row that compares with ML-KEM's, since in both cases one party derives the shared secret with its private key. ML-DSA has no `+ key load` figure for `keygen`/`sign` because `sig.firmar` generates the keypair and signs in the same call on purpose — the private key never leaves the function — so timing it as `sign` would charge signing for the keygen.
+
+**Why two time columns.** `Mean` times the algorithm with the key already in memory. `+ key load` times the module's public API instead, which takes keys as PEM (RSA) or raw bytes (curves) and deserializes them on **every** call — and OpenSSL 3 *validates* an RSA private key when it loads it, at ~152 ms per call. That is 57× the decryption itself and 65× the signature. On `keygen`, though, the two columns differ by less than RSA's own σ: exporting a fresh key to PEM costs microseconds, so that 42 ms gap is prime-search variance, not serialization. Folding it into the RSA rows would have advertised ML-KEM decapsulation as *thousands* of times faster than RSA decryption instead of the honest ~120×, so both layers are measured and both are published.
+
+**The trade-off in one line: post-quantum wins on CPU and loses on bytes.** ML-KEM-768 generates a keypair ~11 000× faster than RSA-3072 (0.019 ms against 212 ms — RSA hunts for 1536-bit primes, ML-KEM samples a lattice) and decapsulates ~120× faster than RSA decrypts; ML-DSA-65 even verifies 2.4× faster than Ed25519. But its public key is 1184 B against X25519's 32 B, and its signature is 3309 B against Ed25519's 64 B. You pay for the migration in bandwidth and storage, not in CPU — and RSA's σ of 98 ms on keygen (46 % of the mean) is why every figure carries error bars.
+
+#### 📈 Figures
+
+![Time per operation, classical vs post-quantum](docs/img/pqc_tiempos.png)
+
+**Figure 1 — time per operation** (log scale, error bars = measured σ). Panel **A** is the algorithm comparison with keys already loaded: post-quantum (hatched) is orders of magnitude below RSA and lands in the same tens-of-microseconds band as the elliptic curves — except signing, where ML-DSA-65 is ~5× slower than Ed25519 (and still ~11× faster than RSA-3072). Panel **B** is what key (de)serialization adds on top of each operation, which is where RSA's private-key operations lose two orders of magnitude.
+
+![Artifact sizes, classical vs post-quantum](docs/img/pqc_tamanos.png)
+
+**Figure 2 — artifact sizes in bytes** (log scale). The honest counterpart to figure 1: this is the one post-quantum loses. No error bars here on purpose — sizes are deterministic, fixed by FIPS 203/204 and the RSA modulus. X25519's "ciphertext" is its 32-byte ephemeral public key, the analogue of ML-KEM's 1088-byte encapsulation.
+
+![Shor's phase estimation circuit and the measured phase](docs/img/shor_fase.png)
+
+**Figure 3 — Shor on N = 15.** Panel **A** is the phase-estimation circuit (8 counting qubits + 4 work qubits, with the hand-compiled `a^k mod 15` oracle). Panel **B** is the measured phase over 4096 shots: the peaks land exactly on the four multiples of 1/r with r = 4, the real order of 7 mod 15 — which continued fractions turn into r, and `gcd(7² ± 1, 15)` into {3, 5}. The dashed lines are the prediction, not a fit.
+
+#### 🔁 Regenerating the benchmark and the figures
+
+```bash
+docker run --rm -v "$PWD":/app --user "$(id -u):$(id -g)" -e MPLCONFIGDIR=/tmp/mpl \
+  qpcs:ci python scripts/make_pqc_plots.py --medir
+```
+
+Re-measures everything (~50 s), rewrites `docs/benchmark_pqc.json` and regenerates the three PNGs. Without `--medir` the script only redraws from the committed JSON, so touching a colour never changes a published number. The heavy benchmark also has a test of its own, kept out of the fast suite:
+
+```bash
+docker run --rm qpcs:ci pytest tests/ -m "slow"        # ~44 s
+docker run --rm qpcs:ci pytest tests/ -m "not slow"    # the 122 fast tests
+```
+
+#### ⚠️ What these numbers do *not* say
+
+- **They are not a constant-time analysis.** The benchmark measures mean performance to compare cost; nothing here rules out timing side channels.
+- **They are machine-specific.** Every JSON carries the platform, CPU, Python and `liboqs` versions it was measured on. Comparing across machines without checking that block is meaningless.
+- **Shor factors toys, not keys.** N = 15 with an oracle compiled by hand for each (a, N). N = 21 needs its own `c_amod21` (5 work qubits) and is not implemented — the dashboard says so when you pick it. Breaking RSA-2048 would need thousands of logical qubits with error correction, which do not exist.
+
 ### 🌀 Module 3 — Deterministic chaos
 
 Image encryption using **chaotic attractors** (Lorenz / Logistic Map), with entropy and pixel-correlation tests proving no statistical information leaks.
