@@ -7,7 +7,7 @@
 import numpy as np
 import pytest
 from qkd.privacy import binary_entropy
-from qkd.reconciliation import ParityOracle, cascade
+from qkd.reconciliation import ParityOracle, _binary, _local_parity, cascade
 
 
 def _par(n: int, q: float, seed: int):
@@ -87,6 +87,99 @@ def test_no_muta_las_entradas():
     bob_original = bob.copy()
     cascade(alice, bob, qber=0.03, rng=rng)
     np.testing.assert_array_equal(bob, bob_original)
+
+
+def _cascade_ingenua(alice, bob, qber, rng, n_passes=4):
+    """Cascade con busqueda LINEAL del bloque, para contrastar (MEJORA B3).
+
+    Reproduce paso a paso el algoritmo de qkd.reconciliation.cascade con una
+    unica diferencia: donde la implementacion real consulta la tabla
+    precomputada `block_of_by_pass[pj][pos]` (O(1)), esta recorre los bloques
+    de la pasada buscando cual contiene la posicion (`pos in bloque`, O(k)),
+    que es la version ingenua O(n^2) que la optimizacion sustituyo.
+
+    Todo lo demas es identico, INCLUIDO el consumo del rng (las mismas
+    permutaciones en el mismo orden), asi que ambas rutas tienen que producir
+    exactamente la misma clave corregida y el mismo leak_ec.
+    """
+    n = bob.size
+    bob = bob.copy()
+    oracle = ParityOracle(alice)
+
+    q = max(qber, 1e-3)
+    k = max(2, int(np.ceil(0.73 / q)))
+
+    blocks_by_pass = []
+    alice_parity_by_pass = []
+    corrected = 0
+
+    for p in range(n_passes):
+        if p == 0:
+            perm = np.arange(n, dtype=np.int64)
+        else:
+            perm = rng.permutation(n).astype(np.int64)
+        blocks = [perm[i : i + k] for i in range(0, n, k)]
+        parities = [oracle.parity(b) for b in blocks]
+
+        blocks_by_pass.append(blocks)
+        alice_parity_by_pass.append(parities)
+
+        pending = [
+            (p, j) for j, b in enumerate(blocks) if parities[j] != _local_parity(bob, b)
+        ]
+
+        while pending:
+            pending.sort(key=lambda pj: blocks_by_pass[pj[0]][pj[1]].size)
+            pi, bi = pending.pop(0)
+            block = blocks_by_pass[pi][bi]
+
+            if alice_parity_by_pass[pi][bi] == _local_parity(bob, block):
+                continue
+
+            pos = _binary(oracle, bob, block)
+            bob[pos] ^= 1
+            corrected += 1
+
+            for pj in range(len(blocks_by_pass)):
+                if pj == pi:
+                    continue
+                # LA diferencia: busqueda lineal en vez de la tabla O(1).
+                for jj, candidato in enumerate(blocks_by_pass[pj]):
+                    if pos in candidato:
+                        pending.append((pj, jj))
+                        break
+
+        k *= 2
+
+    return bob, oracle.leaked, corrected
+
+
+@pytest.mark.parametrize("q", [0.02, 0.05])
+def test_block_of_coincide_con_la_busqueda_ingenua(q):
+    """La tabla precomputada da EXACTAMENTE lo mismo que buscar a pelo.
+
+    MEJORA B3: de las tres optimizaciones del modulo, dos ya tenian un test
+    que las vigilaba (los dos backends del canal en test_backends_coinciden y
+    el Toeplitz por FFT frente a la matriz explicita). La tercera
+    -block_of_by_pass, que baja el backtracking del efecto cascada de O(n^2) a
+    O(1)- no tenia ninguno, y un fallo ahi no rompe la correccion de forma
+    visible: cascade seguiria igualando las claves por otras pasadas y solo
+    se notaria como un f_EC mas alto, dentro del rango [1.0, 1.4] que tolera
+    test_eficiencia_razonable. Este test cierra ese hueco con el mismo patron
+    que el de la FFT: optimizacion contra definicion, bit a bit.
+    """
+    alice, bob, _ = _par(4_000, q, seed=17)
+
+    # Dos generadores con la MISMA semilla: las permutaciones de las pasadas
+    # son identicas en ambas rutas, asi que la comparacion es limpia.
+    r_real = cascade(alice, bob, qber=q, rng=np.random.default_rng(101))
+    bob_ingenua, leak_ingenua, corrected_ingenua = _cascade_ingenua(
+        alice, bob, qber=q, rng=np.random.default_rng(101)
+    )
+
+    np.testing.assert_array_equal(r_real.bob, bob_ingenua)
+    assert r_real.leak_ec == leak_ingenua
+    assert r_real.corrected == corrected_ingenua
 
 
 def test_el_oraculo_cobra_cada_consulta():
