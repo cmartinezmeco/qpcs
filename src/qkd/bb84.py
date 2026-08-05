@@ -150,7 +150,15 @@ def run_bb84(
                 "Eve no esta implementada en el backend qiskit; usa "
                 "backend=numpy con eve_rate > 0."
             )
-        sim = AerSimulator()
+        # MEJORA D2 (cierra I3): el simulador se creaba sin seed_simulator, asi
+        # que las medidas de Bob por circuito NO eran reproducibles entre
+        # ejecuciones (a diferencia del QRNG, que si propaga su semilla). La
+        # semilla se SORTEA del rng que ya recibe la funcion en vez de anadir
+        # un parametro nuevo: asi la ruta qiskit queda atada al mismo
+        # Generator que gobierna el resto y no se introduce una segunda
+        # fuente de aleatoriedad (convencion de aleatoriedad explicita).
+        semilla_sim = int(rng.integers(0, 2**31 - 1))
+        sim = AerSimulator(seed_simulator=semilla_sim)
         bob_bits_list = []
 
         # Procesamos los fotones en porciones (lotes) de tamaño k
