@@ -3,20 +3,43 @@
 
 import numpy as np
 import pytest
+from qkd.privacy import secure_key_length
 from qkd.protocol import QBER_THRESHOLD, run_protocol
 
 
-def test_cadena_completa_sin_eve():
-    """De 10^5 fotones a una clave secreta. Es EL test del modulo."""
+def test_cadena_completa_sin_eve(sigma_qber):
+    """De 10^5 fotones a una clave secreta. Es EL test del modulo.
+
+    MEJORA B4: la comprobacion del rendimiento era una banda a ojo
+    (0.15 < secret_fraction < 0.40, un factor 2.7 de anchura) que chocaba con
+    la regla de oro "las tolerancias se derivan, no se inventan": pasaria
+    aunque la amplificacion de privacidad regalase o perdiese miles de bits.
+    Se sustituye por la IDENTIDAD de la formula de la longitud segura,
+    evaluada con el Q medido y el leak_ec realmente publicado -no es una
+    estadistica, tiene que cuadrar exactamente-, y la banda ancha se deja
+    solo donde corresponde: sobre el QBER medido, que si es estadistico.
+    """
+    ruido = 0.02
     r = run_protocol(
-        n_photons=100_000, eve_rate=0.0, noise=0.02, rng=np.random.default_rng(42)
+        n_photons=100_000, eve_rate=0.0, noise=ruido, rng=np.random.default_rng(42)
     )
     assert not r.aborted
     assert r.final_key is not None
     assert r.final_key.size > 0
-    # El rendimiento debe estar en el entorno del 25-30% (tabla del cap. 3
-    # de la guia: N = 100 000, Q = 2% => ~27 500 bits, un 27%).
-    assert 0.15 < r.secret_fraction < 0.40
+    assert r.reconciliation is not None
+
+    # Lo estadistico: el QBER medido sigue al ruido inyectado (4 sigma).
+    assert abs(r.qber.qber - ruido) <= 4 * sigma_qber(ruido, r.qber.n_sample)
+
+    # Lo exacto: ell = n(1 - h(Q)) - leak_ec - 2 log2(1/eps), evaluada con las
+    # cifras que devuelve la propia ejecucion. Verifica la formula de punta a
+    # punta (hasta ahora solo estaba testeada en unidad).
+    ell_esperado = secure_key_length(
+        n=int(r.reconciliation.bob.size),
+        qber=r.qber.qber,
+        leak_ec=r.reconciliation.leak_ec,
+    )
+    assert r.final_key.size == ell_esperado
 
 
 def test_cadena_completa_con_eve_aborta():

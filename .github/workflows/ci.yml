@@ -36,3 +36,25 @@ jobs:
 
       - name: Pytest (fast suite)
         run: docker run --rm qpcs:ci pytest tests/ -v -m "not slow"
+
+      # MEJORA E1: la reproducibilidad "bit a bit" de las tres figuras del
+      # modulo 1 era una comprobacion MANUAL, hecha una vez y a mano. Aqui
+      # pasa a ser una garantia continua: se regeneran las figuras DENTRO de
+      # la imagen (el entorno oficial: Python 3.11 y dependencias pineadas) y
+      # se exige que los PNG resultantes tengan el mismo MD5 que los
+      # versionados en docs/img/. Si un cambio rompe el determinismo -una
+      # semilla que se pierde, un sorteo que cambia de orden- la CI se pone
+      # roja en el mismo PR, en vez de descubrirse al regenerar las figuras
+      # meses despues. Se ejecuta sobre la copia del repo que vive dentro del
+      # contenedor: no modifica nada del arbol de trabajo.
+      - name: Figuras QKD reproducibles bit a bit
+        run: |
+          docker run --rm qpcs:ci bash -c '
+            set -e
+            cd /app
+            md5sum docs/img/qber_vs_eve.png \
+                   docs/img/qrng_histograma.png \
+                   docs/img/embudo_de_bits.png > /tmp/figuras.md5
+            python scripts/make_qkd_plots.py
+            md5sum -c /tmp/figuras.md5
+          '

@@ -211,4 +211,8 @@ def cascade(
         n_passes=n_passes,
         corrected=corrected,
         ok=ok,
+        # MEJORA D1: se propaga el QBER al resultado. Es el mismo valor que
+        # ya se usa arriba para el log de f_EC; guardarlo hace implementable
+        # la property ReconciliationResult.efficiency.
+        qber=qber,
     )

@@ -26,7 +26,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from qkd.privacy import binary_entropy
 from qkd.protocol import QBER_THRESHOLD, run_protocol, run_until_qber
 from qkd.qrng import QRNG
 
@@ -220,10 +219,9 @@ def figura_3_embudo_de_bits() -> None:
     n_rec = int(rec.bob.size)
     ell = int(r.final_key.size)
 
-    # f_EC calculada aqui (leak_ec / (n * h(Q))) porque la property
-    # ReconciliationResult.efficiency del contrato sigue sin implementar y,
-    # tal y como esta declarada, no puede calcularla: no almacena Q.
-    f_ec = rec.leak_ec / (n_rec * binary_entropy(r.qber.qber))
+    # MEJORA D1: f_EC sale de la property del contrato, ya implementada
+    # (antes se calculaba aqui a mano porque el dataclass no almacenaba Q).
+    f_ec = rec.efficiency
 
     print("[figura 3] balance de bits de la ejecucion (para el README):")
     print(f"  fotones enviados      {_miles(r.n_photons):>8}")

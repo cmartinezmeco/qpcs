@@ -33,7 +33,14 @@ def binary_entropy(q: float) -> float:
     return float(-q * np.log2(q) - (1 - q) * np.log2(1 - q))
 
 
-def secure_key_length(n: int, qber: float, leak_ec: int, epsilon: float = 1e-9) -> int:
+def secure_key_length(
+    n: int,
+    qber: float,
+    leak_ec: int,
+    epsilon: float = 1e-9,
+    sigma: float = 0.0,
+    n_sigma: float = 0.0,
+) -> int:
     """Longitud de clave segura (Devetak-Winter + leftover hash lemma).
 
         ell = n(1 - h(Q)) - leak_ec - 2 log2(1/eps)
@@ -48,10 +55,20 @@ def secure_key_length(n: int, qber: float, leak_ec: int, epsilon: float = 1e-9) 
                          eps = 1e-9). Constante, ridiculo e imprescindible
                          para poder decir "eps-seguro" con propiedad.
 
+    MEJORA C1: Q es un ESTIMADOR sobre una muestra, y su incertidumbre
+    (sigma, que estimate_qber ya calcula y el dashboard ya ensena) no entraba
+    en esta formula: se usaba el valor puntual. Con la muestra a la baja por
+    azar, la clave sale mas larga de lo que la cota paranoica permitiria. Los
+    parametros `sigma` y `n_sigma` permiten usar la cota superior
+    min(1, Q + n_sigma*sigma) en el termino h(). Por defecto n_sigma = 0, es
+    decir, el comportamiento es EXACTAMENTE el de antes: la capacidad queda
+    disponible sin cambiar ningun resultado ya publicado.
+
     Devuelve 0 si no queda nada que destilar: el protocolo debe abortar
     (lo hace run_protocol, y hay un test que lo comprueba).
     """
-    ell = n * (1 - binary_entropy(qber)) - leak_ec - 2 * np.log2(1 / epsilon)
+    q_cota = min(1.0, qber + n_sigma * sigma)
+    ell = n * (1 - binary_entropy(q_cota)) - leak_ec - 2 * np.log2(1 / epsilon)
     return max(0, int(np.floor(ell)))
 
 

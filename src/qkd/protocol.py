@@ -109,7 +109,13 @@ def run_protocol(
 
     # --- 7. Amplificacion de privacidad (Toeplitz) ---
     n_rec = int(rec.bob.size)
-    ell = secure_key_length(n=n_rec, qber=est.qber, leak_ec=rec.leak_ec)
+    # MEJORA C1: se pasa la sigma de la estimacion del QBER para que la cota
+    # de seguridad pueda usarla. n_sigma se deja en su valor por defecto (0),
+    # asi que el resultado numerico es identico al de antes; lo que cambia es
+    # que el dato deja de estar desconectado de la formula que lo necesita.
+    ell = secure_key_length(
+        n=n_rec, qber=est.qber, leak_ec=rec.leak_ec, sigma=est.sigma
+    )
     if ell <= 0:
         # ell <= 0: Eve (canal + paridades) puede saber tanto como mide la
         # clave. No se devuelve una clave vacia en silencio: se aborta.
