@@ -56,11 +56,36 @@ class ReconciliationResult:
     n_passes: int
     corrected: int  # errores corregidos
     ok: bool  # True si las claves coinciden
+    # MEJORA D1 (cierra I2/I4): el QBER con el que se ejecuto la
+    # reconciliacion. Faltaba, y por eso efficiency no era implementable.
+    # cascade() ya lo recibe como parametro y ya lo usaba para su log, asi
+    # que aqui solo se propaga un valor que ya estaba en el ambito. Sin valor
+    # por defecto a proposito: es obligatorio, para que no se pueda construir
+    # un resultado cuya eficiencia salga indefinida por descuido.
+    qber: float
 
     @property
     def efficiency(self) -> float:
-        """f_EC = leak_ec / (n * h(Q)). Debe salir ~1.1-1.2."""
-        raise NotImplementedError
+        """f_EC = leak_ec / (n * h(Q)). Debe salir ~1.1-1.2.
+
+        MEJORA D1: implementada (antes lanzaba NotImplementedError y los dos
+        consumidores -dashboard y script de graficas- la calculaban por su
+        cuenta, cada uno con su copia de la formula).
+
+        Devuelve NaN cuando h(Q) = 0 (Q = 0 o Q = 1) o n = 0: la eficiencia
+        no esta definida ahi. NO se devuelve 0.0 a proposito, porque un f_EC
+        por debajo de 1 violaria el limite de Shannon y el proyecto usa
+        justamente esa condicion como detector de bugs.
+        """
+        # Import local: privacy.py no importa types.py a nivel de modulo, pero
+        # hacerlo al reves a nivel de fichero crearia un ciclo de imports.
+        from .privacy import binary_entropy
+
+        n = self.bob.size
+        h = binary_entropy(self.qber)
+        if n == 0 or h <= 0.0:
+            return float("nan")
+        return self.leak_ec / (n * h)
 
 
 @dataclass(frozen=True)

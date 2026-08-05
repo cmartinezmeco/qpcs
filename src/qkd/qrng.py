@@ -8,7 +8,7 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator
 
-from .types import Bits
+from .types import Bases, Bits
 
 
 class QRNG:  # Importar con "from .qrng import QRNG"
@@ -91,10 +91,14 @@ class QRNG:  # Importar con "from .qrng import QRNG"
         # Los primeros n bits (los pedidos; sobran los del "ceil"), copiados.
         return bits[:n].copy()
 
-    def random_bases(self, n: int) -> Bits:
+    def random_bases(self, n: int) -> Bases:
         """Bases: 0 = Z (rectilinea), 1 = X (diagonal). Misma distribucion,
         significado distinto.
         """
+        # MEJORA A5: el retorno se anotaba como Bits. Bits y Bases son el mismo
+        # tipo fisico (alias de uint8), pero types.py los mantiene separados
+        # justo para que las firmas se lean solas; esta es la unica funcion
+        # cuyo motivo de existir es semantico, asi que devuelve Bases.
         # Reutiliza random_bits: misma distribucion, solo cambia la
         # interpretacion de los bits generados.
         return self.random_bits(n)

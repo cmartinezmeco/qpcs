@@ -21,6 +21,13 @@ def test_api_publica_existe():
         "binary_entropy",
         "run_protocol",
         "run_until_qber",
+        # MEJORA E4: los tipos de resultado pasan a ser API publica declarada
+        # (los consumen el dashboard y el script de graficas), asi que este
+        # guardian tambien los vigila.
+        "SiftedKeys",
+        "QberEstimate",
+        "ReconciliationResult",
+        "ProtocolResult",
     )
     for nombre in nombres:
         assert hasattr(qkd, nombre), f"falta {nombre} en la API publica de qkd"

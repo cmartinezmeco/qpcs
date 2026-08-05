@@ -41,6 +41,7 @@ se puede usar mathtext, porque ahi no hay Streamlit.
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict
 
 import matplotlib.pyplot as plt
@@ -62,7 +63,6 @@ from pqc.types import FactorizacionShor, MensajeCifrado, ResultadoFirma
 from qiskit import transpile
 from qiskit_aer import AerSimulator
 from qkd.bb84 import run_bb84
-from qkd.privacy import binary_entropy
 from qkd.protocol import QBER_THRESHOLD, run_protocol, run_until_qber
 from qkd.types import ProtocolResult
 
@@ -321,14 +321,15 @@ with tab_qkd:
     # Metricas grandes
     # -----------------------------------------------------------------------
 
-    # f_EC calculada aqui con binary_entropy porque la property
-    # ReconciliationResult.efficiency del contrato sigue sin implementar (y tal
-    # y como esta declarada no puede: el dataclass no almacena Q).
+    # MEJORA D1: f_EC sale ya de la property del contrato
+    # (ReconciliationResult.efficiency), no de una copia local de la formula.
+    # La property devuelve NaN cuando no esta definida (h(Q) = 0 o n = 0) y
+    # aqui eso se ensena como "—", igual que antes.
     f_ec: float | None = None
     if r.reconciliation is not None:
-        h = binary_entropy(r.qber.qber)
-        if h > 0.0 and r.reconciliation.bob.size > 0:
-            f_ec = r.reconciliation.leak_ec / (r.reconciliation.bob.size * h)
+        eficiencia = r.reconciliation.efficiency
+        if math.isfinite(eficiencia):
+            f_ec = eficiencia
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric(
