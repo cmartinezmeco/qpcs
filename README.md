@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Qiskit](https://img.shields.io/badge/Qiskit-1.0.2-6929C4?logo=qiskit&logoColor=white)](https://www.ibm.com/quantum/qiskit)
-[![liboqs](https://img.shields.io/badge/liboqs-0.14.0-00A3E0)](https://openquantumsafe.org/)
+[![liboqs](https://img.shields.io/badge/liboqs-0.16.0-00A3E0)](https://openquantumsafe.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Tests](https://img.shields.io/badge/tests-pytest-0A9EDC?logo=pytest&logoColor=white)](https://docs.pytest.org/)
 
@@ -195,14 +195,16 @@ pip install -r requirements.txt
 
 > 🔴 **Required for the local venv only.** The Dockerfile does this automatically — skip this step if you only use Docker.
 >
-> **Why:** `liboqs-python==0.14.1` tries to auto-clone a `liboqs` git tag named `0.14.1`, which **does not exist upstream** (only `0.14.0` does). The auto-install therefore fails with `No oqs shared libraries found`. We build `0.14.0` manually instead.
+> **Why:** `liboqs-python` is only the Python binding; the actual cryptography lives in `liboqs`, a C library with **no wheel**. Without it you get `No oqs shared libraries found` on `import oqs`.
+>
+> **The C library and the binding must be the same version.** `requirements.txt` pins `liboqs-python==0.16.0`, so build `liboqs` **0.16.0** — the same tag the [Dockerfile](Dockerfile) compiles. A venv left over from an earlier phase may still have 0.14.x; check with the command in [Verify your setup](#-verify-your-setup) and rebuild if it disagrees.
 
 ```bash
 cd ~
 ```
 
 ```bash
-git clone --branch 0.14.0 --depth=1 https://github.com/open-quantum-safe/liboqs
+git clone --branch 0.16.0 --depth=1 https://github.com/open-quantum-safe/liboqs
 ```
 
 ```bash
@@ -260,28 +262,31 @@ Install these extensions:
 **In your local venv:**
 
 ```bash
-python -c "import qiskit, oqs, numpy, scipy, matplotlib, cryptography, streamlit, numba; print('Qiskit:', qiskit.__version__); print('liboqs:', oqs.oqs_python_version()); print('All OK')"
+python -c "import qiskit, oqs, numpy, scipy, matplotlib, cryptography, streamlit, numba; print('Qiskit:', qiskit.__version__); print('liboqs C:', oqs.oqs_version()); print('liboqs-python:', oqs.oqs_python_version()); print('All OK')"
 ```
 
 **Inside the container:**
 
 ```bash
-docker run --rm qpcs python -c "import qiskit, oqs; print('Qiskit:', qiskit.__version__); print('liboqs:', oqs.oqs_python_version()); print('All OK')"
+docker run --rm qpcs python -c "import qiskit, oqs; print('Qiskit:', qiskit.__version__); print('liboqs C:', oqs.oqs_version()); print('liboqs-python:', oqs.oqs_python_version()); print('All OK')"
 ```
 
 **Run the test suite:**
 
 ```bash
-pytest tests/
+pytest tests/ -m "not slow"
 ```
 
 Expected output:
 
 ```
 Qiskit: 1.0.2
-liboqs: 0.14.1
+liboqs C: 0.16.0
+liboqs-python: 0.16.0
 All OK
 ```
+
+> Both `liboqs` lines must read **0.16.0**. If the C one says `0.14.x`, your venv predates the version bump — redo [Step 6](#step-6--build-liboqs-manually) against the `0.16.0` tag. The container is always right by construction; only local venvs drift.
 
 ---
 
@@ -317,11 +322,21 @@ rm -rf ~/_oqs
 </details>
 
 <details>
-<summary><b>❌ <code>fatal: Remote branch 0.14.1 not found in upstream origin</code></b></summary>
+<summary><b>❌ <code>oqs.oqs_version()</code> and <code>oqs.oqs_python_version()</code> disagree</b></summary>
 
 <br/>
 
-Expected — that tag doesn't exist upstream. Don't fight it: follow **Step 6** and build `0.14.0` manually.
+The C library and the Python binding are versioned together and must match. `requirements.txt` pins `liboqs-python==0.16.0`, so the C library has to be the `0.16.0` tag.
+
+The usual cause is a venv built during Phase 1, when the project still compiled `0.14.0`: `pip install -r requirements.txt` upgrades the binding but **cannot** touch the C library you built by hand in Step 6. Rebuild it:
+
+```bash
+rm -rf ~/_oqs ~/liboqs
+```
+
+Then redo **Step 6** with `--branch 0.16.0`.
+
+> Historical note, in case you find it in an old branch: `liboqs-python==0.14.1` tried to auto-clone a `liboqs` tag `0.14.1` that never existed upstream, which is why Step 6 exists at all. The `0.16.0` tag does exist, but the manual build is still needed — there is no wheel.
 
 </details>
 
@@ -379,24 +394,28 @@ Check `.dockerignore` exists and excludes `.venv/`. The build context should be 
 ```
 qpcs/
 │
+├── 📂 .github/workflows/    # CI: lint, types, tests, coverage, figure MD5s
 ├── 📂 .vscode/              # Shared VS Code configuration (Black, interpreter)
-├── 📂 docker/               # Container configurations
 │
 ├── 📂 src/                  # Source code
 │   ├── 📂 qkd/              # Module 1 · QKD (BB84) + QRNG
-│   ├── 📂 pqc/              # Module 2 · Post-Quantum Cryptography + Shor
-│   ├── 📂 chaos/            # Module 3 · Deterministic chaos encryption
-│   └── 📂 utils/            # Shared visualization helpers (Matplotlib)
+│   └── 📂 pqc/              # Module 2 · Post-Quantum Cryptography + Shor
 │
-├── 📂 tests/                # Unit tests (pytest)
-├── 📂 notebooks/            # Jupyter prototyping (equations, quick maths)
+├── 📂 tests/                # Unit tests (pytest) — tests/qkd/, tests/pqc/
+├── 📂 scripts/              # Figure generators (make_qkd_plots, make_pqc_plots)
+├── 📂 dashboard/            # Streamlit app (one tab per module)
+├── 📂 docs/                 # benchmark_pqc.json, img/ (published figures), theory/
 │
 ├── 🐳 Dockerfile            # Reproducible environment (builds liboqs)
-├── 📄 requirements.txt      # Pinned dependencies (==, never >=)
+├── 🐳 docker-compose.yml    # `up` → dashboard on :8501; `run test` → pytest
+├── 📄 requirements.txt      # Pinned runtime deps (==, never >=)
+├── 📄 requirements-dev.txt  # Pinned dev deps (ruff, black, mypy, pytest)
 ├── 📄 .dockerignore
 ├── 📄 .gitignore
 └── 📄 README.md
 ```
+
+> Modules 3 and 4 (`src/chaos/`, particle-detector entropy) are not in the tree yet — they arrive with their own phases.
 
 ---
 
@@ -454,7 +473,9 @@ Measured **inside the container** with `time.perf_counter` (never `time.time`: i
 | `verify` | Ed25519 | 0.143 | 0.057 | 0.128 | 50 | 0.169 | — |
 | `verify` | **ML-DSA-65** | 0.059 | 0.008 | 0.055 | 200 | 0.090 | — |
 
-> An X25519 exchange is reported as `decaps`: it is the row that compares with ML-KEM's, since in both cases one party derives the shared secret with its private key. ML-DSA has no `+ key load` figure for `keygen`/`sign` because `sig.firmar` generates the keypair and signs in the same call on purpose — the private key never leaves the function — so timing it as `sign` would charge signing for the keygen.
+> An X25519 exchange is reported as `decaps`: it is the row that compares with ML-KEM's, since in both cases one party derives the shared secret with its private key. ML-DSA has no `+ key load` figure for `keygen` because `sig.firmar` generates the keypair and signs in the same call on purpose — the private key never leaves the function — so there is no public function that only generates a pair.
+
+> **Two rows were added after this table was measured** and will appear the next time the benchmark is re-run in the container. `ML-KEM-768 hibrido` (`encrypt`/`decrypt`) times the **whole envelope** — KEM + HKDF-SHA256 + AES-256-GCM, i.e. `hybrid.cifrar_mensaje` — which is the only post-quantum row genuinely comparable with RSA's `encrypt`: the `encaps`/`decaps` rows time the bare KEM, which ships a 32-byte secret and encrypts no message at all. `ML-DSA-65 +keygen +carga` (`sign`) times signing through the public API, keypair generation included; it is not comparable with a plain `sign` and says so in its own name.
 
 **Why two time columns.** `Mean` times the algorithm with the key already in memory. `+ key load` times the module's public API instead, which takes keys as PEM (RSA) or raw bytes (curves) and deserializes them on **every** call — and OpenSSL 3 *validates* an RSA private key when it loads it, at ~152 ms per call. That is 57× the decryption itself and 65× the signature. On `keygen`, though, the two columns differ by less than RSA's own σ: exporting a fresh key to PEM costs microseconds, so that 42 ms gap is prime-search variance, not serialization. Folding it into the RSA rows would have advertised ML-KEM decapsulation as *thousands* of times faster than RSA decryption instead of the honest ~120×, so both layers are measured and both are published.
 
@@ -478,20 +499,27 @@ Measured **inside the container** with `time.perf_counter` (never `time.time`: i
 
 ```bash
 docker run --rm -v "$PWD":/app --user "$(id -u):$(id -g)" -e MPLCONFIGDIR=/tmp/mpl \
-  qpcs:ci python scripts/make_pqc_plots.py --medir
+  qpcs python scripts/make_pqc_plots.py --medir
 ```
 
-Re-measures everything (~50 s), rewrites `docs/benchmark_pqc.json` and regenerates the three PNGs. Without `--medir` the script only redraws from the committed JSON, so touching a colour never changes a published number. The heavy benchmark also has a test of its own, kept out of the fast suite:
+Re-measures everything (~50 s), rewrites `docs/benchmark_pqc.json` and regenerates the three PNGs. Without `--medir` the script only redraws from the committed JSON, so touching a colour never changes a published number — and CI checks exactly that, by regenerating the three figures inside the image and comparing their MD5 against the committed ones.
+
+**Always re-measure inside the container.** The JSON carries the environment it was measured in, and the container is the only one that is reproducible: a local venv can easily still have `liboqs` 0.14.x, which would silently downgrade the published environment block.
+
+The heavy benchmark also has a test of its own, kept out of the fast suite (CI runs it on pushes to `main`):
 
 ```bash
-docker run --rm qpcs:ci pytest tests/ -m "slow"        # ~44 s
-docker run --rm qpcs:ci pytest tests/ -m "not slow"    # the 122 fast tests
+docker run --rm qpcs pytest tests/ -m "slow"        # ~45 s
+docker run --rm qpcs pytest tests/ -m "not slow"    # the fast suite
 ```
+
+> The image is tagged `qpcs` here, matching the [Quick start](#-quick-start-docker--recommended). CI builds the same `Dockerfile` as `qpcs:ci`; either tag works as long as it is the one you built.
 
 #### ⚠️ What these numbers do *not* say
 
 - **They are not a constant-time analysis.** The benchmark measures mean performance to compare cost; nothing here rules out timing side channels.
 - **They are machine-specific.** Every JSON carries the platform, CPU, Python and `liboqs` versions it was measured on. Comparing across machines without checking that block is meaningless.
+- **The means above are noisier than the medians.** Every headline ratio here is computed from the mean, and on the fastest rows the mean sits 20–37 % above its own p50 — scheduler and GC noise lands on the mean, not the median. It shows: RSA-3072 `verify` reads *faster* in the `+ key load` column (0.090 ms) than in the plain one (0.097 ms), which cannot be true, and the p50 pair (0.071 vs 0.084) restores the order. Recompute any factor from the `p50_ms` column and the orders of magnitude hold. The table above predates a fix that now disables the cyclic GC during each sample, so the next re-measure should narrow that gap.
 - **Shor factors toys, not keys.** N = 15 with an oracle compiled by hand for each (a, N). N = 21 needs its own `c_amod21` (5 work qubits) and is not implemented — the dashboard says so when you pick it. Breaking RSA-2048 would need thousands of logical qubits with error correction, which do not exist.
 
 ### 🌀 Module 3 — Deterministic chaos
@@ -512,7 +540,7 @@ Using thermal/quantum noise from silicon sensors (CERN Open Data) as a **true ra
 | 🔢 **Numerical computation** | `NumPy` · `SciPy` · `Numba` |
 | 🔒 **Classical cryptography** | `cryptography` |
 | 🛡️ **Post-quantum cryptography** | `liboqs-python` |
-| 📊 **Visualization / dashboard** | `Matplotlib` · `Seaborn` · `Streamlit` |
+| 📊 **Visualization / dashboard** | `Matplotlib` · `Streamlit` |
 | 🧪 **Testing** | `Pytest` |
 | 🐳 **Containers** | `Docker` |
 

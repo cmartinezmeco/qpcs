@@ -33,11 +33,14 @@ from pqc.benchmark import (
     OPS_RSA,
     OPS_X25519,
     SUFIJO_CAPA_API,
+    SUFIJO_CON_KEYGEN,
+    SUFIJO_HIBRIDO,
     cargar_json,
     entorno,
     entorno_del_json,
     guardar_json,
     medir_classical,
+    medir_hibrido,
     medir_kem,
     medir_sig,
     tabla_medidas,
@@ -147,16 +150,61 @@ def test_operacion_que_no_aplica_falla_con_mensaje_claro():
         medir_classical("ECC", "Ed25519", "decaps", POCAS)
 
 
-def test_la_capa_api_de_mldsa_solo_admite_verify():
+def test_la_capa_api_de_mldsa_etiqueta_el_keygen_que_lleva_dentro():
     """`sig.firmar` genera el par y firma en la misma llamada a proposito.
 
-    Cronometrarla como "sign" le cargaria a la firma el coste del keygen y
-    ML-DSA-65 pareceria el doble de lento de lo que es, asi que la capa "api"
-    lo rechaza en vez de publicar una cifra enganosa (ver medir_sig).
+    Cronometrarla como un "sign" cualquiera le cargaria a la firma el coste del
+    keygen y ML-DSA-65 pareceria el doble de lento de lo que es. Antes eso se
+    resolvia prohibiendo la medida; ahora se mide y se AVISA en el nombre de la
+    fila, que es mejor: la cifra existe y no se puede confundir con un sign
+    limpio porque lleva "+keygen" pegado.
+
+    Lo que este test fija es justo eso, que el aviso viaja en el `mecanismo`:
+    si alguien quitase el sufijo, la fila colisionaria con el "sign" de la capa
+    primitiva y la tabla perderia una de las dos sin avisar.
     """
-    with pytest.raises(ValueError, match="no aplica"):
-        medir_sig(MECANISMO_SIG, "sign", POCAS, "api")
+    con_keygen = medir_sig(MECANISMO_SIG, "sign", POCAS, "api")
+    assert con_keygen.repeticiones == POCAS
+    assert con_keygen.operacion == "sign"
+    assert con_keygen.familia == "ML-DSA"
+    assert con_keygen.mecanismo == MECANISMO_SIG + SUFIJO_CON_KEYGEN + SUFIJO_CAPA_API
+    # Y sigue siendo distinguible del sign limpio de la capa primitiva.
+    limpio = medir_sig(MECANISMO_SIG, "sign", POCAS, "primitiva")
+    assert limpio.mecanismo == MECANISMO_SIG
+    assert limpio.mecanismo != con_keygen.mecanismo
+
     assert medir_sig(MECANISMO_SIG, "verify", POCAS, "api").repeticiones == POCAS
+    # keygen sigue sin tener sentido por la API publica: no hay ninguna funcion
+    # de sig.py que solo genere el par.
+    with pytest.raises(ValueError, match="no aplica"):
+        medir_sig(MECANISMO_SIG, "keygen", POCAS, "api")
+
+
+def test_el_sobre_hibrido_se_mide_y_se_distingue_del_kem_pelado():
+    """La operacion insignia del modulo, que antes no tenia ninguna fila.
+
+    encaps/decaps miden el KEM pelado: transportan un secreto de 32 bytes y no
+    cifran ningun mensaje. Lo comparable con `rsa_cifrar_oaep` es el sobre
+    entero (KEM + HKDF + AES-GCM), y es lo que mide `medir_hibrido`.
+
+    Las dos cosas conviven en la misma tabla porque el sufijo las separa; si
+    compartieran nombre, una de las dos desapareceria de la tabla en silencio.
+    """
+    for operacion in ("encrypt", "decrypt"):
+        medida = medir_hibrido(MECANISMO_KEM, operacion, POCAS)
+        _comprobar_forma(
+            medida, "ML-KEM", MECANISMO_KEM + SUFIJO_HIBRIDO, operacion, POCAS
+        )
+    # El sobre completo cuesta MAS que el encapsulamiento pelado que lleva
+    # dentro: es el KEM mas el HKDF mas el AES-GCM. Es una comprobacion fisica,
+    # no un valor: vale en cualquier maquina.
+    sobre = medir_hibrido(MECANISMO_KEM, "encrypt", 20)
+    kem_pelado = medir_kem(MECANISMO_KEM, "encaps", 20)
+    assert sobre.p50_ms > kem_pelado.p50_ms
+
+    # Y un KEM no hace las operaciones del sobre ni al reves.
+    with pytest.raises(ValueError, match="no aplica"):
+        medir_hibrido(MECANISMO_KEM, "encaps", POCAS)
 
 
 def test_familias_y_mecanismos_incoherentes_fallan():
@@ -297,10 +345,16 @@ def test_tabla_completa_tiene_las_dos_capas_y_las_cuatro_familias():
 
     con_carga = [f for f in filas if f.mecanismo.endswith(SUFIJO_CAPA_API)]
     primitivas = [f for f in filas if not f.mecanismo.endswith(SUFIJO_CAPA_API)]
-    # 5 de RSA + 2 de X25519 + 3 de Ed25519 + 3 de ML-KEM + 3 de ML-DSA.
-    assert len(primitivas) == 16
-    # La capa "api" repite todo menos keygen y sign de ML-DSA (ver medir_sig).
-    assert len(con_carga) == 14
+    # 5 de RSA + 2 de X25519 + 3 de Ed25519 + 3 de ML-KEM + 3 de ML-DSA, mas
+    # las 2 del sobre hibrido (encrypt/decrypt), que no tiene capas.
+    assert len(primitivas) == 18
+    # La capa "api" repite todo menos el keygen de ML-DSA, que no existe como
+    # funcion publica; su "sign" si esta, etiquetado "+keygen" (ver medir_sig).
+    assert len(con_carga) == 15
+    # El sobre hibrido esta, y no se ha comido las filas del KEM pelado.
+    hibridas = [f for f in filas if f.mecanismo.endswith(SUFIJO_HIBRIDO)]
+    assert {f.operacion for f in hibridas} == {"encrypt", "decrypt"}
+    assert len([f for f in filas if f.mecanismo == MECANISMO_KEM]) == 3
     # Ninguna fila duplicada: (mecanismo, operacion) es la clave de la tabla.
     claves = [(f.mecanismo, f.operacion) for f in filas]
     assert len(claves) == len(set(claves))

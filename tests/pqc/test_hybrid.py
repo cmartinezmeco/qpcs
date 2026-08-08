@@ -11,8 +11,13 @@ deteccion de manipulacion, frescura del nonce), nunca valores fijos.
 
 import pytest
 from cryptography.exceptions import InvalidTag
-from pqc.hybrid import cifrar_mensaje, descifrar_mensaje
-from pqc.kem import kem_generar
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+# _clave_aes es privada a proposito; se importa SOLO aqui, y solo para poder
+# abrir el sobre por el mismo sitio que lo abre el receptor y comprobar que el
+# AAD esta atado al mecanismo. Ningun otro test depende de un nombre privado.
+from pqc.hybrid import _clave_aes, cifrar_mensaje, descifrar_mensaje
+from pqc.kem import kem_desencapsular, kem_generar
 from pqc.types import MensajeCifrado
 
 MENSAJE = b"La criptografia post-cuantica protege esto en 2035."
@@ -90,6 +95,66 @@ def test_manipular_el_nonce_lo_detecta():
     )
     with pytest.raises(InvalidTag):
         descifrar_mensaje(clave_privada, roto)
+
+
+@pytest.mark.parametrize(
+    "mecanismo_falso",
+    [
+        "Kyber768-inventado",  # no existe: liboqs levantaria MechanismNotSupported
+        "ML-KEM-1024",  # existe y es MAYOR: los buffers de liboqs tragan
+        "ML-KEM-512",  # existe y es MENOR: ctypes levantaria ValueError
+    ],
+)
+def test_manipular_el_mecanismo_lo_detecta(mecanismo_falso):
+    """La CUARTA via de manipulacion, y la unica que no es un byte cualquiera.
+
+    `mecanismo` es el unico campo del sobre que el receptor tiene que
+    INTERPRETAR antes de poder verificar nada: decide con que KEM se
+    desencapsula. Sin proteccion, cada uno de estos tres valores fallaba de
+    una forma DISTINTA -MechanismNotSupportedError, InvalidTag y ValueError de
+    ctypes-, y dos de las tres se escapaban de descifrar_mensaje como
+    excepciones que ningun llamador espera (el dashboard solo captura
+    InvalidTag: se iba a traceback).
+
+    Lo que este test fija es que las tres salen por la MISMA puerta que
+    cualquier otra manipulacion del sobre. Un llamador solo tiene que conocer
+    un modo de fallo.
+    """
+    clave_publica, clave_privada = kem_generar()
+    sobre = cifrar_mensaje(clave_publica, MENSAJE)
+    roto = MensajeCifrado(
+        sobre.kem_ciphertext, sobre.nonce, sobre.aead_ciphertext, mecanismo_falso
+    )
+    with pytest.raises(InvalidTag):
+        descifrar_mensaje(clave_privada, roto)
+
+
+def test_el_mecanismo_esta_autenticado_como_aad():
+    """El `mecanismo` entra en el calculo del tag, no solo en la lista blanca.
+
+    Se comprueba abriendo el sobre a mano por donde lo abre el receptor
+    (desencapsular -> HKDF) y descifrando el AEAD tres veces con la misma
+    clave y el mismo nonce, cambiando SOLO los datos asociados: con el
+    mecanismo bueno sale el mensaje, con otro mecanismo y con None (que es lo
+    que se pasaba antes) salta InvalidTag. Si el AAD no estuviera atado al
+    campo, las tres darian el mismo resultado.
+
+    Con el catalogo ML-KEM de hoy la lista blanca ya ataja las tres
+    sustituciones posibles, asi que el AAD es defensa en profundidad: existe
+    para que el campo siga autenticado el dia que el catalogo tenga dos
+    mecanismos con las mismas longitudes, donde la lista blanca no distingue y
+    el tag si.
+    """
+    clave_publica, clave_privada = kem_generar()
+    sobre = cifrar_mensaje(clave_publica, MENSAJE, "ML-KEM-768")
+
+    secreto = kem_desencapsular(clave_privada, sobre.kem_ciphertext, sobre.mecanismo)
+    aead = AESGCM(_clave_aes(secreto))
+
+    assert aead.decrypt(sobre.nonce, sobre.aead_ciphertext, b"ML-KEM-768") == MENSAJE
+    for aad_falso in (b"ML-KEM-1024", None):
+        with pytest.raises(InvalidTag):
+            aead.decrypt(sobre.nonce, sobre.aead_ciphertext, aad_falso)
 
 
 def test_clave_privada_ajena_no_descifra():

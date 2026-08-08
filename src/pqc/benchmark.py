@@ -43,10 +43,24 @@ Asi que cada operacion se mide en DOS capas (ver el tipo `Capa`):
 Las dos capas conviven en la misma tabla porque el `Operacion` de `types.py`
 es un Literal cerrado y no se toca: la capa viaja en el `mecanismo`, que si es
 string libre, con el sufijo `SUFIJO_CAPA_API` (p. ej. "RSA-3072 +carga").
+
+Hay DOS filas que no siguen ese esquema de capas, y las dos lo dicen en el
+nombre por la misma via:
+
+  - "<KEM> hibrido" (`SUFIJO_HIBRIDO`): el sobre completo KEM + HKDF + AES-GCM
+    de `hybrid.py`. No tiene capa "primitiva" contra la que restar porque sus
+    claves ya viajan como bytes crudos y no hay serializacion que medir. Es la
+    unica fila post-cuantica comparable de tu a tu con `rsa_cifrar_oaep`: las
+    de encaps/decaps miden el KEM pelado, que transporta un secreto de 32
+    bytes y no cifra ningun mensaje.
+  - "<firma> +keygen +carga" (`SUFIJO_CON_KEYGEN`): firmar por la API publica,
+    que genera el par dentro de la misma llamada (ver `medir_sig`). No es
+    comparable con un "sign" a secas y por eso lo avisa en el nombre.
 """
 
 from __future__ import annotations
 
+import gc
 import json
 import platform
 import statistics
@@ -79,6 +93,7 @@ from .classical import (
     x25519_generar,
     x25519_intercambio,
 )
+from .hybrid import cifrar_mensaje, descifrar_mensaje
 from .kem import abrir_kem, kem_desencapsular, kem_encapsular, kem_generar
 from .sig import abrir_firma, firmar, verificar
 from .types import Familia, Medida, Operacion, Tamanos
@@ -90,6 +105,20 @@ Capa = Literal["primitiva", "api"]
 # sitio donde cabe: `Operacion` es un Literal cerrado del contrato compartido
 # (types.py) y ampliarlo requiere acuerdo del equipo.
 SUFIJO_CAPA_API = " +carga"
+
+# Sufijo del sobre hibrido completo (KEM + HKDF + AES-GCM, ver hybrid.py). Va
+# en el `mecanismo` por la misma razon que el de la capa: "ML-KEM-768" a secas
+# ya significa el KEM pelado y no se puede reutilizar sin que las dos filas
+# colisionen en la tabla. No es una capa: el hibrido NO tiene version
+# "primitiva" contra la que restar, porque sus claves ya viajan como bytes
+# crudos y no hay ninguna (de)serializacion que medir.
+SUFIJO_HIBRIDO = " hibrido"
+
+# Sufijo de la firma medida por la API publica, con el keygen dentro. Ver
+# `medir_sig`: `sig.firmar` genera el par y firma en la misma llamada, asi que
+# esa medida NO es comparable con un "sign" a secas y tiene que decirlo en el
+# nombre.
+SUFIJO_CON_KEYGEN = " +keygen"
 
 # Repeticiones por defecto, diferenciadas por familia porque los tiempos por
 # iteracion se llevan cuatro ordenes de magnitud:
@@ -133,6 +162,11 @@ OPS_RSA: tuple[Operacion, ...] = ("keygen", "encrypt", "decrypt", "sign", "verif
 # analogo exacto en un KEM (ver `medir_classical`).
 OPS_X25519: tuple[Operacion, ...] = ("keygen", "decaps")
 OPS_ED25519: tuple[Operacion, ...] = ("keygen", "sign", "verify")
+# El sobre hibrido cifra y descifra mensajes, como RSA-OAEP: mismas etiquetas
+# que RSA para que las filas queden lado a lado (ver medir_hibrido).
+OPS_HIBRIDO: tuple[Operacion, ...] = ("encrypt", "decrypt")
+# Por la API publica de sig.py no hay keygen suelto: `firmar` lo lleva dentro.
+OPS_FIRMA_API: tuple[Operacion, ...] = ("sign", "verify")
 
 # Fichero de resultados versionado. JSON y no CSV: los dataclasses del
 # contrato mapean directos a diccionarios, se preservan los tipos (float vs
@@ -159,18 +193,43 @@ def _cronometrar(
     La mediana va aparte porque aguanta los picos del planificador del sistema
     operativo que si contaminan la media: si media y p50 se separan mucho, la
     medida esta sucia y hay que desconfiar de ella.
+
+    EL RECOLECTOR DE BASURA SE APAGA durante la muestra. Una pasada del gc
+    ciclico dentro de una iteracion se cobra entera contra esa iteracion, y
+    como cae en un punto arbitrario contamina la MEDIA sin tocar apenas la
+    mediana: es exactamente el patron que se veia en las cifras publicadas
+    (media un 20-37% por encima del p50 en varias filas, hasta el punto de que
+    RSA verify salia mas rapido en la capa que hace MAS trabajo). Se hace un
+    collect antes de empezar -para no arrastrar basura de la fila anterior- y
+    se restaura el estado al salir, pase lo que pase. Apagar el gc ciclico no
+    filtra memoria: el conteo de referencias sigue liberando todo lo que no
+    tiene ciclos, que es el caso de las claves y los buffers que se miden aqui.
+
+    Lo que NO se corrige, y conviene saberlo al leer las cifras: cada muestra
+    incluye el coste de invocar el callable de Python (del orden de 0.1 us).
+    Sobre los 20 us de una operacion ML-KEM es un ~1%, y juega EN CONTRA de la
+    conclusion del modulo (infla lo rapido, no lo lento), asi que no se corrige
+    a proposito: un sesgo que perjudica a tu propia tesis se documenta, no se
+    compensa.
     """
     if repeticiones < 1:
         raise ValueError("repeticiones debe ser >= 1")
 
-    for _ in range(calentamiento):
-        fn()
+    gc.collect()
+    gc_estaba_activo = gc.isenabled()
+    gc.disable()
+    try:
+        for _ in range(calentamiento):
+            fn()
 
-    muestras: list[float] = []
-    for _ in range(repeticiones):
-        t0 = time.perf_counter()
-        fn()
-        muestras.append((time.perf_counter() - t0) * 1000.0)
+        muestras: list[float] = []
+        for _ in range(repeticiones):
+            t0 = time.perf_counter()
+            fn()
+            muestras.append((time.perf_counter() - t0) * 1000.0)
+    finally:
+        if gc_estaba_activo:
+            gc.enable()
 
     media = statistics.fmean(muestras)
     sigma = statistics.stdev(muestras) if len(muestras) > 1 else 0.0
@@ -289,14 +348,33 @@ def medir_sig(
     OJO con la capa "api": `sig.firmar` genera un par NUEVO y lo consume en el
     acto (la clave privada nunca sale de la funcion, que es justo lo que se
     quiere de una clave de firma), asi que no hay forma de cronometrar "sign"
-    sin meter dentro el keygen. Medirlo como "sign" atribuiria a la firma un
-    coste que no es suyo -- ML-DSA-65 parece el doble de lento --, asi que la
-    capa "api" solo admite "verify", que si es una funcion publica limpia
-    (`sig.verificar`). El keygen y la firma de ML-DSA se miden por separado en
-    la capa "primitiva", que es la que compara algoritmos.
+    sin meter dentro el keygen.
+
+    Antes eso se resolvia PROHIBIENDO "sign" en la capa api, y la celda se
+    quedaba vacia sin que el lector supiera cuanto cuesta de verdad firmar por
+    la API publica. Ahora se mide y se ETIQUETA lo que es: la fila sale como
+    "ML-DSA-65 +keygen +carga", con los dos sufijos que avisan de que ahi
+    dentro hay un par de claves recien generado. No es comparable con el "sign"
+    de RSA o de Ed25519 -y por eso lleva el aviso en el nombre-, pero responde
+    la pregunta que la tabla dejaba sin responder. Al acabar en el sufijo de
+    capa queda automaticamente fuera de la tabla resumida del README y bajo el
+    toggle del dashboard, que es donde debe estar una medida con letra pequena.
+
+    La alternativa -degradar `sig.firmar` para que aceptase una clave ya
+    generada- se descarta: sacar la clave privada de esa funcion es peor idea
+    que dejar una celda vacia en una tabla.
     """
     if capa == "api":
-        _validar(operacion, ("verify",), f"la capa api de {mecanismo}")
+        _validar(operacion, OPS_FIRMA_API, f"la capa api de {mecanismo}")
+        if operacion == "sign":
+            return _medir(
+                "ML-DSA",
+                mecanismo + SUFIJO_CON_KEYGEN,
+                operacion,
+                capa,
+                repeticiones,
+                {"sign": lambda: firmar(MENSAJE, mecanismo)},
+            )
         # `firmar` genera el par y firma; aqui solo hace falta un resultado
         # verificable, su coste no se cronometra.
         resultado = firmar(MENSAJE, mecanismo)
@@ -318,6 +396,50 @@ def medir_sig(
                 "verify": lambda: verificador.verify(MENSAJE, firma, clave_publica),
             }
             return _medir("ML-DSA", mecanismo, operacion, capa, repeticiones, acciones)
+
+
+def medir_hibrido(
+    mecanismo: str = MECANISMO_KEM,
+    operacion: Operacion = "encrypt",
+    repeticiones: int = REPETICIONES_PQC,
+) -> Medida:
+    """Cronometra el SOBRE COMPLETO: cifrar_mensaje / descifrar_mensaje.
+
+    Es la operacion insignia del modulo y la unica de la parte post-cuantica
+    que se compara de tu a tu con `rsa_cifrar_oaep`: las dos cogen un mensaje y
+    devuelven algo que solo el destinatario puede leer. Las filas de encaps y
+    decaps miden el KEM pelado, que transporta un secreto de 32 bytes y no
+    cifra ningun mensaje; sin esta fila, la tabla comparaba RSA cifrando contra
+    ML-KEM haciendo otra cosa.
+
+    Se etiqueta "<mecanismo> hibrido" y operacion "encrypt"/"decrypt", los
+    mismos que usa RSA, para que las dos filas queden lado a lado. Ninguna de
+    las dos cosas amplia el contrato: "encrypt" y "decrypt" ya estan en el
+    Literal `Operacion` y el `mecanismo` es texto libre.
+
+    Una sola capa, no dos: aqui no hay nada que (de)serializar (las claves de
+    ML-KEM ya son bytes crudos), asi que la distincion primitiva/api no aplica
+    y la fila no lleva el sufijo de capa.
+
+    El coste incluye el KEM entero: encapsular (o desencapsular), derivar la
+    clave con HKDF-SHA256 y cifrar (o descifrar y verificar el tag) con
+    AES-256-GCM. Esa suma es justo lo que paga quien manda un mensaje.
+    """
+    _validar(operacion, OPS_HIBRIDO, f"el sobre hibrido ({mecanismo})")
+    clave_publica, clave_privada = kem_generar(mecanismo)
+    sobre = cifrar_mensaje(clave_publica, MENSAJE, mecanismo)
+    acciones: dict[Operacion, Callable[[], object]] = {
+        "encrypt": lambda: cifrar_mensaje(clave_publica, MENSAJE, mecanismo),
+        "decrypt": lambda: descifrar_mensaje(clave_privada, sobre),
+    }
+    return _medir(
+        "ML-KEM",
+        mecanismo + SUFIJO_HIBRIDO,
+        operacion,
+        "primitiva",
+        repeticiones,
+        acciones,
+    )
 
 
 def medir_classical(
@@ -614,11 +736,19 @@ def tabla_medidas(
             filas.append(
                 medir_kem(MECANISMO_KEM, operacion, repeticiones_pqc, capa_actual)
             )
-        # ML-DSA en la capa "api" solo admite verify (ver medir_sig).
-        for operacion in OPS_FIRMA if capa == "primitiva" else ("verify",):
+        # ML-DSA en la capa "api" no tiene keygen propio: `sig.firmar` lo mete
+        # dentro de la firma, y esa fila sale etiquetada "+keygen" (ver
+        # medir_sig).
+        for operacion in OPS_FIRMA if capa == "primitiva" else OPS_FIRMA_API:
             filas.append(
                 medir_sig(MECANISMO_SIG, operacion, repeticiones_pqc, capa_actual)
             )
+
+    # El sobre hibrido, fuera del bucle de capas: no tiene dos capas que
+    # comparar (ver medir_hibrido). Va al final para que las filas de arriba
+    # conserven el orden con el que se publicaron.
+    for operacion in OPS_HIBRIDO:
+        filas.append(medir_hibrido(MECANISMO_KEM, operacion, repeticiones_pqc))
     return filas
 
 

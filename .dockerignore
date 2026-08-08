@@ -4,4 +4,14 @@ __pycache__/
 .git/
 .pytest_cache/
 .ipynb_checkpoints/
+# Caches de las herramientas de desarrollo. No las necesita la imagen y son
+# grandes: .mypy_cache pasa facil de 20 MB, y todo lo que este aqui se
+# transfiere al daemon de Docker en CADA build. Llevan su propio .gitignore
+# dentro (por eso `git status` no las ensena) pero el contexto de build no
+# mira .gitignore, mira este fichero.
+.mypy_cache/
+.ruff_cache/
+# Artefactos de coverage (pytest-cov, ver requirements-dev.txt y la CI).
+.coverage
+htmlcov/
 

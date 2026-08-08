@@ -79,6 +79,49 @@ def test_firma_truncada_se_rechaza():
     assert verificar(corta) is False
 
 
+def test_clave_publica_de_longitud_incorrecta_se_rechaza():
+    """El gemelo del test de firma truncada, por el otro lado: la clave publica.
+
+    Es el caso que obliga a que `verificar` capture algo. liboqs mete la clave
+    publica en un buffer de tamano fijo (PK_65 bytes), asi que una MAS LARGA
+    levanta un ValueError de ctypes y una mas CORTA se rellena de ceros y
+    simplemente no verifica. Los dos son "esta firma no vale", no un fallo del
+    programa, y los dos tienen que salir False sin excepcion.
+
+    El docstring de sig.verificar afirmaba esto desde el principio y no lo
+    comprobaba nadie.
+    """
+    res = firmar(b"mensaje", "ML-DSA-65")
+    larga = ResultadoFirma(
+        res.mensaje, res.firma, res.clave_publica + b"\x00" * 32, res.mecanismo
+    )
+    assert verificar(larga) is False
+    corta = ResultadoFirma(
+        res.mensaje, res.firma, res.clave_publica[:-32], res.mecanismo
+    )
+    assert verificar(corta) is False
+
+
+def test_un_argumento_mal_tipado_no_se_disfraza_de_firma_invalida():
+    """Un `str` donde va `bytes` es un bug del llamador, y tiene que explotar.
+
+    Antes `verificar` capturaba `Exception` entera y devolvia False: el
+    TypeError de ctypes salia disfrazado de "firma invalida", que es el peor
+    sitio donde esconder un error de tipos, porque el llamador se lo cree y
+    concluye que la firma es mala. Ahora solo se traducen a False los errores
+    de LONGITUD (ver el docstring de verificar).
+    """
+    res = firmar(b"mensaje", "ML-DSA-65")
+    mal_tipado = ResultadoFirma(
+        "mensaje",  # type: ignore[arg-type]  # el bug que el test provoca
+        res.firma,
+        res.clave_publica,
+        res.mecanismo,
+    )
+    with pytest.raises(TypeError):
+        verificar(mal_tipado)
+
+
 def test_tamanos_fips_204():
     """1952 B de clave publica y 3309 de firma en ML-DSA-65.
 

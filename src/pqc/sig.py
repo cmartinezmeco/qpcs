@@ -84,12 +84,24 @@ def verificar(resultado: ResultadoFirma) -> bool:
     operacion, no un error del programa. Asi `verificar` tiene la misma forma
     que `classical.rsa_verificar_pss` y el benchmark las cronometra igual.
 
-    liboqs 0.14/0.16 ya devuelve False en todos esos casos (comprobado, tambien
-    con firma truncada y clave publica de longitud incorrecta), pero el try
-    envuelve la llamada para que el contrato "verificar no lanza" no dependa de
-    la version de la libreria C. El `abrir_firma` queda FUERA del try a
-    proposito: un mecanismo inexistente si debe explotar, porque es un error de
-    programacion, no una firma invalida.
+    QUE SE CAPTURA Y QUE NO. liboqs devuelve False por su cuenta ante un
+    mensaje alterado, una firma alterada, una firma truncada o una clave
+    publica mas corta de la cuenta (esa la rellena de ceros). Lo unico que
+    LANZA es un error de LONGITUD: `verify` mete la clave publica en un buffer
+    de tamano fijo (1952 B en ML-DSA-65), asi que una clave mas larga hace
+    saltar el ValueError de ctypes. Eso sigue siendo "esta firma no verifica",
+    no un fallo del programa, y por eso se traduce a False; el RuntimeError
+    cubre los fallos internos de la libreria C.
+
+    Lo que ya NO se captura es `Exception` a secas, que es lo que habia aqui:
+    tragaba tambien el TypeError de pasar un `str` donde va `bytes` y lo
+    convertia en "firma invalida", escondiendo un error de tipos del llamador
+    detras de un resultado criptografico que parece legitimo. Un bug de tipos
+    tiene que explotar.
+
+    El `abrir_firma` queda FUERA del try a proposito: un mecanismo inexistente
+    si debe explotar, porque es un error de programacion, no una firma
+    invalida.
     """
     with abrir_firma(resultado.mecanismo) as verificador:
         try:
@@ -98,5 +110,5 @@ def verificar(resultado: ResultadoFirma) -> bool:
                     resultado.mensaje, resultado.firma, resultado.clave_publica
                 )
             )
-        except Exception:
+        except (ValueError, RuntimeError):
             return False

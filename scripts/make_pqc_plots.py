@@ -51,10 +51,8 @@ from pqc.benchmark import (
     tabla_medidas,
     tabla_tamanos,
 )
-from pqc.shor import circuito_orden_15, factorizar_15
+from pqc.shor import circuito_orden_15, factorizar_15, histograma_fases_15
 from pqc.types import Medida, Tamanos
-from qiskit import transpile
-from qiskit_aer import AerSimulator
 
 # Backend sin pantalla: el script corre igual en local, en la CI y en Docker.
 # switch_backend (y no matplotlib.use antes del import) para no romper el
@@ -193,8 +191,12 @@ def figura_1_tiempos(medidas: list[Medida]) -> None:
 
     ax_a.set_yscale("log")
     # Aire por arriba para que la leyenda no pise la barra mas alta (el keygen
-    # de RSA, que se va tres ordenes de magnitud por encima del resto).
-    ax_a.set_ylim(top=max(m.media_ms for m in medidas) * 12)
+    # de RSA, que se va tres ordenes de magnitud por encima del resto). El
+    # maximo se toma SOLO de las filas que este panel dibuja: metiendo tambien
+    # las de la capa "+carga" (que van al panel B) el techo salia de una barra
+    # que no esta aqui y aplastaba el panel entero.
+    dibujadas = [m.media_ms for m in medidas if m.mecanismo in MECANISMOS]
+    ax_a.set_ylim(top=max(dibujadas) * 12)
     ax_a.set_xticks(range(len(GRUPOS)), [nombre for nombre, _ in GRUPOS], fontsize=9)
     ax_a.set_ylabel("tiempo por operacion (ms, escala log)")
     ax_a.set_xlabel("operacion (nombre clasico / nombre del KEM)")
@@ -282,7 +284,12 @@ def figura_2_tamanos(tamanos: list[Tamanos]) -> None:
 
     ancho = 0.8 / len(MECANISMOS)
     for j, mecanismo in enumerate(MECANISMOS):
-        tam = por_mecanismo[mecanismo]
+        # .get y no [ ]: si el JSON viene de una version que aun no medía uno
+        # de los cinco mecanismos, la figura se dibuja sin esa serie en vez de
+        # morir con un KeyError a mitad del script.
+        tam = por_mecanismo.get(mecanismo)
+        if tam is None:
+            continue
         xs: list[float] = []
         valores: list[int] = []
         for i, (_, campo) in enumerate(ARTEFACTOS):
@@ -327,22 +334,18 @@ def figura_3_shor() -> None:
     que las fracciones continuas convierten en el orden y de ahi en los
     factores 3 y 5.
 
-    Excepcion documentada a "el script no reimplementa logica del modulo":
-    `shor.medir_fase_15` devuelve UNA fase por llamada (shots=1, que es lo que
-    necesita la factorizacion), y para un histograma hacen falta los counts de
-    una sola ejecucion con muchos shots. Asi que aqui se toma el circuito
-    publico `circuito_orden_15` y se ejecuta con SHOTS shots. El transpile
-    antes del run NO es opcional: AerSimulator no sabe ejecutar las puertas
-    personalizadas de c_amod15 sin descomponerlas primero (el bug de la tarea
-    2.2).
+    Ya NO hay excepcion a "el script no reimplementa logica del modulo": el
+    muestreo con muchos disparos vive en `shor.histograma_fases_15`, que es
+    justo lo que faltaba (medir_fase_15 devuelve UNA fase por llamada, que es
+    lo que necesita la factorizacion). Antes estas mismas siete lineas -
+    transpile, run con SHOTS y conversion de bitstring a fase - estaban aqui y
+    otra vez en el dashboard.
     """
-    qc = circuito_orden_15(A_SHOR, N_COUNT)
-    backend = AerSimulator(seed_simulator=SEMILLA)
-    counts = backend.run(transpile(qc, backend), shots=SHOTS).result().get_counts()
-
-    # bitstring del registro de conteo -> fase medida y / 2^t en [0, 1).
-    fases = np.array([int(bits, 2) / 2**N_COUNT for bits in counts])
-    cuentas = np.array([int(v) for v in counts.values()])
+    histograma = histograma_fases_15(
+        A_SHOR, np.random.default_rng(SEMILLA), N_COUNT, SHOTS
+    )
+    fases = np.array(list(histograma.keys()))
+    cuentas = np.array(list(histograma.values()))
 
     # La factorizacion completa, con la misma semilla que el test: los numeros
     # que se anotan en la figura salen de aqui, no escritos a mano.
@@ -361,7 +364,11 @@ def figura_3_shor() -> None:
     # --- Panel A: el circuito -------------------------------------------
     # fold=-1: sin plegado, el circuito entero en una linea. Necesita
     # pylatexenc (esta en requirements.txt) o el dibujante mpl no arranca.
-    qc.draw("mpl", ax=ax_circuito, fold=-1, style="clifford")
+    # El circuito se pide aqui solo para DIBUJARLO: quien lo ejecuta es
+    # histograma_fases_15, que construye el suyo con los mismos parametros.
+    circuito_orden_15(A_SHOR, N_COUNT).draw(
+        "mpl", ax=ax_circuito, fold=-1, style="clifford"
+    )
     ax_circuito.set_title(
         f"A · estimacion de fase de U|y> = |{A_SHOR}y mod 15>  "
         f"({N_COUNT} qubits de conteo + 4 de trabajo)",
@@ -423,21 +430,31 @@ def _imprimir_tabla(medidas: list[Medida], tamanos: list[Tamanos]) -> None:
     """
     por_mecanismo = {t.mecanismo: t for t in tamanos}
     print(
-        f"\n{'operacion':<10} {'mecanismo':<12} {'media (ms)':>11} "
+        f"\n{'operacion':<10} {'mecanismo':<21} {'media (ms)':>11} "
         f"{'sigma (ms)':>11} {'p50 (ms)':>10} {'reps':>5}  tamano"
     )
     for medida in medidas:
         if medida.mecanismo.endswith(SUFIJO_CAPA_API):
             continue
-        tam = por_mecanismo[medida.mecanismo]
-        etiquetas = {
-            "keygen": f"pk {tam.clave_publica} B",
-            "encaps": f"ct {tam.texto_cifrado} B",
-            "encrypt": f"ct {tam.texto_cifrado} B",
-            "sign": f"sig {tam.firma} B",
-        }
+        # .get y no [ ]: `tabla_medidas` y `tabla_tamanos` son independientes,
+        # asi que no todo mecanismo medido tiene por que tener tamanos. El
+        # sobre hibrido ("ML-KEM-768 hibrido") es el primer caso real: mide
+        # tiempo pero no es un mecanismo con claves propias. Antes esto era un
+        # KeyError que mataba el script AL FINAL, despues de haber reescrito
+        # ya el JSON y las tres figuras.
+        tam = por_mecanismo.get(medida.mecanismo)
+        etiquetas = (
+            {
+                "keygen": f"pk {tam.clave_publica} B",
+                "encaps": f"ct {tam.texto_cifrado} B",
+                "encrypt": f"ct {tam.texto_cifrado} B",
+                "sign": f"sig {tam.firma} B",
+            }
+            if tam is not None
+            else {}
+        )
         print(
-            f"{medida.operacion:<10} {medida.mecanismo:<12} {medida.media_ms:>11.3f} "
+            f"{medida.operacion:<10} {medida.mecanismo:<21} {medida.media_ms:>11.3f} "
             f"{medida.sigma_ms:>11.3f} {medida.p50_ms:>10.3f} "
             f"{medida.repeticiones:>5}  {etiquetas.get(medida.operacion, '—')}"
         )

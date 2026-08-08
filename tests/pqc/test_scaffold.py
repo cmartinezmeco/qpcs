@@ -15,44 +15,53 @@ import pqc
 
 
 def test_api_publica_existe():
-    nombres = (
-        # classical (2.4)
-        "rsa_generar",
-        "rsa_cifrar_oaep",
-        "rsa_descifrar_oaep",
-        "rsa_firmar_pss",
-        "rsa_verificar_pss",
-        "x25519_generar",
-        "x25519_intercambio",
-        "ed25519_generar",
-        "ed25519_firmar",
-        "ed25519_verificar",
-        # kem (2.5)
-        "kem_generar",
-        "kem_encapsular",
-        "kem_desencapsular",
-        # hybrid (2.5)
+    """Toda la superficie declarada existe, y `__all__` no miente.
+
+    La lista de nombres NO se repite aqui a mano: se lee de `pqc.__all__`, que
+    es el sitio donde el modulo declara su frontera. Escribirla dos veces
+    permitia justo el fallo que este test deberia cazar -que la frontera
+    declarada y la real se separen- y ademas dejaba fuera nueve nombres que el
+    dashboard y las figuras si importaban.
+    """
+    assert pqc.__all__, "pqc.__all__ esta vacio"
+    for nombre in pqc.__all__:
+        assert hasattr(pqc, nombre), f"falta {nombre} en la API publica de pqc"
+
+
+def test_lo_que_consumen_el_dashboard_y_las_figuras_es_publico():
+    """Los nombres que se importan desde FUERA del paquete estan en __all__.
+
+    Es la otra mitad del contrato: no basta con que exista lo declarado, hace
+    falta que este declarado lo que se usa. Estos son los nombres que
+    dashboard/qkd_app.py y scripts/make_pqc_plots.py importan de `pqc.*`; antes
+    ninguno estaba en __all__ y se podia renombrar cualquiera de ellos con la
+    suite en verde y el dashboard roto.
+    """
+    consumidos_fuera = (
+        # dashboard/qkd_app.py
+        "RUTA_JSON",
+        "SUFIJO_CAPA_API",
+        "cargar_json",
+        "entorno_del_json",
+        "MECANISMOS_ADMITIDOS",
         "cifrar_mensaje",
         "descifrar_mensaje",
-        # sig (2.6)
+        "kem_generar",
+        "factorizar_15",
+        "histograma_fases_15",
         "firmar",
         "verificar",
-        # shor (2.2 / 2.3)
-        "qft_dagger",
-        "c_amod15",
+        # scripts/make_pqc_plots.py
+        "guardar_json",
+        "tabla_medidas",
+        "tabla_tamanos",
         "circuito_orden_15",
-        "medir_fase_15",
-        "orden_desde_fase",
-        "factorizar_15",
-        # benchmark (2.7)
-        "medir_kem",
-        "medir_sig",
-        "medir_classical",
-        "tamanos_kem",
-        "tamanos_sig",
+        # tests/pqc
+        "abrir_kem",
+        "abrir_firma",
     )
-    for nombre in nombres:
-        assert hasattr(pqc, nombre), f"falta {nombre} en la API publica de pqc"
+    for nombre in consumidos_fuera:
+        assert nombre in pqc.__all__, f"{nombre} se usa fuera pero no es publico"
 
 
 def test_liboqs_trae_mecanismos_nist():
@@ -61,9 +70,12 @@ def test_liboqs_trae_mecanismos_nist():
     sigs = oqs.get_enabled_sig_mechanisms()
     assert "ML-KEM-768" in kems, "liboqs no expone ML-KEM-768 (FIPS 203)"
     assert "ML-DSA-65" in sigs, "liboqs no expone ML-DSA-65 (FIPS 204)"
-    # NOTA sobre la nomenclatura (comprobado en liboqs 0.14.0, la que compila
-    # el Dockerfile): esta version AUN expone los nombres pre-estandarizacion
-    # "Kyber768" y "Dilithium3" como alias, conviviendo con los nombres NIST.
+    # NOTA sobre la nomenclatura. El Dockerfile compila liboqs 0.16.0 (ver
+    # Dockerfile y requirements.txt: liboqs-python==0.16.0); la observacion que
+    # sigue se comprobo sobre la 0.14.0, que es la que compilaba entonces y la
+    # que puede seguir habiendo en un venv local antiguo. Aquella version AUN
+    # exponia los nombres pre-estandarizacion "Kyber768" y "Dilithium3" como
+    # alias, conviviendo con los nombres NIST.
     # Es decir, liboqs NO nos obliga a usar la nomenclatura correcta: que en
     # NUESTRO codigo aparezca solo "ML-KEM-*"/"ML-DSA-*" (FIPS 203/204) y nunca
     # "Kyber"/"Dilithium" salvo como nota historica es una regla de REVIEW, no
