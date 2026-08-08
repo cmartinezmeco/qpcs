@@ -15,11 +15,12 @@ navegador del anfitrion no se ve nada aunque el puerto este publicado):
 Este fichero NO reimplementa logica de protocolo: consume run_protocol,
 run_until_qber y run_bb84 tal y como los exporta el paquete qkd, y las
 funciones de `pqc` (shor, kem, hybrid, sig, benchmark) tal y como las exporta
-el paquete pqc. Las dos excepciones documentadas son la tabla de sifting, que
+el paquete pqc. Queda UNA sola excepcion documentada, la tabla de sifting, que
 reproduce los tres sorteos iniciales de run_bb84 para poder ensenar los fotones
-descartados (ver _datos_sifting), y el histograma de fases de Shor, que ejecuta
-el circuito publico con muchos shots porque medir_fase_15 devuelve una sola
-fase por llamada (ver _muestrear_fases).
+descartados (ver _datos_sifting). La otra excepcion que habia aqui -el
+histograma de fases de Shor, que se ejecutaba a mano porque medir_fase_15
+devuelve una sola fase por llamada- ya no hace falta: esa logica vive ahora en
+`shor.histograma_fases_15`, que es lo que consume _muestrear_fases.
 
 UN SOLO FICHERO, DOS MODULOS (tarea 2.9)
 ----------------------------------------
@@ -55,13 +56,11 @@ from pqc.benchmark import (
     cargar_json,
     entorno_del_json,
 )
-from pqc.hybrid import cifrar_mensaje, descifrar_mensaje
+from pqc.hybrid import MECANISMOS_ADMITIDOS, cifrar_mensaje, descifrar_mensaje
 from pqc.kem import kem_generar
-from pqc.shor import circuito_orden_15, factorizar_15
+from pqc.shor import factorizar_15, histograma_fases_15
 from pqc.sig import firmar, verificar
 from pqc.types import FactorizacionShor, MensajeCifrado, ResultadoFirma
-from qiskit import transpile
-from qiskit_aer import AerSimulator
 from qkd.bb84 import run_bb84
 from qkd.protocol import QBER_THRESHOLD, run_protocol, run_until_qber
 from qkd.types import ProtocolResult
@@ -81,7 +80,11 @@ N_FILAS_TABLA = 40
 # Mecanismos que ofrece el desplegable. Nomenclatura NIST obligatoria (FIPS
 # 203/204): nunca "Kyber"/"Dilithium". El indice 1 es el nivel NIST 3, el
 # recomendado y el que mide el benchmark.
-MECANISMOS_KEM = ("ML-KEM-512", "ML-KEM-768", "ML-KEM-1024")
+#
+# Los del KEM NO se listan aqui: son los mismos que `hybrid.MECANISMOS_ADMITIDOS`
+# acepta dentro de un sobre, asi que se importan de alli. Tenerlos escritos dos
+# veces permitiria que el desplegable ofreciese un mecanismo que luego el sobre
+# rechaza, que es justo el fallo que nadie encuentra hasta la demo.
 MECANISMOS_SIG = ("ML-DSA-44", "ML-DSA-65", "ML-DSA-87")
 MENSAJE_DEMO = "La criptografia post-cuantica protege esto en 2035."
 # Shots del histograma de fases de Shor. 2048 dan picos estables y el circuito
@@ -241,24 +244,20 @@ def _factorizar(semilla: int) -> FactorizacionShor:
 
 @st.cache_data
 def _muestrear_fases(a: int, semilla: int) -> tuple[list[float], list[int]]:
-    """Histograma de la fase medida: ejecuta el circuito con SHOTS_FASE shots.
+    """Histograma de la fase medida, en las dos listas que quiere ax.bar().
 
-    Excepcion documentada a "el dashboard no reimplementa logica del modulo":
-    `shor.medir_fase_15` devuelve UNA fase por llamada (shots=1, que es lo que
-    necesita la factorizacion) y para un histograma hacen falta los counts de
-    una sola ejecucion con muchos shots. Se usa el circuito publico
-    `circuito_orden_15`, sin tocar nada de src/pqc/shor.py.
+    La simulacion entera la hace `shor.histograma_fases_15`; aqui solo se
+    parte el diccionario {fase: veces} en dos listas paralelas y se cachea.
+    Antes esto reimplementaba el transpile + run + conversion de bitstring a
+    fase, siete lineas duplicadas tambien en scripts/make_pqc_plots.py.
 
-    El transpile antes del run NO es opcional: AerSimulator no sabe ejecutar
-    las puertas personalizadas de c_amod15 sin descomponerlas primero.
+    La semilla se pasa envuelta en un np.random.Generator y no directamente
+    como seed_simulator: es la convencion del modulo (todo lo estocastico
+    recibe un Generator explicito y deriva de el la semilla del backend), y
+    antes este fichero se la saltaba.
     """
-    backend = AerSimulator(seed_simulator=semilla)
-    circuito = circuito_orden_15(a, 8)
-    counts = backend.run(transpile(circuito, backend), shots=SHOTS_FASE).result()
-    histograma = counts.get_counts()
-    fases = [int(bits, 2) / 2**8 for bits in histograma]
-    veces = [int(v) for v in histograma.values()]
-    return fases, veces
+    histograma = histograma_fases_15(a, np.random.default_rng(semilla), 8, SHOTS_FASE)
+    return list(histograma.keys()), list(histograma.values())
 
 
 @st.cache_data
@@ -472,16 +471,19 @@ with tab_pqc:
                 )
         else:
             res = _factorizar(semilla_shor)
-            fases, veces = _muestrear_fases(int(res.a), semilla_shor)
 
             with col_res:
                 m1, m2, m3, m4 = st.columns(4)
+                # Con ok=False los campos son CENTINELAS, no medidas (a=0,
+                # orden=0: ver el docstring de FactorizacionShor). Se ensena
+                # "—" en vez del cero, que aqui se leeria como "el orden es
+                # cero". `intentos` si significa lo mismo en los dos casos.
                 m1.metric(
                     "Factores de 15",
                     f"{res.factores[0]} × {res.factores[1]}" if res.ok else "—",
                 )
-                m2.metric("Orden r hallado", res.orden)
-                m3.metric("Base a usada", res.a)
+                m2.metric("Orden r hallado", str(res.orden) if res.ok else "—")
+                m3.metric("Base a usada", str(res.a) if res.ok else "—")
                 m4.metric("Intentos", res.intentos)
                 if res.ok:
                     st.success(
@@ -495,48 +497,56 @@ with tab_pqc:
                         "intentos (orden impar o a^(r/2) ≡ -1 en todos)."
                     )
 
-            col_hist, col_texto = st.columns([3, 2])
+            # El histograma y su explicacion solo tienen sentido si la ejecucion
+            # encontro algo: con ok=False, `a` y `orden` son centinelas a 0, y a=0
+            # ni siquiera es una base valida -pasarselo a circuito_orden_15 levanta
+            # ValueError y tumba la pagina con un traceback-. Antes el muestreo se
+            # lanzaba ANTES de mirar `ok`, asi que el st.error de arriba, que es la
+            # forma correcta de contar el fracaso, era inalcanzable.
+            if res.ok:
+                fases, veces = _muestrear_fases(int(res.a), semilla_shor)
+                col_hist, col_texto = st.columns([3, 2])
 
-            with col_hist:
-                st.subheader(f"Fase medida con a = {res.a} ({SHOTS_FASE} shots)")
-                fig_shor, ax_shor = plt.subplots(figsize=(6.5, 4))
-                # Las lineas de referencia van en los multiplos de 1/r con el r
-                # que hallo la ejecucion: no son un ajuste, son la prediccion.
-                for k in range(res.orden):
-                    ax_shor.axvline(
-                        k / res.orden, ls="--", color="gray", lw=1, zorder=1
+                with col_hist:
+                    st.subheader(f"Fase medida con a = {res.a} ({SHOTS_FASE} shots)")
+                    fig_shor, ax_shor = plt.subplots(figsize=(6.5, 4))
+                    # Las lineas de referencia van en los multiplos de 1/r con el r
+                    # que hallo la ejecucion: no son un ajuste, son la prediccion.
+                    for k in range(res.orden):
+                        ax_shor.axvline(
+                            k / res.orden, ls="--", color="gray", lw=1, zorder=1
+                        )
+                        ax_shor.text(
+                            k / res.orden,
+                            SHOTS_FASE * 0.34,
+                            f"s/r = {k}/{res.orden}",
+                            rotation=90,
+                            fontsize=8,
+                            color="gray",
+                            ha="right",
+                            va="bottom",
+                        )
+                    # Sin mathtext: en Streamlit la cache de mathtext de Matplotlib
+                    # no es thread-safe (ver el docstring del modulo).
+                    ax_shor.bar(fases, veces, width=0.012, color="C0", zorder=3)
+                    ax_shor.set_xlabel("fase medida y/2⁸ (adimensional)")
+                    ax_shor.set_ylabel(f"veces medida (de {SHOTS_FASE} shots)")
+                    ax_shor.set_xlim(-0.05, 1.0)
+                    ax_shor.set_ylim(0, SHOTS_FASE * 0.5)
+                    ax_shor.grid(axis="y", alpha=0.25, lw=0.5)
+                    fig_shor.tight_layout()
+                    st.pyplot(fig_shor)
+                    plt.close(fig_shor)
+                    st.caption(
+                        f"Los picos caen en los multiplos de 1/r con r = "
+                        f"{res.orden}: eso es lo que las fracciones continuas "
+                        "convierten en el orden, y de ahi salen los factores."
                     )
-                    ax_shor.text(
-                        k / res.orden,
-                        SHOTS_FASE * 0.34,
-                        f"s/r = {k}/{res.orden}",
-                        rotation=90,
-                        fontsize=8,
-                        color="gray",
-                        ha="right",
-                        va="bottom",
-                    )
-                # Sin mathtext: en Streamlit la cache de mathtext de Matplotlib
-                # no es thread-safe (ver el docstring del modulo).
-                ax_shor.bar(fases, veces, width=0.012, color="C0", zorder=3)
-                ax_shor.set_xlabel("fase medida y/2⁸ (adimensional)")
-                ax_shor.set_ylabel(f"veces medida (de {SHOTS_FASE} shots)")
-                ax_shor.set_xlim(-0.05, 1.0)
-                ax_shor.set_ylim(0, SHOTS_FASE * 0.5)
-                ax_shor.grid(axis="y", alpha=0.25, lw=0.5)
-                fig_shor.tight_layout()
-                st.pyplot(fig_shor)
-                plt.close(fig_shor)
-                st.caption(
-                    f"Los picos caen en los multiplos de 1/r con r = "
-                    f"{res.orden}: eso es lo que las fracciones continuas "
-                    "convierten en el orden, y de ahi salen los factores."
-                )
 
-            with col_texto:
-                st.subheader("Que se esta viendo")
-                st.markdown(
-                    f"""
+                with col_texto:
+                    st.subheader("Que se esta viendo")
+                    st.markdown(
+                        f"""
 1. **Estimacion de fase.** El circuito ({8} qubits de conteo + 4 de trabajo)
    mide una fase y/2⁸ ≈ s/r del operador |y⟩ → |{res.a}·y mod 15⟩.
 2. **Fracciones continuas.** El denominador del mejor convergente da el orden
@@ -549,7 +559,7 @@ que rompa nada en produccion: el oraculo esta compilado a mano para (a, N) y
 factorizar RSA-2048 necesitaria del orden de miles de qubits logicos con
 correccion de errores, que no existen.
 """
-                )
+                    )
 
     # -----------------------------------------------------------------------
     # PQC real: cifrar y firmar un mensaje de verdad
@@ -560,7 +570,9 @@ correccion de errores, que no existen.
 
         with col_ctrl:
             mensaje = st.text_input("Mensaje a cifrar y firmar", MENSAJE_DEMO)
-            mecanismo_kem = st.selectbox("Mecanismo KEM (FIPS 203)", MECANISMOS_KEM, 1)
+            mecanismo_kem = st.selectbox(
+                "Mecanismo KEM (FIPS 203)", MECANISMOS_ADMITIDOS, 1
+            )
             mecanismo_sig = st.selectbox(
                 "Mecanismo de firma (FIPS 204)", MECANISMOS_SIG, 1
             )

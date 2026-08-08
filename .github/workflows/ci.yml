@@ -25,17 +25,43 @@ jobs:
       - name: Build image
         run: docker build -t qpcs:ci .
 
+      # scripts/ y dashboard/ entran en ruff y black (no en mypy). Eran 1200
+      # lineas sin lint ni formato verificado, justo las dos piezas que la
+      # documentacion admite no haber leido linea a linea, y donde vivia un
+      # KeyError latente en _imprimir_tabla. Se quedan FUERA de mypy a
+      # proposito: streamlit y pandas en modo strict piden un andamiaje de
+      # tipos que no compensa para un fichero de presentacion.
       - name: Ruff (lint)
-        run: docker run --rm qpcs:ci ruff check src/ tests/
+        run: docker run --rm qpcs:ci ruff check src/ tests/ scripts/ dashboard/
 
       - name: Black (format check)
-        run: docker run --rm qpcs:ci black --check src/ tests/
+        run: docker run --rm qpcs:ci black --check src/ tests/ scripts/ dashboard/
 
       - name: Mypy (strict types)
         run: docker run --rm qpcs:ci mypy --strict src/qkd src/pqc
 
-      - name: Pytest (fast suite)
-        run: docker run --rm qpcs:ci pytest tests/ -v -m "not slow"
+      # --cov=src/pqc y NUNCA --cov=src: el umbral es el criterio de cierre del
+      # MODULO 2. Medir src/ entero impondria un minimo a la Fase 1, que esta
+      # cerrada y no es objeto de este umbral. pytest-cov ya estaba instalado
+      # en la imagen (requirements-dev.txt) para exactamente esto, y no lo
+      # invocaba nadie: el "coverage > 85%" del criterio de cierre se
+      # comprobaba a mano una vez, o no se comprobaba.
+      - name: Pytest (fast suite + coverage del modulo 2)
+        run: >
+          docker run --rm qpcs:ci pytest tests/ -v -m "not slow"
+          --cov=src/pqc --cov-report=term-missing --cov-fail-under=85
+
+      # El unico test marcado `slow` del repositorio valida el benchmark
+      # publicable: que la capa "+carga" nunca salga mas rapida que la
+      # primitiva, que el keygen de RSA sea ordenes de magnitud mas caro que el
+      # de ML-KEM y que ninguna fila tenga sigma exactamente 0. Tanto su propio
+      # docstring como pyproject.toml decian que se ejecuta "al mergear a
+      # main", pero no habia ningun paso que lo hiciera: no se habia ejecutado
+      # automaticamente nunca. Cuesta ~45 s y solo corre en push a main, no en
+      # cada PR, que es lo que aquellas dos frases prometian.
+      - name: Pytest (suite lenta, solo en main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: docker run --rm qpcs:ci pytest tests/ -v -m "slow"
 
       # MEJORA E1: la reproducibilidad "bit a bit" de las tres figuras del
       # modulo 1 era una comprobacion MANUAL, hecha una vez y a mano. Aqui
@@ -57,4 +83,28 @@ jobs:
                    docs/img/embudo_de_bits.png > /tmp/figuras.md5
             python scripts/make_qkd_plots.py
             md5sum -c /tmp/figuras.md5
+          '
+
+      # El gemelo del paso anterior para el modulo 2, que no lo tenia. Las tres
+      # figuras de la Fase 2 son igual de deterministas que las de la Fase 1:
+      # las de tiempos y tamanos se dibujan del JSON versionado y la de Shor
+      # lleva SEMILLA = 42 fija. La asimetria no tenia razon tecnica.
+      #
+      # SIN --medir a proposito: asi el script solo lee docs/benchmark_pqc.json
+      # y redibuja. Con --medir volveria a medir dentro del runner (cifras de
+      # otra maquina, un minuto de CPU) y reescribiria el JSON, que es
+      # justamente lo que no debe pasar en una comprobacion de reproducibilidad.
+      #
+      # Es un paso INDEPENDIENTE del de la Fase 1: no toca sus tres ficheros ni
+      # su comando. Si alguna vez se pone rojo, el fallo esta en el modulo 2.
+      - name: Figuras PQC reproducibles bit a bit
+        run: |
+          docker run --rm qpcs:ci bash -c '
+            set -e
+            cd /app
+            md5sum docs/img/pqc_tiempos.png \
+                   docs/img/pqc_tamanos.png \
+                   docs/img/shor_fase.png > /tmp/figuras_pqc.md5
+            python scripts/make_pqc_plots.py
+            md5sum -c /tmp/figuras_pqc.md5
           '
