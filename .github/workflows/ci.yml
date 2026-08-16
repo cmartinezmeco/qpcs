@@ -38,18 +38,18 @@ jobs:
         run: docker run --rm qpcs:ci black --check src/ tests/ scripts/ dashboard/
 
       - name: Mypy (strict types)
-        run: docker run --rm qpcs:ci mypy --strict src/qkd src/pqc
+        run: docker run --rm qpcs:ci mypy --strict src/qkd src/pqc src/chaos
 
-      # --cov=src/pqc y NUNCA --cov=src: el umbral es el criterio de cierre del
-      # MODULO 2. Medir src/ entero impondria un minimo a la Fase 1, que esta
-      # cerrada y no es objeto de este umbral. pytest-cov ya estaba instalado
-      # en la imagen (requirements-dev.txt) para exactamente esto, y no lo
-      # invocaba nadie: el "coverage > 85%" del criterio de cierre se
-      # comprobaba a mano una vez, o no se comprobaba.
-      - name: Pytest (fast suite + coverage del modulo 2)
+      # --cov=src/pqc,src/chaos y NUNCA --cov=src: el umbral es el criterio
+      # de cierre de los MODULOS 2 y 3. Medir src/ entero impondria un
+      # minimo a la Fase 1, que esta cerrada y no es objeto de este umbral.
+      # El modulo 3 arranca aqui con --cov-fail-under=85 desde la tarea 3.1,
+      # no como un arreglo a posteriori (a diferencia de como se hizo con
+      # el modulo 2 en su momento).
+      - name: Pytest (fast suite + coverage de los modulos 2 y 3)
         run: >
           docker run --rm qpcs:ci pytest tests/ -v -m "not slow"
-          --cov=src/pqc --cov-report=term-missing --cov-fail-under=85
+          --cov=src/pqc --cov=src/chaos --cov-report=term-missing --cov-fail-under=85
 
       # El unico test marcado `slow` del repositorio valida el benchmark
       # publicable: que la capa "+carga" nunca salga mas rapida que la
