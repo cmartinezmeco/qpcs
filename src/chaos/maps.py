@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .types import (LORENZ_BETA, LORENZ_RHO, LORENZ_SIGMA, PASO_RK4, Orbita)
+from .types import LORENZ_BETA, LORENZ_RHO, LORENZ_SIGMA, Orbita
 
 
 def orbita_logistica(x0: float, r: float, n: int) -> Orbita:
@@ -34,7 +34,7 @@ def orbita_logistica(x0: float, r: float, n: int) -> Orbita:
     orb = np.empty(n, dtype=np.float64)
     x = float(x0)
     for i in range(n):
-        x = r * x * (1.0 - x) 
+        x = r * x * (1.0 - x)
         orb[i] = x
     return orb
 
@@ -42,11 +42,20 @@ def orbita_logistica(x0: float, r: float, n: int) -> Orbita:
 def _campo_lorenz(u: Orbita) -> Orbita:
     """dx/dt = sigma(y-x); dy/dt = x(rho-z)-y; dz/dt = xy - beta z."""
     x, y, z = u[0], u[1], u[2]
-    return np.array([LORENZ_SIGMA * (y - x),x * (LORENZ_RHO - z) - y,x * y - LORENZ_BETA * z,], dtype=np.float64)
+    return np.array(
+        [
+            LORENZ_SIGMA * (y - x),
+            x * (LORENZ_RHO - z) - y,
+            x * y - LORENZ_BETA * z,
+        ],
+        dtype=np.float64,
+    )
 
 
 def orbita_lorenz(u0: Orbita, n: int, h: float) -> Orbita:
-    """Integra el sistema de Lorenz con Runge-Kutta de orden 4, paso fijo. Devuelve (n, 3).
+    """Integra el sistema de Lorenz con Runge-Kutta de orden 4, paso fijo.
+
+    Devuelve un array de forma (n, 3): la trayectoria completa.
 
     Paso fijo y no adaptativo a proposito (cap. 3.3): un integrador
     adaptativo elige el paso segun una estimacion del error, y esa
