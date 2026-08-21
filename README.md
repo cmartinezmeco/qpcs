@@ -524,7 +524,50 @@ docker run --rm qpcs pytest tests/ -m "not slow"    # the fast suite
 
 ### 🌀 Module 3 — Deterministic chaos
 
-Image encryption using **chaotic attractors** (Lorenz / Logistic Map), with entropy and pixel-correlation tests proving no statistical information leaks.
+Image encryption with a **permutation–diffusion** scheme driven by deterministic chaos (**logistic map** and **Lorenz**), measured against **AES-256-GCM** and against a deliberately naive stream cipher on exactly the same yardstick.
+
+> **The notice that governs the whole module.** This is a permutation–diffusion scheme based on deterministic chaos. It has excellent metrics and **no security proof**. It does not replace AES.
+
+The chain has a single source of randomness — the key — and no `np.random` anywhere on the encryption path:
+
+`key → orbit → keystream → permutation (index sorting) + two-pass chained XOR diffusion → ciphertext`
+
+The permutation is built by **index sorting** (`np.argsort(..., kind="stable")`) rather than by Arnold's cat map: sorting accepts non-square images and its period is the orbit's, not 192 for N = 256. The diffusion runs **forward and backward** so that a change in the *last* pixel also propagates. Encryption is sequential by nature; decryption is a single vectorized NumPy line, which is why decrypting is far cheaper than encrypting.
+
+#### 📊 The three columns — the point of the module
+
+Same 256×256 generated test image, same metric functions, one real run inside the container. Expected values are **derived** (`entropia_esperada`, `npcr_esperado` and `uaci_esperado` carry the derivation in their docstrings), never copied from a paper.
+
+| Metric | Plain image | Chaotic scheme | AES-256-GCM | Trivial counter | Expected |
+|---|---:|---:|---:|---:|---:|
+| Entropy (bits/px) | 5.4525 | 7.99706 | 7.99697 | 7.99663 | 7.99719 |
+| Correlation H | +0.9550 | +0.0171 | −0.0183 | +0.0183 | 0 |
+| Correlation V | +0.9789 | −0.0041 | −0.0264 | +0.0045 | 0 |
+| Correlation D | +0.9359 | −0.0038 | −0.0035 | −0.0080 | 0 |
+| χ² (255 dof) | 1 581 568 | 267.1 | 274.1 | 306.2 | 255 ± 22.6 |
+| NPCR (%) | — | 99.6353 | 99.6155 | 99.5712 | 99.6094 |
+| UACI (%) | — | 33.5266 | 33.4348 | 33.5624 | 33.4635 |
+| **Security proof** | — | **none** | **yes** | **none** | |
+| **Authentication** | — | **no** | **yes (GCM tag)** | **no** | |
+
+Every tolerance is derived, never invented: entropy against the **Miller–Madow** bias-corrected expectation (8.0 exactly is unreachable — for 65 536 pixels the ceiling is 7.99719) with σ = √((K−1)/2)/(N·ln 2); correlation with σ = 1/√n over 5 000 non-overlapping pairs; NPCR with the binomial σ = √(p(1−p)/M); UACI with σ = √(Var|X−Y|/M)/255. The arithmetic is written out in [`tests/chaos/tolerancias.py`](tests/chaos/tolerancias.py). NPCR and UACI are measured between **two independent ciphertexts** (two keys one bit apart for the chaotic scheme, two nonces for AES, two keys for the counter), which is the only reading under which the three schemes are comparable — see the limitation on plaintext differentials below. The AES row is the only one that changes between runs, because its nonce is fresh by design.
+
+**What follows from the three columns being identical — and it is the lesson of the module.** The standard metrics of chaotic image encryption are **necessary conditions, not sufficient ones**. They detect gross defects — a skewed histogram, a permutation that does not permute, a diffusion that does not propagate — and nothing else. That a scheme passes them means it has no obvious errors, **not that it is secure**. The third column is what makes the argument airtight: `SHA256(key || counter)` used as a stream is a construction nobody would defend as a serious cipher, and it scores just as well. AES-256-GCM's security does not come from passing these tests; it comes from twenty-five years of public cryptanalysis, an open standardization process and resistance arguments against known families of attack. Our scheme has none of that, so **it is not secure**, however good the table looks.
+
+#### ⚠️ Known limitations
+
+Written in full, not trimmed:
+
+- **No provable security.** No reduction to a hard problem, no random-oracle proof, nothing.
+- **No authentication.** The scheme encrypts but does not authenticate: no MAC, no tag. Decrypting with the wrong key returns noise, never an error — exactly the difference the table's last row makes visible.
+- **Deterministic, no nonce.** Encrypting the same image twice with the same key gives byte-identical output. Reusing a key across two images is as catastrophic as reusing a one-time pad: XOR-ing the two ciphertexts cancels the keystream entirely and leaves a function of the two plaintexts alone. Both facts are pinned by tests rather than merely described (`test_dos_cifrados_de_lo_mismo_son_IGUALES`, `test_la_reutilizacion_de_clave_filtra_la_estructura`).
+- **NPCR/UACI against a *plaintext* change do not reach their ideal values, and cannot.** Measured and derived, not glossed over: with the specified XOR-chained diffusion the whole scheme is affine over GF(2), so a one-bit change in the plaintext propagates as a *constant* XOR delta. Every intensity difference is then exactly 1, which caps UACI at 0.392 % — against the 33.4635 % of the closing criterion — and leaves NPCR dependent on where the touched pixel lands in the permuted order (anywhere from 0 % to 100 %, ≈50 % on average) instead of pinned at 99.6 %. Reaching the ideal figures requires the diffusion to mix **two different group operations** (modular addition and XOR); that is a change of scheme and a team decision, not a tolerance tweak. The exact prediction is asserted against the implementation in `test_avalancha_ante_un_cambio_en_el_plano`, and the cap in `test_uaci_diferencial_esta_acotada_por_la_linealidad_del_XOR`.
+- **`hash_plano` leaks.** The container ships the SHA-256 of the *plaintext* so that round-trip tests and the dashboard can verify a decryption. It also lets an attacker confirm a guess about the image without decrypting it. Kept for its pedagogical value, documented here.
+- **Finite-precision cycles.** Any float64 orbit is eventually periodic; if it cycles before the image is exhausted, the keystream repeats.
+- **Four known attacks against this family**, documented and not implemented: *chosen plaintext* (the keystream does not depend on the plaintext, so encrypting an all-zero image reveals it — this is the one that sinks the family), *key reuse*, *state recovery* from enough observed output (a low-dimensional smooth map is not designed to resist it, unlike a real stream cipher), and *degradation by finite precision*.
+- **Scope.** 8-bit greyscale only. No colour, video or audio; no key management; no compression; no GPU.
+
+Verified by [`tests/chaos/`](tests/chaos/): the round trip is exact byte-for-byte across six shapes including 1×50, 50×1, 100×37 and 3×3, and the ciphertext is identical bit-for-bit in the local venv and inside the container for both dynamical systems.
 
 ### ⚛️ Module 4 *(optional)* — Particle detector noise
 
