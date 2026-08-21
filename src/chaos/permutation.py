@@ -10,11 +10,24 @@ version de NumPy (guia Fase 3, cap. 5.2).
 
 from __future__ import annotations
 
+import numpy as np
+
 from .types import Orbita, Permutacion
 
 
 def permutacion_desde_orbita(orb: Orbita, m: int) -> Permutacion:
     """Permutacion de m elementos por ordenamiento por indice.
+
+    Se ordenan los m primeros valores de la orbita y la permutacion es el
+    vector de indices que produce ese orden. Es la alternativa al mapa del
+    gato de Arnold que usa casi toda la literatura, y se elige por dos
+    motivos concretos (guia Fase 3, cap. 5.2):
+
+      1. Arnold exige imagenes CUADRADAS; esto acepta cualquier forma.
+      2. Arnold es periodico con periodo corto (192 para N=256): iterarlo
+         192 veces devuelve la imagen original SIN la clave. El periodo de
+         esta permutacion es el de la orbita subyacente, no un numero
+         pequeno derivado de la geometria.
 
     Args:
         orb: orbita de la que sacar los valores a ordenar. Debe tener
@@ -24,12 +37,29 @@ def permutacion_desde_orbita(orb: Orbita, m: int) -> Permutacion:
     Returns:
         Array int64 de longitud m: sigma tal que orb[:m][sigma] esta
         ordenado. kind="stable" es obligatorio.
+
+    Raises:
+        ValueError: si la orbita tiene menos de m valores. Truncar en
+            silencio daria una permutacion mas corta que la imagen y el
+            cifrado seria irreversible sin avisar (guia Fase 3, cap. 4.1:
+            el fallo silencioso es el riesgo del modulo).
     """
-    raise NotImplementedError
+    if orb.size < m:
+        raise ValueError(
+            f"la orbita tiene {orb.size} valores y hacen falta {m}: "
+            f"generar mas orbita, nunca truncar la permutacion"
+        )
+    # kind="stable" (ver el docstring del modulo). No es una preferencia.
+    return np.argsort(orb[:m], kind="stable").astype(np.int64)
 
 
 def invertir_permutacion(sigma: Permutacion) -> Permutacion:
     """Inversa de una permutacion, sin bucles, en O(m).
+
+    El truco es la asignacion indexada: colocar i en la posicion sigma[i]
+    es exactamente la definicion de la inversa, y NumPy lo hace de una
+    pasada. Con la convencion de aplicacion `permutada = plano[sigma]`,
+    deshacerla es `plano = permutada[sigma_inv]`.
 
     Args:
         sigma: la permutacion a invertir.
@@ -37,4 +67,6 @@ def invertir_permutacion(sigma: Permutacion) -> Permutacion:
     Returns:
         sigma_inv tal que sigma_inv[sigma[i]] == i para todo i.
     """
-    raise NotImplementedError
+    inv: Permutacion = np.empty_like(sigma)
+    inv[sigma] = np.arange(sigma.size, dtype=np.int64)
+    return inv
