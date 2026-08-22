@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 import numpy as np
-import pytest
 from chaos import (
     ClaveCaotica,
     chi2_histograma,
@@ -24,7 +23,6 @@ def test_vector_de_prueba():
     assert hashlib.sha256(ks.tobytes()).hexdigest() == v["sha256_de_1e6_bytes"]
 
 
-@pytest.mark.skip(reason="depende de chi2_histograma, aun sin implementar (tarea 3.7)")
 def test_la_cuantizacion_ingenua_falla_el_chi2():
     """Demuestra que la decision de diseno sirve. Sin este test, el
     codigo malo pasaria igual el test de arriba."""
