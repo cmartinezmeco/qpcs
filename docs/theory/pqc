@@ -1,0 +1,794 @@
+# Fundamentos teóricos del Módulo 2: criptografía post-cuántica real y el algoritmo de Shor
+
+> **Tarea 2.10** del proyecto QPCS — Fase 2. Entregable: este fichero (`docs/theory/pqc.md`).
+> Repartida entre **Gonzalo** (mitad Shor) y **Marco** (mitad PQC), según §11.1 y §11.4 del
+> documento explicativo integral de la fase.
+
+## Cómo se lee este documento
+
+La **regla de oro** acordada para este documento es la misma que gobierna la tabla 7.1 del documento
+explicativo integral de la Fase 2: *toda afirmación cuantitativa enlazada a un test o a una figura*
+(§11.4). Por eso cada sección termina con un bloque **Verificación** que nombra el test o la figura
+concretos que la sostienen; el mapa completo está en el
+[Apéndice A](#apéndice-a--mapa-teoría--verificación).
+
+Convenciones heredadas del documento de la fase (§1.4), que se respetan aquí:
+
+- Los identificadores de código, ficheros y rutas van en `tipo máquina`.
+- Notación matemática: `N` para el número a factorizar, `a` para la base de Shor, `r` para el orden,
+  `φ` para la fase medida, `q` para el módulo de un retículo, `n` para dimensiones y longitudes.
+- Los números con decimales usan coma decimal en el texto (0,25) y punto cuando se citan literales de
+  código o salidas de programa (`0.25`).
+- **Nomenclatura NIST estricta**: se escribe siempre ML-KEM y ML-DSA (los nombres de FIPS 203 y
+  FIPS 204). Los nombres históricos «Kyber» y «Dilithium» aparecen solo cuando se habla
+  explícitamente de la historia del estándar. Es una regla del proyecto, verificada por un test.
+
+## Reparto de la tarea 2.10
+
+El capítulo 3 del documento de la fase declara su propia partición: *la amenaza* (secciones 3.1 a
+3.6) y *la defensa* (secciones 3.7 a 3.10). El reparto de la tarea 2.10 sigue esa línea, de modo que
+quien enlaza una afirmación con un test es quien escribió ese test (§11.1: Gonzalo 2.2–2.3, Marco
+2.4–2.6):
+
+| Parte | Responsable | Secciones de origen |
+|---|---|---|
+| [Parte I — La amenaza](#parte-i--la-amenaza-gonzalo--mitad-shor) | Gonzalo (`gonzaloz-hub`) | §3.1, §3.1.1, §3.1.2, §3.2, §3.3, §3.4, §3.5, §3.6 |
+| [Parte II — La defensa](#parte-ii--la-defensa-marco--mitad-pqc) | Marco (`Marcociber`) | §3.7, §3.8, §3.8.1, §3.9, §3.10 (+ §5.2 y §6.1.4, ver [Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir)) |
+| [Parte III — Sección compartida](#parte-iii--sección-compartida) | Sin asignar en las fuentes | §3.11 |
+
+---
+
+# Parte I — La amenaza (Gonzalo · mitad Shor)
+
+## 1. La reducción: factorizar es (casi) lo mismo que buscar un orden
+
+*(§3.1)*
+
+Shor no ataca la factorización de frente. La reduce a otro problema —la **búsqueda de orden**— que un
+ordenador cuántico sí sabe resolver rápido. La reducción en sí es puramente clásica, elemental y
+ejecutable en un microsegundo en cualquier portátil: **toda la ventaja cuántica del algoritmo está
+concentrada en un único paso**.
+
+Sea `N` el número a factorizar (impar y no potencia de un primo; esos casos se detectan aparte con
+comprobaciones clásicas triviales). El algoritmo es:
+
+1. Elegir un entero `a` al azar con `1 < a < N`.
+2. Calcular `g = gcd(a, N)` con el algoritmo de Euclides. Si `g > 1`, se ha tenido suerte: `g` es un
+   factor no trivial y hemos terminado **sin usar el ordenador cuántico**. (Con `N` producto de dos
+   primos grandes esto casi nunca ocurre, pero comprobarlo es gratis.)
+3. Si `g = 1`, buscar el **orden** `r` de `a` módulo `N`: el menor entero positivo tal que
+   `a^r ≡ 1 (mod N)`. *Este es el único paso que hace el ordenador cuántico.*
+4. Si `r` es **impar**, volver al paso 1 con otra `a`.
+5. Si `r` es par, calcular `x = a^(r/2) mod N`. Si `x ≡ −1 (mod N)`, volver al paso 1.
+6. En caso contrario, los factores salen de `gcd(a^(r/2) − 1, N)` y `gcd(a^(r/2) + 1, N)`, y al menos
+   uno de los dos es un factor no trivial de `N`.
+
+### 1.1 Por qué funciona el paso 6
+
+*(§3.1.1)*
+
+Si `r` es el orden de `a`, entonces por definición `a^r ≡ 1 (mod N)`, es decir `N | a^r − 1`. Cuando
+`r` es par podemos factorizar esa diferencia de cuadrados:
+
+```
+a^r − 1 = (a^(r/2))^2 − 1 = (a^(r/2) − 1)(a^(r/2) + 1)
+```
+
+de modo que `N | (a^(r/2) − 1)(a^(r/2) + 1)`. Ahora bien, `N` **no** divide a `a^(r/2) − 1`: si lo
+hiciera, tendríamos `a^(r/2) ≡ 1 (mod N)` y `r/2` sería un exponente menor que `r` con esa propiedad,
+contradiciendo que `r` es el menor. Y hemos exigido explícitamente en el paso 5 que `a^(r/2) ≢ −1`,
+es decir, que `N` tampoco divide a `a^(r/2) + 1`.
+
+**Conclusión**: `N` divide al producto pero a ninguno de los dos factores por separado, así que sus
+primos tienen que estar *repartidos* entre ambos. El máximo común divisor con cada uno pesca uno de
+esos trozos, y por eso los dos `gcd` del paso 6 devuelven factores no triviales.
+
+### 1.2 Por qué los reintentos no son fuerza bruta
+
+Los pasos 4 y 5 devuelven al principio del bucle, lo que a primera vista parece un «probar hasta que
+salga». No lo es: se puede demostrar que, para `a` elegida uniformemente al azar entre los coprimos
+con `N`, la probabilidad de que `r` sea par y `a^(r/2) ≢ −1` es **al menos 1/2**. Es decir, de media
+basta con uno o dos intentos, y la probabilidad de necesitar más de `k` decrece exponencialmente. No
+se está barriendo un espacio grande: se están esquivando unos pocos casos degenerados.
+
+**Verificación.** `test_reduccion_es_correcta_para_todo_a` (la reducción clásica, para las seis bases
+coprimas con 15, sin tocar el circuito) y `test_shor_factoriza_15` (el bucle completo devuelve
+`{3, 5}` de forma reproducible con semilla 42).
+
+## 2. Los dos ejemplos trabajados del módulo
+
+*(§3.1.2)*
+
+**Con `N = 15` y `a = 7`.** Las potencias sucesivas módulo 15 son `7^1 = 7`, `7^2 = 49 ≡ 4`,
+`7^3 ≡ 28 ≡ 13`, `7^4 ≡ 91 ≡ 1`. Luego `r = 4`, que es par. Además
+`a^(r/2) = 7^2 = 49 ≡ 4 ≢ −1 ≡ 14`. Entonces:
+
+```
+gcd(4 − 1, 15) = gcd(3, 15) = 3      gcd(4 + 1, 15) = gcd(5, 15) = 5
+```
+
+y obtenemos `15 = 3 × 5`. ✓
+
+**Con `N = 15` y `a = 11`** (el caso que produce el dashboard con la semilla 44). Aquí `11^1 = 11` y
+`11^2 = 121 = 8·15 + 1 ≡ 1`, así que `r = 2`, par, y `a^(r/2) = 11 ≢ 14`. Los factores salen de:
+
+```
+gcd(11 − 1, 15) = gcd(10, 15) = 5    gcd(11 + 1, 15) = gcd(12, 15) = 3
+```
+
+El mismo resultado por otra base y con un orden distinto. ✓
+
+> **Dónde está la magia y dónde no.** Todo lo de esta sección lo ejecuta un portátil
+> instantáneamente, incluso para `N` de miles de bits. Lo único que un ordenador clásico no sabe
+> hacer rápido es el **paso 3**: hallar el orden `r`. Para `N = 15` es trivial (basta probar
+> potencias), pero para `N` de 2048 bits el orden es un número astronómico y no se conoce forma
+> clásica eficiente de hallarlo. **Ahí, y solo ahí, entra el ordenador cuántico.** El resto de Shor es
+> aritmética modular de instituto.
+
+**Verificación.** Los dos ejemplos son verificables a mano; el segundo es además el recorrido que
+reproduce el dashboard con la semilla por defecto (44) y `N = 15`: base `a = 11`, orden `r = 2`, un
+solo intento, fase medida 0,500 y factores 5×3.
+
+## 3. La herramienta cuántica: el operador y sus autovalores
+
+*(§3.2)*
+
+El ordenador cuántico halla `r` mediante **estimación de fase cuántica** (QPE) aplicada a un operador
+muy concreto. Sobre los estados de la base computacional `|y⟩` con `0 ≤ y < N`, se define la
+operación «multiplicar por `a` módulo `N`»:
+
+```
+U_a |y⟩ = | a · y mod N ⟩
+```
+
+`U_a` es **unitaria** porque, al ser `a` coprimo con `N`, la multiplicación por `a` es una
+*permutación* de los residuos módulo `N`, y toda permutación de los estados de una base ortonormal es
+una transformación unitaria.
+
+La gracia de `U_a` está en su espectro. Para cada `s = 0, 1, …, r − 1`, el estado
+
+```
+|u_s⟩ = (1/√r) · Σ_{k=0}^{r−1} e^(−2πi·sk/r) | a^k mod N ⟩
+```
+
+es un autovector de `U_a` con autovalor `e^(2πis/r)`. La comprobación es directa: aplicando `U_a`,
+cada `|a^k⟩` pasa a `|a^(k+1)⟩`, y reindexando la suma (usando que `a^r ≡ a^0`) se recupera el mismo
+estado multiplicado por `e^(2πis/r)`.
+
+Lo importante para el algoritmo es esto: **la fase del autovalor lleva el orden `r` en el
+denominador**. Si conseguimos medir esa fase con precisión suficiente, podremos despejar `r`.
+
+Hay un detalle práctico que resuelve el problema de «¿cómo preparo un autovector si no conozco `r`?»:
+la superposición uniforme de todos ellos es, sencillamente, el estado `|1⟩`:
+
+```
+(1/√r) · Σ_{s=0}^{r−1} |u_s⟩ = |1⟩
+```
+
+Por tanto basta inicializar el registro de trabajo en `|1⟩` —barato y sin conocer `r`— y la
+estimación de fase devolverá la fase de uno de los autovectores, elegido al azar por la propia
+medida. Este hecho explica una línea del código que de otro modo parecería arbitraria: el
+`qc.x(n_count)` que prepara el registro de trabajo en `|1⟩`, y cuya omisión es uno de los errores
+típicos catalogados (`|0⟩` es un punto fijo de la multiplicación, `a · 0 = 0`, de modo que sin esa
+puerta el circuito no ve ningún orden y la fase medida sale siempre 0).
+
+**Verificación.** `test_fase_es_multiplo_de_1_sobre_4_para_a7`: la fase medida para `a = 7` (cuyo
+orden módulo 15 es 4) cae cerca de un múltiplo de 1/4, con ocho semillas distintas.
+
+## 4. La transformada cuántica de Fourier
+
+*(§3.3)*
+
+La **transformada cuántica de Fourier** (QFT) sobre `t` qubits actúa sobre la base computacional
+como:
+
+```
+QFT |k⟩ = (1/√(2^t)) · Σ_{j=0}^{2^t−1} e^(2πi·kj/2^t) |j⟩
+```
+
+Para entender el código solo hacen falta dos hechos. El primero es **operativo**: la QFT se
+implementa con `O(t²)` puertas (Hadamards y rotaciones de fase controladas), y su inversa —la que
+*lee* una fase codificada en amplitudes y la convierte en un entero medible— se obtiene invirtiendo
+el orden de las puertas y cambiando el signo de los ángulos. En el módulo está escrita a mano en
+`qft_dagger`:
+
+```python
+def qft_dagger(n: int) -> QuantumCircuit:
+    qc = QuantumCircuit(n, name="QFT_dg")
+    for q in range(n // 2):
+        qc.swap(q, n - q - 1)
+    for j in range(n):
+        for m in range(j):
+            qc.cp(-np.pi / float(2 ** (j - m)), m, j)
+        qc.h(j)
+    return qc
+```
+
+Los `swap` iniciales invierten el orden de los qubits (la QFT los deja «al revés» respecto del
+convenio de lectura), y el bucle doble aplica las rotaciones de fase controladas con **signo
+negativo** —esa es la diferencia entre la transformada y su inversa— seguidas de una Hadamard por
+qubit. Está escrita a mano en lugar de usar la clase `QFT` de Qiskit por robustez frente a cambios de
+versión: la ubicación y la API de esa clase han cambiado entre versiones mayores, mientras que
+`swap`, `cp` y `h` son estables.
+
+El segundo hecho es **conceptual**, y es de donde sale toda la ventaja del algoritmo:
+
+> **Por qué la QFT es el corazón, y por qué es barata.** La transformada de Fourier *clásica* rápida
+> (FFT) sobre `2^t` amplitudes cuesta `O(2^t · t)` operaciones. La cuántica cuesta `O(t²)` puertas
+> sobre `t` qubits que representan esas `2^t` amplitudes *en superposición*. Esa compresión
+> exponencial —operar sobre `2^t` números con `t` qubits— es la razón física por la que la
+> factorización pasa de sub-exponencial a polinómica. No es un truco de programación: es la propiedad
+> que hace que el algoritmo de Shor exista.
+>
+> Conviene, eso sí, no sacar la conclusión equivocada: la QFT **no** permite *leer* las `2^t`
+> amplitudes (una medida devuelve un solo valor). Lo que permite es **concentrar la probabilidad** en
+> los valores que codifican la periodicidad buscada, que es exactamente lo que hace falta aquí.
+
+**Verificación.** El documento de la fase no asigna a §3.3 ningún test ni figura en la tabla 7.1; su
+contenido se sostiene sobre las secciones que sí los tienen (§3.2 y §3.5).
+
+## 5. El circuito de Shor, paso a paso
+
+*(§3.4)*
+
+El circuito usa dos registros: uno de **conteo** con `t` qubits (cuantos más, mayor resolución de
+fase) y uno de **trabajo** con `n = ⌈log₂ N⌉` qubits que alberga los estados `|y⟩`. En el módulo,
+para `N = 15`: **`t = 8` qubits de conteo y `n = 4` de trabajo, doce en total**.
+
+1. Inicializar el registro de trabajo en `|1⟩` y el de conteo en `|0⟩^⊗t`.
+2. Poner el registro de conteo en superposición uniforme con una Hadamard sobre cada qubit:
+   `(1/√(2^t)) · Σ_k |k⟩`.
+3. Aplicar la **exponenciación modular controlada**: para cada qubit `j` del registro de conteo,
+   aplicar `U_a^(2^j)` sobre el registro de trabajo, controlado por ese qubit. Al terminar, el estado
+   global contiene `|k⟩|a^k mod N⟩` superpuesto sobre todos los `k`.
+4. Aplicar `QFT†` al registro de conteo.
+5. Medir el registro de conteo, obteniendo un entero `y ∈ {0, …, 2^t − 1}` tal que `y/2^t ≈ s/r` para
+   algún `s`.
+
+En el código, ese ensamblaje es `circuito_orden_15`:
+
+```python
+def circuito_orden_15(a: int, n_count: int = 8) -> QuantumCircuit:
+    qc = QuantumCircuit(n_count + 4, n_count)
+    for q in range(n_count):
+        qc.h(q)                      # conteo en superposicion uniforme
+    qc.x(n_count)                    # registro de trabajo = |1>
+    for q in range(n_count):         # exponenciacion modular controlada
+        qc.append(c_amod15(a, 2**q), [q] + list(range(n_count, n_count + 4)))
+    qc.append(qft_dagger(n_count), range(n_count))
+    qc.measure(range(n_count), range(n_count))
+    return qc
+```
+
+### 5.1 El oráculo compilado: dónde hace el módulo una simplificación honesta
+
+El paso 3 es **el caro**. Una exponenciación modular *genérica* para `N` arbitrario requiere
+construir sumadores y multiplicadores modulares reversibles: un circuito enorme. Para `N = 15` con
+una `a` fija, esa permutación `|y⟩ ↦ |a·y mod 15⟩` se puede **compilar a mano** a un puñado de
+puertas SWAP y X, que es exactamente lo que hace `c_amod15` y lo que hace el material didáctico
+clásico de Qiskit.
+
+La consecuencia, que va literalmente en las limitaciones conocidas (capítulo 10): **el oráculo no es
+de propósito general**. Cambiar de `N` obliga a compilar otro distinto; es exactamente el motivo por
+el que `N = 21` no está implementado (necesitaría un `c_amod21` con cinco qubits de trabajo). No es
+un fallo, es el alcance elegido: demostrar el mecanismo, no construir la máquina.
+
+**Verificación.** Figura 3, `docs/img/shor_fase.png`: dos paneles, el diagrama del circuito de
+estimación de fase generado con `qc.draw('mpl')` y el histograma de la fase medida sobre muchos
+disparos, con los picos cayendo en los múltiplos de `1/r`.
+
+## 6. De la fase medida al orden: fracciones continuas
+
+*(§3.5)*
+
+La medida devuelve un entero `y` tal que `y/2^t ≈ s/r`. El problema es que conocemos `y/2^t` —un
+racional con denominador potencia de dos— pero queremos `s/r`, con ambos desconocidos. La herramienta
+clásica exacta para esto es el desarrollo en **fracción continua**.
+
+Todo racional admite un desarrollo `y/2^t = c₀ + 1/(c₁ + 1/(c₂ + …))` cuyos truncamientos sucesivos
+—los **convergentes** `pᵢ/qᵢ`— son, en un sentido preciso, las mejores aproximaciones racionales
+posibles con denominador acotado. El teorema relevante garantiza que si
+
+```
+| y/2^t − s/r | < 1/(2r²)
+```
+
+entonces `s/r` aparece entre los convergentes del desarrollo de `y/2^t`. Tomando `t` suficientemente
+grande (concretamente `2^t > N²`), la precisión de la estimación de fase garantiza esa condición.
+
+El post-proceso, enteramente clásico:
+
+1. Desarrollar `y/2^t` en fracción continua y quedarse con el mejor convergente de denominador menor
+   que `N`.
+2. El denominador `q` de ese convergente es el candidato a orden `r`.
+3. Comprobar si `a^q ≡ 1 (mod N)`. Si sí, es el orden (o un divisor de él).
+4. Con `r` en la mano, aplicar la reducción clásica de la sección 1.
+
+En el código esto son tres líneas apoyadas en la biblioteca estándar de Python: el tipo `Fraction`
+con su método `limit_denominator(N)`, que implementa exactamente la búsqueda del mejor convergente
+con denominador acotado:
+
+```python
+def orden_desde_fase(fase: float, n: int = 15) -> int | None:
+    frac = Fraction(fase).limit_denominator(n)
+    r = frac.denominator
+    return r if r > 1 else None
+```
+
+El tipo de retorno `int | None` es deliberado: una fase de 0 (o cualquiera cuyo mejor convergente
+tenga denominador 1) no aporta un orden útil, y devolver `None` obliga al llamante a tratar ese caso
+explícitamente en lugar de arrastrar un 1 sin sentido.
+
+> **Por qué esto no es hacer trampa.** Podría objetarse que «probar candidatos» es fuerza bruta
+> encubierta. No lo es: las fracciones continuas producen `O(t)` candidatos, no `O(N)`. El trabajo
+> duro —encontrar, entre `2^t` posibilidades y con una sola medida, una fase relacionada con `r`— lo
+> hizo el circuito cuántico. El post-proceso clásico solo limpia el ruido de la discretización.
+
+**Verificación.** `test_fracciones_continuas_recuperan_denominador`.
+
+## 7. Por qué esto rompe RSA, y a qué distancia está de hacerlo de verdad
+
+*(§3.6)*
+
+Recapitulando la cadena completa: elegir `a` → (cuántico) hallar el orden `r` de `a` módulo `N` →
+(clásico) calcular `gcd(a^(r/2) ± 1, N)` → factores `p` y `q`. Con `p` y `q` en la mano, un atacante
+reconstruye la clave privada RSA calculando `d ≡ e^(−1) (mod (p − 1)(q − 1))` y descifra todo el
+tráfico que esa clave protegía, pasado y futuro. El logaritmo discreto se rompe con una variante de
+la misma idea, de modo que Diffie–Hellman y ECC caen por el mismo mecanismo.
+
+Esto es lo que hace que la amenaza no sea futura sino **retroactiva** (§2.2.2): un adversario con
+recursos puede grabar hoy el tráfico cifrado —incluidos los intercambios de clave— y almacenarlo
+hasta disponer del hardware que lo descifre (*harvest now, decrypt later*). Para cualquier información
+cuya vida útil secreta se mida en décadas, migrar no es una tarea que pueda posponerse hasta que
+aparezca el primer ordenador cuántico relevante.
+
+> **La distancia real entre factorizar 15 y factorizar RSA-2048.** Factorizar 15 en este módulo usa
+> 4 qubits de trabajo y 8 de conteo: **doce en total**, que un simulador ejecuta en un portátil en
+> milisegundos. Factorizar un módulo RSA de 2048 bits requiere, según las estimaciones publicadas,
+> del orden de **miles de qubits lógicos** —y, con los códigos de corrección de errores actuales,
+> **millones de qubits físicos**— manteniendo coherencia durante horas de cómputo. Esa máquina no
+> existe hoy.
+>
+> Este módulo demuestra que el *algoritmo* funciona sobre números de juguete; la barrera hacia RSA es
+> puramente de escala de hardware. Decirlo con claridad es lo que separa un proyecto serio de uno
+> sensacionalista, y es la razón de que el propio dashboard incluya esa advertencia en su panel de
+> Shor.
+
+Conviene añadir el matiz de §2.1: la seguridad de RSA nunca fue un teorema. No existe ninguna
+demostración de que factorizar sea intrínsecamente costoso; lo único que hay es la constatación
+empírica de que nadie conoce un algoritmo clásico eficiente. El mejor conocido —la criba general del
+cuerpo de números— es sub-exponencial, y para RSA-2048 sitúa el ataque en el orden de `2^112`
+operaciones, fuera de alcance.
+
+**Verificación.** Esta sección se sostiene sobre las **limitaciones conocidas 1 a 5** del capítulo 10
+del documento de la fase, y no sobre un test propio:
+
+1. El oráculo no es de propósito general (compilado a mano para `N = 15` y las seis bases coprimas).
+2. `N = 21` no está implementado (necesitaría un `c_amod21` con cinco qubits de trabajo).
+3. No se factoriza nada que proteja nada (doce qubits simulados frente a miles de qubits lógicos).
+4. Se simula el proceso cuántico, no se ejecuta (`AerSimulator` usa por debajo un generador
+   pseudoaleatorio clásico sembrado).
+5. No se estima el coste en recursos para RSA real (no hay conteo de qubits lógicos, profundidad de
+   circuito ni estimación de tiempo, más allá de citar las estimaciones publicadas).
+
+---
+
+# Parte II — La defensa (Marco · mitad PQC)
+
+## 8. El baseline clásico: RSA-3072 (OAEP/PSS), X25519 y Ed25519
+
+*(tarea 2.4; el contenido de esta sección vive en §5.2 del documento de la fase, no en su capítulo 3
+— ver el punto 2 del [Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir))*
+
+Antes de la defensa post-cuántica hace falta la referencia contra la que se compara. El módulo la
+construye con RSA-3072 (OAEP para cifrar, PSS para firmar), X25519 y Ed25519.
+
+### 8.1 OAEP para cifrar, PSS para firmar; nunca PKCS#1 v1.5
+
+El módulo **prohíbe explícitamente** el relleno PKCS#1 v1.5, en sus dos variantes. El de cifrado es
+vulnerable al ataque de Bleichenbacher (un oráculo de relleno que permite descifrar sin la clave
+privada), y el de firma carece de una reducción de seguridad demostrada. OAEP y PSS son sus
+sustitutos modernos, ambos **probabilísticos** —de ahí que cifrar o firmar dos veces el mismo mensaje
+dé resultados distintos—. Los dos rellenos se declaran una sola vez a nivel de módulo, con SHA-256
+como algoritmo de hash y MGF1 como función de máscara, y PSS con
+`salt_length=padding.PSS.MAX_LENGTH`.
+
+### 8.2 RSA-3072 y no RSA-2048
+
+El valor por defecto de `rsa_generar` es **3072 bits**, no los 2048 habituales. El motivo es la
+honestidad de la comparación: RSA-3072 ofrece unos **128 bits de seguridad clásica**, que es el nivel
+comparable a ML-KEM-768 y ML-DSA-65 (**nivel 3 del NIST**). RSA-2048 se queda en unos 112 bits, de
+modo que compararlo contra ML-KEM-768 le regalaría a RSA una ventaja en los tiempos que no le
+corresponde. El exponente público es 65537, el estándar de facto.
+
+### 8.3 El límite de 318 bytes: la justificación empírica de por qué existen los KEM
+
+Con un módulo de 3072 bits (384 bytes) y OAEP-SHA256, el mensaje máximo es:
+
+```
+k − 2·hlen − 2 = 384 − 64 − 2 = 318 bytes
+```
+
+y el byte 319 produce un `ValueError`. Ese límite duro es, literalmente, el argumento de por qué la
+criptografía asimétrica no se usa nunca para cifrar mensajes largos, y por tanto de por qué existen
+los KEM y el patrón híbrido de la sección 11.
+
+### 8.4 Las curvas: X25519 y Ed25519
+
+A diferencia de RSA, las curvas usan formato **raw de 32 bytes** (RFC 7748 para X25519, RFC 8032 para
+Ed25519) en lugar de PEM. El motivo es que estas curvas no tienen sobrecarga de codificación y así el
+tamaño que reporta el benchmark es el real: 32 bytes por clave, que contrastados con los 1184 de una
+clave pública ML-KEM-768 dan exactamente la medida del precio en bytes de la migración
+post-cuántica.
+
+`x25519_intercambio` es el análogo clásico del KEM, y su propiedad definitoria es la **simetría**:
+`intercambio(priv_A, pub_B) = intercambio(priv_B, pub_A)`. Ed25519, por su parte, es **determinista**
+(RFC 8032): la firma no consume aleatoriedad, de modo que aquí tampoco entra ningún generador. Su
+firma ocupa **64 bytes**, la referencia clásica frente a los 3309 de ML-DSA-65.
+
+**Verificación.** `test_rsa_oaep_es_probabilistico`, `test_rsa_pss_es_probabilistico` (ambos mapeados
+en la tabla 7.1 a la sección 3.7), `test_rsa_oaep_tiene_limite_de_tamano` (mapeado a la sección 3.9:
+comprueba que 318 bytes pasan y que 319 lanza `ValueError`) y
+`test_x25519_ambos_lados_derivan_el_mismo_secreto` (mapeado a la sección 3.8).
+
+## 9. La defensa: por qué los retículos resisten
+
+*(§3.7)*
+
+Si Shor rompe la factorización y el logaritmo discreto, ¿sobre qué se construye criptografía de clave
+pública que un ordenador cuántico **no** rompa? Sobre problemas para los que no se conoce ningún
+algoritmo cuántico eficiente. El candidato principal —y la base de lo que el NIST estandarizó— son
+los **problemas de retículos**.
+
+Un *retículo* es el conjunto de todas las combinaciones enteras de unos vectores base en `R^n`: una
+rejilla infinita de puntos que se extiende por el espacio. Dos problemas asociados se creen duros:
+
+- **SVP** (*Shortest Vector Problem*): encontrar el punto del retículo más cercano al origen, sin
+  contar el origen. En dimensión baja es fácil de visualizar y de resolver; en dimensión alta, y
+  partiendo de una base «fea» (vectores casi paralelos y largos), es computacionalmente durísimo.
+- **LWE** (*Learning With Errors*): dadas muchas ecuaciones lineales con ruido,
+  `⟨a_i, s⟩ + e_i ≡ b_i (mod q)`, donde `s` es el vector secreto, los `a_i` son públicos y aleatorios,
+  y los `e_i` son errores «pequeños» tomados de una distribución estrecha, recuperar `s`.
+
+> **La intuición del ruido, para un ingeniero.** LWE es «resolver un sistema de ecuaciones lineales al
+> que alguien ha metido un poco de ruido en cada ecuación». *Sin* el ruido sería trivial: eliminación
+> gaussiana lo resuelve en tiempo polinómico y se acabó. *Con* el ruido, cada ecuación es
+> casi-correcta pero no exactamente, la eliminación gaussiana amplifica los errores
+> descontroladamente, y el número de combinaciones que hay que descartar explota con la dimensión.
+>
+> Lo relevante para nosotros: ni el mejor algoritmo clásico ni el mejor cuántico conocidos resuelven
+> LWE en dimensión alta en tiempo razonable. Y hay una razón **estructural** para que Shor no muerda
+> aquí: el algoritmo de Shor necesita una **estructura de grupo abeliano oculta** que explotar
+> mediante la QFT —la periodicidad de `a^k mod N` es exactamente eso—. LWE no la tiene. No es que
+> nadie haya sabido aplicar Shor a los retículos: es que el problema no tiene la forma que Shor sabe
+> atacar.
+
+**Regev** demostró en 2005 un resultado que es la piedra angular de esta rama: resolver LWE en el
+**caso medio** es al menos tan difícil como resolver ciertos problemas de retículos en el **peor
+caso**. Esa reducción de peor caso a caso medio es inusual y valiosa en criptografía: significa que
+romper el criptosistema para claves aleatorias implicaría resolver el problema difícil para *todas*
+las instancias, no solo para algunas afortunadas.
+
+ML-KEM y ML-DSA no usan LWE puro, sino una variante estructurada llamada **Module-LWE**, que trabaja
+con vectores de polinomios en lugar de vectores de números. Esto reduce drásticamente el tamaño de
+las claves y acelera las operaciones (permite usar transformadas numéricas rápidas), a cambio de una
+hipótesis de dureza ligeramente más fuerte —se cree igual de sólida, y es la que el NIST aceptó tras
+varios años de criptoanálisis público en su proceso de estandarización.
+
+**Verificación.** La tabla 7.1 no asigna a §3.7 ningún test sobre la dureza de los retículos: el
+módulo *usa* ML-KEM y ML-DSA y no analiza esa dureza (limitación conocida 6 del capítulo 10, «la
+confianza en su seguridad es la del proceso de estandarización del NIST, no un resultado de este
+trabajo»). Las dos filas que la tabla 7.1 sí asocia a la sección 3.7 son
+`test_rsa_oaep_es_probabilistico` y `test_rsa_pss_es_probabilistico` (ver
+[Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir), punto 2).
+
+## 10. ML-KEM: qué es un KEM y qué no es
+
+*(§3.8)*
+
+**ML-KEM** (FIPS 203, estandarizado en 2024; durante el concurso del NIST se llamó *Kyber*) **no es un
+cifrador de mensajes**: es un KEM, un *Key Encapsulation Mechanism*. La distinción es la que más
+malentendidos causa y conviene fijarla antes de mirar el código.
+
+Un KEM no cifra un mensaje que tú elijas. **Genera y transporta un secreto compartido aleatorio.** El
+flujo es:
+
+1. Alice genera un par (clave pública, clave privada) y publica la pública.
+2. Bob toma la clave pública de Alice y **encapsula**: la función le devuelve dos cosas, un *texto
+   cifrado* y un *secreto compartido* de 32 bytes. Envía el texto cifrado a Alice por el canal.
+3. Alice **desencapsula** el texto cifrado con su clave privada y obtiene el **mismo** secreto
+   compartido de 32 bytes.
+
+Al terminar, ambos comparten 32 bytes secretos que nadie más conoce. Eso todavía no es «cifrar un
+mensaje»: es haberse puesto de acuerdo en una clave.
+
+> **Por qué existe esta indirección, y qué la distingue de Diffie–Hellman.** La criptografía
+> asimétrica es cara y está limitada en tamaño: RSA-3072 con OAEP-SHA256 cifra como máximo 318 bytes
+> (sección 8.3), y ML-KEM directamente no admite un mensaje elegido. Por eso nunca se cifra un mensaje
+> largo con criptografía asimétrica: se usa la asimétrica solo para acordar una clave simétrica corta,
+> y la simétrica —rapidísima— para el mensaje. Un KEM formaliza exactamente ese «ponerse de acuerdo».
+>
+> La diferencia con un intercambio Diffie–Hellman (como X25519, el baseline clásico del módulo) es
+> sutil pero real: en DH **ambas** partes aportan un par de claves y el secreto emerge de combinarlas;
+> en un KEM, el emisor solo necesita la clave pública del receptor y el secreto lo *genera* el propio
+> encapsulamiento. Esta asimetría es la razón de que en el benchmark el intercambio de X25519 se
+> etiquete como la operación comparable al `decaps` de ML-KEM, y también de que dos encapsulamientos
+> consecutivos contra la misma clave pública produzcan secretos independientes.
+
+Los parámetros del estándar, con los tamaños que el benchmark del módulo confirma **midiéndolos** (no
+escribiéndolos a mano: `tamanos_kem` lee `length_public_key`, `length_secret_key` y
+`length_ciphertext` del diccionario `details` del propio objeto de liboqs):
+
+| Mecanismo | Clave pública | Clave privada | Texto cifrado | Nivel NIST |
+|---|---|---|---|---|
+| ML-KEM-512 | 800 B | 1632 B | 768 B | 1 |
+| **ML-KEM-768** | **1184 B** | **2400 B** | **1088 B** | **3 (el que usa el módulo)** |
+| ML-KEM-1024 | 1568 B | 3168 B | 1568 B | 5 |
+
+El secreto compartido son siempre **32 bytes**, independientemente del nivel.
+
+### 10.1 El rechazo implícito: una propiedad que sorprende
+
+*(§3.8.1)*
+
+Hay un comportamiento de ML-KEM que resulta contraintuitivo la primera vez y que el módulo documenta
+y verifica explícitamente: **si el texto cifrado llega manipulado, la desencapsulación no falla**.
+Devuelve, sin protestar, un secreto de 32 bytes *distinto* del original.
+
+No es un descuido del estándar: es deliberado. La construcción **Fujisaki–Okamoto** que le da a
+ML-KEM su seguridad IND-CCA convierte deliberadamente cualquier fallo en un secreto pseudoaleatorio
+determinista, porque *fallar de forma distinguible sería un oráculo*: un atacante que pudiera enviar
+textos cifrados manipulados y observar si el receptor «acepta» o «rechaza» obtendría información
+explotable, exactamente el mecanismo de los ataques de oráculo de relleno que hundieron a PKCS#1 v1.5
+(sección 8.1).
+
+La consecuencia práctica es que **la detección de manipulación ocurre una capa más arriba**: con la
+clave equivocada derivada de ese secreto equivocado, el AES-GCM del paso siguiente no valida su
+etiqueta de autenticación y lanza. El módulo tiene un test dedicado a cada una de las dos mitades de
+este razonamiento.
+
+**Verificación.** `test_kem_secretos_coinciden` (corrección: emisor y receptor obtienen el mismo
+secreto de 32 bytes), `test_kem_tamanos_fips_203` y figura 2 (`docs/img/pqc_tamanos.png`),
+`test_dos_encapsulamientos_dan_secretos_distintos`, `test_x25519_ambos_lados_derivan_el_mismo_secreto`
+(el DH clásico es simétrico) y `test_ciphertext_manipulado_da_otro_secreto_sin_lanzar` (el rechazo
+implícito).
+
+## 11. El patrón híbrido: KEM → HKDF → AES-GCM
+
+*(§3.9)*
+
+Para **cifrar un mensaje de verdad** —que es lo que exige el criterio de cierre de la fase— el módulo
+encadena tres piezas:
+
+1. **ML-KEM-768 encapsula**, produciendo un texto cifrado de **1088 bytes** que viaja por el canal y
+   un secreto compartido de **32 bytes** que no viaja.
+2. **HKDF-SHA256 deriva** de ese secreto una clave AES-256 de **32 bytes**, usando una etiqueta de
+   dominio fija (`b"qpcs-fase2-mlkem-aesgcm-v1"`).
+3. **AES-256-GCM cifra y autentica** el mensaje con esa clave y un *nonce* de **12 bytes** recién
+   generado.
+
+Tres decisiones de esta cadena merecen justificación, porque las tres son puntos donde las
+implementaciones ingenuas se equivocan:
+
+**Por qué HKDF y no usar el secreto del KEM directamente como clave AES.** El secreto de ML-KEM ya es
+uniforme, así que técnicamente podría usarse tal cual. El KDF aporta otras dos cosas: **fija el
+dominio de uso** (el parámetro `info`), de modo que si el mismo secreto se reutilizara para otro
+propósito —autenticar, cifrar otro canal— daría claves independientes; y permite derivar varias
+claves distintas del mismo secreto. Cuesta microsegundos y es lo que hace TLS. El `salt=None` no es un
+descuido: HKDF usa entonces un salt de ceros, que es exactamente lo correcto cuando la entrada ya es
+material de clave uniforme —como lo es el secreto de ML-KEM— y no una contraseña de baja entropía.
+
+**Por qué AES-GCM y no un modo sin autenticar.** GCM es cifrado *autenticado* (AEAD): además de
+ocultar el mensaje, produce una **etiqueta de 16 bytes** que detecta cualquier manipulación. Con un
+modo sin autenticar, alterar un bit del texto cifrado devolvería basura descifrada *sin avisar*; con
+GCM, la validación falla y no sale ni un byte de texto en claro. En un módulo cuyo objetivo es
+demostrar seguridad, cifrar sin autenticar sería un contrasentido.
+
+**Por qué el nonce se genera fresco en cada mensaje.** Reutilizar un nonce con la misma clave rompe
+GCM por completo: no solo compromete la confidencialidad de los dos mensajes implicados, sino que
+permite **recuperar la clave de autenticación y falsificar etiquetas** para mensajes arbitrarios. Es
+el fallo catastrófico clásico de este modo. El módulo lo evita por partida doble: el nonce sale de
+`os.urandom(12)` en cada llamada, y además cada llamada encapsula de nuevo, de modo que también la
+clave AES es distinta.
+
+> **Los 12 bytes del nonce no son arbitrarios.** 96 bits es el tamaño de nonce **nativo** de GCM. Con
+> cualquier otra longitud, el estándar obliga a pasar el nonce por la función GHASH para comprimirlo,
+> lo que es más lento y no aporta ninguna ventaja de seguridad. Es una de esas constantes que conviene
+> saber de dónde salen antes de «mejorarlas».
+
+A diferencia de RSA-OAEP, el híbrido **no tiene límite de tamaño de mensaje**: lo cifra AES, no el
+algoritmo asimétrico. Esa es toda la gracia del patrón.
+
+**Verificación.** `test_cifrado_hibrido_roundtrip`; las **tres vías de manipulación**
+(`test_manipular_el_cifrado`, `test_manipular_el_kem_ciphertext`, `test_manipular_el_nonce`), que
+acaban las tres en la misma `InvalidTag` por caminos distintos; `test_nonce_y_cifrado_nunca_se_repiten`;
+y `test_mensaje_largo_y_mensaje_vacio` (mensaje vacío y mensaje de 70 000 bytes, este último para
+demostrar que el híbrido no tiene el límite de tamaño de RSA-OAEP).
+
+## 12. ML-DSA: firmas post-cuánticas
+
+*(§3.10)*
+
+**ML-DSA** (FIPS 204; durante el concurso, *Dilithium*) es el esquema de firma estandarizado. Su flujo
+es el habitual: se genera un par de claves, se **firma** un mensaje con la privada, y cualquiera
+**verifica** la firma con la pública. Si el mensaje se altera en un solo bit, la verificación falla.
+
+Internamente usa la técnica **Fiat–Shamir con abortos** sobre Module-LWE y Module-SIS: construye una
+prueba interactiva de conocimiento del secreto, la vuelve no interactiva sustituyendo el desafío del
+verificador por un hash (la transformación de Fiat–Shamir), y —esta es la parte específica de los
+retículos— **rechaza y reintenta** aquellas muestras cuya distribución filtraría información sobre la
+clave privada. Ese muestreo por rechazo es lo que hace que el tiempo de firma tenga una **dispersión
+apreciable**, algo que el benchmark del módulo captura en su columna de desviación típica.
+
+| Mecanismo | Clave pública | Firma | Nivel NIST |
+|---|---|---|---|
+| ML-DSA-44 | 1312 B | 2420 B | 2 |
+| **ML-DSA-65** | **1952 B** | **3309 B** | **3 (el que usa el módulo)** |
+| ML-DSA-87 | 2592 B | 4627 B | 5 |
+
+> **El precio de la migración, en una cifra.** Una firma Ed25519 clásica ocupa 64 bytes; una ML-DSA-65
+> ocupa 3309, unas **cincuenta veces más**. Una cadena de certificados que hoy pesa 3–5 KB puede pasar
+> a 10–15 KB con firmas post-cuánticas, con impacto directo en el tamaño de cada *handshake* TLS.
+>
+> Ese es el coste real de la transición, y es exactamente el tipo de número que un benchmark honesto
+> pone sobre la mesa: no «la PQC es buena», sino «la PQC firma en tantos milisegundos y su firma pesa
+> cincuenta veces más; decide tú si te compensa».
+
+> **Firmar no es cifrar.** El malentendido número uno de este bloque, y el motivo de que el módulo
+> tenga un test llamado `test_firmar_no_oculta_el_mensaje`: una firma **no oculta** el contenido. El
+> mensaje viaja en claro junto a la firma; lo que la firma prueba es *quién lo emitió* y que nadie lo
+> ha alterado. Para ocultarlo está el cifrado híbrido de la sección 11. El propio dashboard lo señala
+> en su panel de PQC.
+
+**Verificación.** `test_firma_valida_verifica`; los **tres rechazos** (`test_mensaje_manipulado`,
+`test_firma_manipulada`, `test_de_otra_clave`); `test_tamanos_fips_204` y figura 2
+(`docs/img/pqc_tamanos.png`); y `test_firmar_no_oculta_el_mensaje`.
+
+## 13. El coste, en una frase: gana en tiempo, pierde en bytes
+
+*(§6.1.4; se incluye solo el **resultado**, no la metodología de medida — ver el punto 3 del
+[Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir))*
+
+La tabla de tamaños de la ejecución publicada en `docs/benchmark_pqc.json`, en bytes:
+
+| Mecanismo | Clave pública | Clave privada | Texto cifrado | Firma |
+|---|---|---|---|---|
+| RSA-3072 | 422 | 1 792 | 384 | 384 |
+| X25519 | 32 | 32 | 32 | 0 |
+| Ed25519 | 32 | 32 | 0 | 64 |
+| ML-KEM-768 | 1 184 | 2 400 | 1 088 | 0 |
+| ML-DSA-65 | 1 952 | 4 032 | 0 | 3 309 |
+
+En tiempo, el `keygen` de RSA-3072 es el gran perdedor, con 212,376 ms de media —cuatro órdenes de
+magnitud más que los 0,019 ms del `keygen` de ML-KEM-768— y una dispersión enorme (σ = 98,053 ms,
+casi la mitad de la media), consecuencia de que generar una clave RSA implica *buscar* primos al azar.
+En tamaños el veredicto se invierte: ML-KEM-768 necesita 1184 bytes de clave pública frente a los 32
+de X25519 (**37 veces más**), y una firma ML-DSA-65 ocupa 3309 bytes frente a los 64 de Ed25519
+(**52 veces más**).
+
+**Esa es la frase que resume el módulo**: la criptografía post-cuántica **gana en tiempo y pierde en
+bytes**, y el coste real de la migración se paga en ancho de banda y almacenamiento, no en CPU.
+
+Dos matices obligatorios, de las limitaciones conocidas del capítulo 10: los tiempos **no dicen nada
+sobre canales laterales** (limitación 11) y **las cifras son de una máquina concreta** (limitación 12:
+Linux 6.6.87.2 (WSL2) sobre x86_64, Python 3.11.15 y liboqs 0.16.0; las comparaciones *relativas*
+entre familias son robustas, los valores absolutos no; por eso el bloque de entorno viaja dentro del
+JSON).
+
+**Verificación.** Figura 1 (`docs/img/pqc_tiempos.png`) y figura 2 (`docs/img/pqc_tamanos.png`); los
+datos proceden de `docs/benchmark_pqc.json`.
+
+---
+
+# Parte III — Sección compartida
+
+## 14. Del papel al código: qué es real y qué es simulación
+
+*(§3.11 — sección que las fuentes **no asignan** a ninguna de las dos mitades; ver el punto 1 del
+[Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir))*
+
+Una advertencia de honestidad intelectual que la Fase 1 estableció como obligatoria en toda la
+documentación del proyecto, y que aquí tiene una forma peculiar porque el módulo es *mitad y mitad*:
+
+- **La mitad PQC no es una simulación.** ML-KEM-768 y ML-DSA-65 se ejecutan de verdad, sobre liboqs
+  0.16.0, la implementación de referencia del proyecto Open Quantum Safe. El mensaje que el módulo
+  cifra está cifrado con el mismo código que protege sistemas reales. Las claves las genera el CSPRNG
+  del sistema y **no se siembran**, precisamente porque una clave reproducible sería una clave
+  insegura.
+- **La mitad de Shor sí es una simulación, y de números de juguete.** El circuito corre en
+  `AerSimulator`, que por debajo usa un generador pseudoaleatorio clásico sembrado. Se *simula* el
+  proceso cuántico, no se ejecuta. Además, el oráculo de exponenciación modular está compilado a mano
+  para `N = 15`, así que ni siquiera es un Shor de propósito general: es un **modelo de amenaza** que
+  demuestra el mecanismo.
+
+La distinción importa porque un repositorio que insinúe que «rompe RSA desde un portátil» pierde toda
+su credibilidad ante cualquiera que sepa del tema, mientras que uno que declare exactamente dónde está
+el límite demuestra que lo entiende. El módulo la declara en **tres sitios**: en los docstrings del
+código, en el panel de Shor del dashboard y en el capítulo 10 del documento explicativo de la fase.
+
+Esta advertencia es **obligatoria** en este documento por esa misma razón.
+
+---
+
+# Apéndice A — Mapa teoría ↔ verificación
+
+Subconjunto de la **tabla 7.1** del documento de la fase, restringido a las filas que caen dentro del
+reparto de la tarea 2.10. Las filas de la tabla 7.1 que apuntan a §5.6 y §2.3 (sigma derivada, las dos
+capas, validación del JSON, el arco amenaza + defensa) corresponden al trabajo de Carlos y quedan
+fuera de este documento, salvo el resultado de la sección 13 (ver
+[Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir), punto 3).
+
+| Resultado teórico | Sección origen | Aquí | Test / figura que lo verifica |
+|---|---|---|---|
+| La fase medida es múltiplo de `1/r` | 3.2 | §3 | `test_fase_es_multiplo_de_1_sobre_4_para_a7`; fig. 3 |
+| Las fracciones continuas recuperan `r` | 3.5 | §6 | `test_fracciones_continuas_recuperan_denominador` |
+| La reducción factorización→orden | 3.1 | §1 | `test_reduccion_es_correcta_para_todo_a` |
+| Shor factoriza `15 = 3 × 5` | 3.1 | §1 | `test_shor_factoriza_15` |
+| OAEP es probabilístico | 3.7 | §8.1 | `test_rsa_oaep_es_probabilistico` |
+| PSS es probabilístico | 3.7 | §8.1 | `test_rsa_pss_es_probabilistico` |
+| RSA-OAEP tiene límite de 318 B | 3.9 | §8.3 | `test_rsa_oaep_tiene_limite_de_tamano` |
+| El DH de X25519 es simétrico | 3.8 | §8.4 | `test_x25519_ambos_lados_derivan_el_mismo_secreto` |
+| Corrección del KEM (mismo secreto) | 3.8 | §10 | `test_kem_secretos_coinciden` |
+| Tamaños de FIPS 203 | 3.8 | §10 | `test_kem_tamanos_fips_203`; fig. 2 |
+| Cada encapsulamiento da secreto fresco | 3.8 | §10 | `test_dos_encapsulamientos_dan_secretos_distintos` |
+| Rechazo implícito de ML-KEM | 3.8 | §10.1 | `test_ciphertext_manipulado_da_otro_secreto_sin_lanzar` |
+| El híbrido cifra un mensaje real | 3.9 | §11 | `test_cifrado_hibrido_roundtrip` |
+| AEAD detecta manipulación (3 vías) | 3.9 | §11 | `test_manipular_el_cifrado` / `_el_kem_ciphertext` / `_el_nonce` |
+| El nonce nunca se repite | 3.9 | §11 | `test_nonce_y_cifrado_nunca_se_repiten` |
+| El híbrido no tiene límite de tamaño | 3.9 | §11 | `test_mensaje_largo_y_mensaje_vacio` |
+| Firma válida verifica | 3.10 | §12 | `test_firma_valida_verifica` |
+| Los tres rechazos de la firma | 3.10 | §12 | `test_mensaje_manipulado` / `_firma_manipulada` / `_de_otra_clave` |
+| Tamaños de FIPS 204 | 3.10 | §12 | `test_tamanos_fips_204`; fig. 2 |
+| Firmar no oculta el mensaje | 3.10 | §12 | `test_firmar_no_oculta_el_mensaje` |
+| Nomenclatura NIST disponible | 1.4 | Preámbulo | `test_liboqs_trae_mecanismos_nist` |
+
+---
+
+# Apéndice B — Puntos que las fuentes dejan sin decidir
+
+El documento explicativo de la Fase 2 no resuelve los cuatro puntos siguientes. Se recogen aquí
+marcados como tales, en lugar de rellenarlos con suposiciones; **las decisiones tomadas
+provisionalmente en este borrador se señalan explícitamente y están pendientes de acuerdo del
+equipo**.
+
+1. **La sección 3.11 no pertenece a ninguna mitad.** «Del papel al código: qué es real y qué es
+   simulación» es, en palabras del propio documento, «mitad y mitad»: un bullet dice que la PQC no es
+   simulación, el otro que Shor sí lo es. En este documento la advertencia es **obligatoria** (§3.11:
+   el módulo la declara en tres sitios), pero su autoría **no está asignada**. Aquí figura como
+   [Parte III — sección compartida](#parte-iii--sección-compartida); queda pendiente decidir si la
+   escriben los dos, un párrafo cada uno, o quien haga el merge final.
+2. **El baseline clásico se queda sin sección de teoría.** OAEP, PSS y el límite de 318 bytes de
+   RSA-OAEP viven en §5.2 (referencia de código), no en el capítulo 3, pero la tabla 7.1 los mapea a
+   las secciones 3.7 y 3.9, que tratan de retículos y del híbrido. Aquí se les ha dado **sección
+   propia** (§8, dentro de la mitad de Marco, que es quien hizo la tarea 2.4), porque el límite de
+   318 B es «la justificación empírica de por qué existen los KEM». **Esa colocación es una decisión
+   de este borrador, no algo que fijen las fuentes.**
+3. **Las filas de la tabla 7.1 que son de Carlos.** Cuatro entradas (sigma derivada, las dos capas,
+   validación del JSON, el arco amenaza + defensa) apuntan a §5.6 y §2.3 —benchmark y tests de
+   integración, trabajo de Carlos (§11.1)—, pero la tarea 2.10 solo se reparte entre Gonzalo y Marco.
+   En este borrador **la metodología de medida queda fuera** (es documentación de código, no teoría) y
+   solo se absorbe el **resultado**: el compromiso «gana en tiempo, pierde en bytes» de §6.1.4 (§13 de
+   este documento). **Pendiente de confirmar por el equipo.**
+4. **Extensión, formato y figuras.** El documento de la fase no especifica ni la extensión, ni la
+   estructura de secciones, ni el formato interno, ni un criterio de cierre distinto de la regla de
+   oro, ni si las figuras van incrustadas. (La caja de §6.2.4 sobre no incrustar figuras se refiere al
+   documento LaTeX de la fase, no a este fichero.) En este borrador las figuras se **enlazan** por
+   ruta relativa a `docs/img/`, sin incrustarlas; **es una decisión provisional**.
+
+Un apunte de carga de trabajo, no de contenido, registrado en §11.4: Gonzalo arrastra además la tarea
+1.10 (`docs/theory/qkd.md`, pendiente desde el cierre de la Fase 1), de modo que su mitad —que es la
+mitad corta— es la que tiene más riesgo de quedarse atrás.
+
+---
+
+# Apéndice C — Verificación pendiente contra el código
+
+La **regla de precedencia** del proyecto (§1.2) dice: *para todo lo técnico (firmas, nombres,
+comportamiento) manda el código real; para el contexto, las decisiones y los porqués, mandan la guía y
+los ficheros de contexto*. Este documento se ha redactado a partir del documento explicativo integral
+de la Fase 2, cuyo estado de referencia es `main` tras la fusión del PR #15 (27-07-2026).
+
+Por tanto, **antes de dar por cerrada la tarea 2.10, cada firma, nombre de test, constante y
+comportamiento citados aquí deben contrastarse contra el código real de `src/pqc/` y `tests/pqc/`**, y
+donde el código haya avanzado respecto del documento de la fase, gana el código. Este documento no
+resuelve esa comprobación: las fuentes utilizadas para redactarlo no la incluyen.
