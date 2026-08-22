@@ -1,0 +1,16 @@
+{
+  "_aviso": "NO REGENERAR. Este fichero es la unica defensa contra el fallo silencioso de determinismo (guia Fase 3, cap. 4). Si un test falla contra el, el bug esta en el codigo, no en el vector. Cambiar el algoritmo => keystream_v2.json en su propio PR.",
+  "version": 1,
+  "sistema": "logistico",
+  "clave": {
+    "x0": 0.4,
+    "r": 3.99
+  },
+  "constantes": {
+    "transitorio": 1000,
+    "submuestreo": 3,
+    "escala_bits": 4294967296.0
+  },
+  "primeros_64_bytes_hex": "c47f21e45e4317139d99b1dfd91e84bae791417e6755905b10f04039d0b3a85faddcc68d2d1cfb8e52ff9723fe1771049506d725716389f93feeb881bdb74dc2",
+  "sha256_de_1e6_bytes": "e631fba8b44617b17238510caf27255854b9c26d2ee94e527a130eec6f96d7f0"
+}
