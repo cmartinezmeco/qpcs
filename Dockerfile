@@ -34,10 +34,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-# Instala los paquetes de src/ (qkd y pqc: packages.find los coge los dos, ver
-# pyproject.toml) en el entorno del contenedor. Sin esto, "from qkd.protocol
-# import ..." y "from pqc.shor import ..." fallan en el dashboard y en pytest
-# dentro del contenedor.
+# Instala los paquetes de src/ (qkd, pqc y chaos: packages.find los coge los
+# tres, ver pyproject.toml) en el entorno del contenedor. Sin esto, "from
+# qkd.protocol import ...", "from pqc.shor import ..." y "from chaos import
+# cifrar_imagen" fallan en el dashboard y en pytest dentro del contenedor.
 RUN pip install --no-cache-dir -e .
 
 CMD ["python", "main.py"]

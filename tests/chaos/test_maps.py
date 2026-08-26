@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from chaos import orbita_logistica, orbita_lorenz
 from chaos.types import LORENZ_RANGOS
 
@@ -61,3 +62,30 @@ def test_rk4_converge_con_el_orden_correcto():
     # Se exige un factor de al menos 8 para dar margen sin ser laxo.
     assert error_fino > 0, "el paso fino no puede tener error exactamente cero"
     assert error_grueso / error_fino > 8.0
+
+
+@pytest.mark.parametrize("x0", [0.0, 1.0])
+def test_x0_en_un_punto_fijo_se_rechaza(x0):
+    """Caso borde de la tabla del cap. 8.9 (tarea 3.9): x0 = 0 y x0 = 1 son
+    los dos puntos fijos triviales del mapa y tienen que dar ValueError.
+
+    Con x0 = 0 la orbita es cero para siempre; con x0 = 1 el primer paso la
+    lleva a cero y se queda ahi. En los dos casos el keystream seria un solo
+    byte repetido.
+
+    Y no es una comprobacion de cortesia: SIN esta guarda, x0 = 0 llegaba
+    hasta lyapunov_logistico y salia declarado CAOTICO. La derivada del mapa
+    en x = 0 vale r, asi que el promedio de ln|f'| da ln(4) = 1.386, muy por
+    encima de UMBRAL_LYAPUNOV. El punto fijo mas degenerado del mapa pasaba
+    la validacion de la tarea 3.3 con nota (medido antes de anadir la guarda).
+    """
+    with pytest.raises(ValueError, match="puntos fijos"):
+        orbita_logistica(x0, 4.0, 100)
+
+
+def test_x0_fuera_de_cero_uno_tambien_se_rechaza():
+    """La guarda es sobre el intervalo ABIERTO, no solo sobre los extremos:
+    fuera de (0, 1) el mapa diverge a -inf y el keystream serian NaN."""
+
+    with pytest.raises(ValueError, match=r"fuera de \(0, 1\)"):
+        orbita_logistica(1.5, 4.0, 100)

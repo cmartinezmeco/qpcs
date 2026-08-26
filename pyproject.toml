@@ -9,14 +9,14 @@ build-backend = "setuptools.build_meta"
 # habia que corregir es la descripcion, que seguia anunciando solo el Modulo 1.
 name = "qpcs-qkd"
 version = "0.1.0"
-description = "QPCS - Modulo 1 (QKD/BB84 + QRNG) y Modulo 2 (PQC real + Shor)"
+description = "QPCS - Modulo 1 (QKD/BB84 + QRNG), Modulo 2 (PQC real + Shor) y Modulo 3 (caos determinista)"
 requires-python = ">=3.11,<3.12"
 dependencies = []
 # Las dependencias reales (qiskit, numpy...) viven en requirements.txt en la
 # raiz del repo, que es lo que instala el Dockerfile. Este pyproject.toml solo
-# existe para que "qkd" y "pqc" sean paquetes instalables en modo editable
-# (packages.find sobre src/ los coge los dos) y para centralizar la config de
-# black/ruff/mypy/pytest.
+# existe para que "qkd", "pqc" y "chaos" sean paquetes instalables en modo
+# editable (packages.find sobre src/ los coge los tres) y para centralizar la
+# config de black/ruff/mypy/pytest.
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -63,6 +63,54 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: docker run --rm qpcs:ci pytest tests/ -v -m "slow"
 
+      # DETERMINISMO DEL MODULO 3 (Fase 3, tarea 3.9). Es EL paso de CI de
+      # este modulo, y protege contra el unico fallo del capitulo 4 de la guia
+      # que es a la vez catastrofico y silencioso: que la orbita en coma
+      # flotante salga distinta en dos entornos. Cuando eso pasa no hay
+      # excepcion ni aviso, sale una imagen que parece ruido -que es
+      # exactamente lo que sale cuando el descifrado funciona bien y tambien
+      # cuando no se ha descifrado-, asi que un test de "cifrar y descifrar en
+      # la misma ejecucion" nunca lo veria.
+      #
+      # El script regenera el keystream DENTRO del contenedor y lo contrasta
+      # con vectors/keystream_v1.json, que se genero fuera y esta versionado:
+      # el vector ES el otro entorno, congelado en el repositorio. Comprueba
+      # ademas las constantes del contrato (cambiar TRANSITORIO o SUBMUESTREO
+      # sin cambiar de version del vector se para aqui) y la huella de la
+      # cadena COMPLETA de cifrado con los dos sistemas, que el vector no
+      # cubre: se puede romper el troceado del keystream o el orden de las dos
+      # pasadas de difusion sin tocar un solo byte del keystream.
+      #
+      # Para el cruce local/contenedor a mano (el que hacen las tres maquinas
+      # del equipo antes de un merge) el mismo script tiene --json:
+      #   python scripts/check_chaos_determinism.py --json > /tmp/local.json
+      #   docker run --rm -v "$PWD":/app qpcs:ci \
+      #     python scripts/check_chaos_determinism.py --json > /tmp/dentro.json
+      #   diff /tmp/local.json /tmp/dentro.json
+      - name: Determinismo del modulo 3 (keystream y cadena completa)
+        run: docker run --rm qpcs:ci python scripts/check_chaos_determinism.py
+
+      # El tercer gemelo de los dos pasos de figuras de abajo, para el modulo
+      # 3. Aqui la reproducibilidad es todavia mas exigible que en los otros
+      # dos modulos: las cuatro figuras y el GIF salen de un cifrado que es
+      # determinista POR CONTRATO, asi que un PNG que cambie de MD5 no es un
+      # detalle de dibujo, es un sintoma de que la cadena de cifrado ha dejado
+      # de producir los mismos bytes. Comprobado antes de anadir el paso: los
+      # cinco ficheros salen identicos en el venv local y en el contenedor.
+      - name: Figuras del caos reproducibles bit a bit
+        run: |
+          docker run --rm qpcs:ci bash -c '
+            set -e
+            cd /app
+            md5sum docs/img/chaos_bifurcacion.png \
+                   docs/img/chaos_cadena.png \
+                   docs/img/chaos_correlacion.png \
+                   docs/img/chaos_atractor.png \
+                   docs/img/chaos_cifrado.gif > /tmp/figuras_chaos.md5
+            python scripts/make_chaos_plots.py
+            md5sum -c /tmp/figuras_chaos.md5
+          '
+
       # MEJORA E1: la reproducibilidad "bit a bit" de las tres figuras del
       # modulo 1 era una comprobacion MANUAL, hecha una vez y a mano. Aqui
       # pasa a ser una garantia continua: se regeneran las figuras DENTRO de

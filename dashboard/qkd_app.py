@@ -1,4 +1,4 @@
-"""dashboard/qkd_app.py — tareas 1.9 y 2.9 (Carlos). Dashboard Streamlit.
+"""dashboard/qkd_app.py — tareas 1.9, 2.9 y 3.10 (Carlos). Dashboard Streamlit.
 
 Arranque local:
 
@@ -22,14 +22,24 @@ histograma de fases de Shor, que se ejecutaba a mano porque medir_fase_15
 devuelve una sola fase por llamada- ya no hace falta: esa logica vive ahora en
 `shor.histograma_fases_15`, que es lo que consume _muestrear_fases.
 
-UN SOLO FICHERO, DOS MODULOS (tarea 2.9)
-----------------------------------------
+UN SOLO FICHERO, TRES MODULOS (tareas 2.9 y 3.10)
+------------------------------------------------
 El panel del modulo 2 (PQC + Shor) vive aqui dentro, en su propia pestana, y no
 en un dashboard/pqc_app.py aparte. La alternativa -pasar a una app multipagina
 de Streamlit- obliga a mover ficheros a un directorio pages/ y a cambiar el
 comando de arranque, y el criterio de cierre de la Fase 1 dice que el dashboard
 arranca con `docker compose up`: no se toca. Con st.tabs los dos modulos
 conviven sin que el de QKD cambie de comportamiento.
+
+El modulo 3 (caos determinista) entra igual, como tercera pestana de nivel
+superior, y reutiliza tal cual el sistema visual del rediseno: styles.css,
+_cabecera_seccion y _preparar_ejes. Ni una linea de logica de cifrado vive
+aqui: todo sale de `chaos` tal y como lo exporta el paquete. La unica
+excepcion, documentada donde se usa, es el ayudante privado
+cipher._valores_de_permutacion, que hace falta para ensenar la imagen
+PERMUTADA PERO NO DIFUNDIDA -un estado intermedio que cifrar_imagen no
+devuelve- sin reimplementar la receta de la orbita y arriesgarse a que se
+separe de la del cifrado.
 
 CUIDADO CON MATHTEXT (aprendido en la Fase 1)
 --------------------------------------------
@@ -50,8 +60,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
+from chaos import (
+    ClaveCaotica,
+    chi2_histograma,
+    cifrar_aes_gcm,
+    cifrar_flujo_trivial,
+    cifrar_imagen,
+    correlacion_adyacente,
+    descifrar_imagen,
+    entropia_esperada,
+    entropia_shannon,
+    imagen_de_prueba,
+    lyapunov_logistico,
+    permutacion_desde_orbita,
+)
+from chaos.cipher import _valores_de_permutacion
+from chaos.types import UMBRAL_LYAPUNOV
 from cryptography.exceptions import InvalidTag
 from matplotlib.ticker import FuncFormatter, PercentFormatter
+from PIL import Image
 from pqc.benchmark import (
     RUTA_JSON,
     SUFIJO_CAPA_API,
@@ -94,6 +121,30 @@ MENSAJE_DEMO = "La criptografía poscuántica protege este mensaje en 2035."
 SHOTS_FASE = 2048
 # Cuantos bytes en hexadecimal se ensenan de cada artefacto binario.
 BYTES_PREVIA = 16
+
+# --- Constantes del modulo 3 (tarea 3.10) ----------------------------------
+# Clave por defecto de la demostracion. r = 3.99 es caotico sin ambiguedad y
+# esta lejos de la ventana de periodo 3 en 3.83, que es la trampa del modulo.
+X0_DEMO = 0.4
+R_DEMO = 3.99
+# Lado maximo de una imagen subida por el usuario. El cifrado es un bucle de
+# Python sobre cada pixel: 512x512 son 262 144 vueltas y ~0.3 s, y de ahi
+# para arriba la interfaz empieza a arrastrarse. Las imagenes mas grandes se
+# reescalan en vez de rechazarse, que para una demostracion es mas util.
+LADO_MAXIMO_SUBIDA = 512
+# Perturbacion de la clave equivocada. 1e-15 es del orden del ultimo bit de
+# la mantisa de un float64: es la sensibilidad a la clave del cap. 6.5, que
+# no es una propiedad del cifrado sino del exponente de Lyapunov.
+EPSILON_CLAVE = 1e-15
+# Clave AES de la tabla comparativa. Fija y visible A PROPOSITO: esto es una
+# demostracion didactica, no un despliegue, y lo que importa es que las tres
+# columnas se midan sobre la misma imagen. El nonce SI es fresco en cada
+# llamada, que es justo la diferencia con el esquema caotico.
+CLAVE_AES_DEMO = bytes(range(32))
+# Pares que se dibujan en la dispersion de correlacion. Los mismos 5000 con
+# los que metrics.correlacion_adyacente calcula r, para que la figura y el
+# numero de la tabla hablen de la misma muestra.
+PARES_CORRELACION = 5000
 
 # Paleta compartida por los graficos Matplotlib y la interfaz CSS. Los colores
 # de exito y error quedan reservados para estados, no para decorar series.
@@ -357,6 +408,214 @@ def _cifrar_y_firmar(
     return clave_privada, sobre, firma
 
 
+# ---------------------------------------------------------------------------
+# Modulo 3: caos determinista (tarea 3.10). El motivo de la cache aqui es el
+# tercero de los tres del fichero, y el mas fisico: cifrar una imagen de
+# 512x512 son 262 144 vueltas de un bucle secuencial de Python en cada una de
+# las dos pasadas de difusion, mas tres millones de iteraciones del mapa para
+# generar la orbita. Sin cache, mover cualquier control -incluso uno de otra
+# pestana, porque Streamlit reejecuta el script entero- relanzaria el cifrado
+# completo y la interfaz se arrastraria.
+#
+# Y hay una diferencia con el modulo 2 que conviene tener presente al leer
+# esto: aqui cachear NO cambia lo que se ve. El cifrado caotico es
+# determinista a partir de la clave, asi que la cache devuelve exactamente lo
+# mismo que devolveria recalcular. En el modulo 2 la cache existe justo por lo
+# contrario (congelar un nonce fresco para que la demo se pueda seguir).
+# ---------------------------------------------------------------------------
+
+
+@st.cache_data(show_spinner=False)
+def _clave_caotica(sistema: str, x0: float, r: float, y0: float, z0: float):
+    """Construye la ClaveCaotica a partir de los controles.
+
+    Se pasan los cinco campos siempre y se descartan los que no aplican, en
+    vez de montar el dataclass en la interfaz: asi el contrato de
+    ClaveCaotica (que r es solo del logistico, y que y0/z0 son solo de
+    Lorenz) se cumple en un unico sitio.
+    """
+    if sistema == "logistico":
+        return ClaveCaotica(sistema="logistico", x0=x0, r=r)
+    return ClaveCaotica(sistema="lorenz", x0=x0, y0=y0, z0=z0)
+
+
+@st.cache_data(show_spinner=False)
+def _diagnosticar_clave(sistema: str, x0: float, r: float):
+    """Exponente de Lyapunov de la clave, para el semaforo.
+
+    Solo tiene sentido para el mapa logistico: en Lorenz, sigma, rho y beta
+    son constantes del contrato (types.py) y no partes variables de la
+    clave, asi que lambda_1 no depende de lo que el usuario mueva. Devuelve
+    None en ese caso y el semaforo lo dice con palabras.
+    """
+    if sistema != "logistico":
+        return None
+    return lyapunov_logistico(x0, r)
+
+
+@st.cache_data(show_spinner=False)
+def _cifrar_cadena(
+    imagen: np.ndarray, sistema: str, x0: float, r: float, y0: float, z0: float
+) -> dict[str, np.ndarray]:
+    """Las cuatro imagenes del panel, de una sola pasada.
+
+    original -> permutada -> cifrada -> descifrada. La permutada es un
+    estado intermedio que cifrar_imagen no devuelve (el contenedor lleva el
+    resultado final), asi que se reconstruye con el mismo ayudante que usa
+    el propio orquestador, y no con una copia de la receta: ver el docstring
+    del fichero.
+    """
+    clave = _clave_caotica(sistema, x0, r, y0, z0)
+    m = imagen.size
+    sigma = permutacion_desde_orbita(_valores_de_permutacion(clave, m), m)
+    cifrada = cifrar_imagen(imagen, clave)
+    return {
+        "permutada": imagen.ravel()[sigma].reshape(imagen.shape),
+        "cifrada": cifrada.datos,
+        "descifrada": descifrar_imagen(cifrada, clave),
+        "hash_plano": cifrada.hash_plano,
+        "iv": cifrada.iv,
+    }
+
+
+@st.cache_data(show_spinner=False)
+def _descifrar_con_otra_clave(
+    imagen: np.ndarray, sistema: str, x0: float, r: float, y0: float, z0: float
+) -> np.ndarray:
+    """Descifra con una clave que difiere en 1e-15 en x0.
+
+    Es el interruptor de "clave equivocada" del enunciado, y lo que ensena
+    no es un fallo del cifrado sino el exponente de Lyapunov en accion: esa
+    diferencia se amplifica como e^(lambda*n) y tras el transitorio de mil
+    iteraciones que descarta el keystream las dos orbitas no tienen ninguna
+    relacion. El descarte del transitorio no es higiene numerica, es lo que
+    produce la sensibilidad a la clave (cap. 6.5).
+
+    No lanza ni avisa: un cifrado sin autenticacion NO PUEDE distinguir
+    "clave equivocada" de "cifrado manipulado", y fingir que si es
+    exactamente la diferencia con AES-GCM que la tabla de abajo hace
+    visible. Devuelve ruido, y quien quiera verificar compara el SHA-256.
+    """
+    clave = _clave_caotica(sistema, x0, r, y0, z0)
+    cifrada = cifrar_imagen(imagen, clave)
+    equivocada = _clave_caotica(sistema, x0 + EPSILON_CLAVE, r, y0, z0)
+    return descifrar_imagen(cifrada, equivocada)
+
+
+@st.cache_data(show_spinner=False)
+def _tabla_tres_columnas(
+    imagen: np.ndarray, sistema: str, x0: float, r: float, y0: float, z0: float
+) -> pd.DataFrame:
+    """La tabla del cap. 6.6, medida en vivo sobre la imagen que se ve.
+
+    Las tres columnas se miden con las MISMAS funciones sobre la MISMA
+    imagen: es lo que la convierte en una comparacion y no en tres medidas
+    sueltas. NPCR y UACI se miden entre DOS CIFRADOS INDEPENDIENTES (dos
+    claves separadas por 1e-15 en el caotico, dos nonces en AES, dos claves
+    en el contador), que es la unica lectura en la que los tres esquemas son
+    comparables: con la misma clave, un XOR con flujo fijo daria NPCR = 1/M
+    por definicion.
+
+    Las dos ultimas filas -prueba de seguridad y autenticacion- NO salen de
+    ninguna medida. Son la leccion del modulo, y por eso estan aqui dentro y
+    no en un pie de pagina.
+    """
+    clave = _clave_caotica(sistema, x0, r, y0, z0)
+    otra_clave = _clave_caotica(sistema, x0 + EPSILON_CLAVE, r, y0, z0)
+    otra_aes = bytes(range(1, 33))
+
+    caotico = cifrar_imagen(imagen, clave).datos
+    caotico_2 = cifrar_imagen(imagen, otra_clave).datos
+    aes, _, _ = cifrar_aes_gcm(imagen, CLAVE_AES_DEMO)
+    aes_2, _, _ = cifrar_aes_gcm(imagen, CLAVE_AES_DEMO)
+    trivial = cifrar_flujo_trivial(imagen, CLAVE_AES_DEMO)
+    trivial_2 = cifrar_flujo_trivial(imagen, otra_aes)
+
+    columnas = {
+        "Imagen plana": (imagen, None),
+        "Esquema caótico": (caotico, caotico_2),
+        "AES-256-GCM": (aes, aes_2),
+        "Contador trivial": (trivial, trivial_2),
+    }
+    filas: dict[str, list[str]] = {}
+    for etiqueta, (datos, pareja) in columnas.items():
+        entropia = entropia_shannon(datos)
+        fila = [
+            f"{entropia:.4f}",
+            f"{correlacion_adyacente(datos, 'horizontal'):+.4f}",
+            f"{correlacion_adyacente(datos, 'vertical'):+.4f}",
+            f"{correlacion_adyacente(datos, 'diagonal'):+.4f}",
+            f"{chi2_histograma(datos):,.1f}".replace(",", " "),
+        ]
+        if pareja is None:
+            fila += ["—", "—", "—", "—"]
+        else:
+            npcr = 100.0 * float(np.count_nonzero(datos != pareja)) / datos.size
+            uaci = (
+                float(np.abs(datos.astype(np.int16) - pareja.astype(np.int16)).mean())
+                / 255.0
+                * 100.0
+            )
+            autentica = "sí (tag GCM)" if etiqueta == "AES-256-GCM" else "no"
+            prueba = "sí" if etiqueta == "AES-256-GCM" else "ninguna"
+            fila += [f"{npcr:.4f}", f"{uaci:.4f}", prueba, autentica]
+        filas[etiqueta] = fila
+
+    esperado = [
+        f"{entropia_esperada(imagen.size):.4f}",
+        "0",
+        "0",
+        "0",
+        "255 ± 22.6",
+        "99.6094",
+        "33.4635",
+        "—",
+        "—",
+    ]
+    indice = [
+        "Entropía (bits/px)",
+        "Correlación H",
+        "Correlación V",
+        "Correlación D",
+        "χ² (255 gl)",
+        "NPCR (%)",
+        "UACI (%)",
+        "Prueba de seguridad",
+        "Autenticación",
+    ]
+    return pd.DataFrame({**filas, "Esperado": esperado}, index=indice)
+
+
+def _imagen_subida(fichero) -> np.ndarray | None:
+    """Convierte lo que suba el usuario en una imagen uint8 en escala de grises.
+
+    El modulo trabaja en 8 bits y en escala de grises, y eso no es una
+    limitacion de la interfaz sino del alcance declarado de la fase (cap.
+    2.3): el color es una extension trivial en volumen que no anade nada
+    conceptual, y esta fuera a proposito. Aqui se convierte en vez de
+    rechazar el fichero, y se dice en pantalla.
+
+    Devuelve None si el fichero no se puede abrir como imagen, para que la
+    pestana lo diga en vez de reventar con un traceback.
+    """
+    if fichero is None:
+        return None
+    try:
+        with Image.open(fichero) as abierta:
+            gris = abierta.convert("L")
+            lado_mayor = max(gris.size)
+            if lado_mayor > LADO_MAXIMO_SUBIDA:
+                escala = LADO_MAXIMO_SUBIDA / lado_mayor
+                nuevo = (
+                    max(1, int(gris.width * escala)),
+                    max(1, int(gris.height * escala)),
+                )
+                gris = gris.resize(nuevo, Image.LANCZOS)
+            return np.asarray(gris, dtype=np.uint8).copy()
+    except OSError:
+        return None
+
+
 def _hex_previa(datos: bytes) -> str:
     """Los primeros bytes en hexadecimal, para ensenar un artefacto binario."""
     return datos[:BYTES_PREVIA].hex() + (" ..." if len(datos) > BYTES_PREVIA else "")
@@ -562,14 +821,19 @@ st.markdown(
             <span class="qpcs-tag">QKD · BB84</span>
             <span class="qpcs-tag">Algoritmo de Shor</span>
             <span class="qpcs-tag">ML-KEM · ML-DSA</span>
+            <span class="qpcs-tag">Caos determinista</span>
         </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-tab_qkd, tab_pqc = st.tabs(
-    ["Módulo 1 · Distribución de claves", "Módulo 2 · Amenaza y defensa"]
+tab_qkd, tab_pqc, tab_chaos = st.tabs(
+    [
+        "Módulo 1 · Distribución de claves",
+        "Módulo 2 · Amenaza y defensa",
+        "Módulo 3 · Caos determinista",
+    ]
 )
 
 # ===========================================================================
@@ -1270,3 +1534,485 @@ with tab_pqc:
                     "Otra máquina puede producir cifras distintas; por eso el "
                     "entorno forma parte inseparable de las medidas."
                 )
+
+
+# ===========================================================================
+# PESTANA 3 - Modulo de caos determinista (Fase 3, tarea 3.10).
+#
+# El aviso que gobierna el modulo entero va ARRIBA DEL TODO y no en un pie
+# de pagina: este es el unico modulo del repositorio cuyas metricas salen
+# espectaculares y cuya seguridad real es nula, y la interfaz es justo donde
+# esa confusion se produce. Si alguien solo mira esta pestana en una demo,
+# tiene que leer la advertencia antes que la tabla.
+# ===========================================================================
+
+with tab_chaos:
+    _cabecera_seccion(
+        "Módulo 03 · Caos determinista",
+        "Cifrado de imágenes con el mapa logístico y Lorenz",
+        "Una imagen entra, sale ruido y vuelve intacta. La clave define una "
+        "órbita, la órbita define un flujo de bytes y ese flujo define "
+        "completamente el cifrado: no hay ninguna otra fuente de aleatoriedad.",
+    )
+    st.warning(
+        "**El aviso que gobierna todo el módulo.** Esto es un esquema de "
+        "permutación–difusión basado en caos determinista. Tiene métricas "
+        "excelentes y **no tiene prueba de seguridad**. **No sustituye a AES.** "
+        "Usa un sistema caótico porque es física interesante y visualmente "
+        "demostrable, no porque sea criptográficamente superior."
+    )
+    st.markdown(
+        """
+        <div class="qpcs-process">
+            <div class="qpcs-process__item">
+                <strong>Clave</strong><span>Define la órbita</span>
+            </div>
+            <div class="qpcs-process__arrow">→</div>
+            <div class="qpcs-process__item">
+                <strong>Keystream</strong><span>Bits bajos de la órbita</span>
+            </div>
+            <div class="qpcs-process__arrow">→</div>
+            <div class="qpcs-process__item">
+                <strong>Permutación</strong><span>Rompe la correlación</span>
+            </div>
+            <div class="qpcs-process__arrow">→</div>
+            <div class="qpcs-process__item">
+                <strong>Difusión</strong><span>Aplana el histograma</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # -----------------------------------------------------------------------
+    # Controles. Van DENTRO de la pestana y no en la barra lateral: la lateral
+    # es de BB84 desde la Fase 1 y su cabecera lo dice, asi que meter aqui los
+    # parametros de otro modulo obligaria a leer dos sitios para entender una
+    # sola figura.
+    # -----------------------------------------------------------------------
+
+    col_control, col_diagnostico = st.columns([2, 3], gap="large")
+
+    with col_control:
+        with st.container(border=True):
+            st.subheader("Clave y dinámica")
+            sistema_caos = st.selectbox(
+                "Sistema dinámico",
+                options=["logistico", "lorenz"],
+                format_func=lambda s: {
+                    "logistico": "Mapa logístico (1D, discreto)",
+                    "lorenz": "Lorenz (3D, continuo, RK4)",
+                }[s],
+                help=(
+                    "Los dos generan el mismo tipo de flujo de bytes. Lorenz "
+                    "integra con Runge-Kutta de paso fijo y es dos órdenes de "
+                    "magnitud más lento por muestra."
+                ),
+            )
+            x0_caos = st.number_input(
+                "x₀ (condición inicial)",
+                min_value=0.001,
+                max_value=0.999,
+                value=X0_DEMO,
+                step=0.05,
+                format="%.3f",
+                help="Debe estar en (0, 1): 0 y 1 son puntos fijos del mapa.",
+            )
+            if sistema_caos == "logistico":
+                r_caos = st.slider(
+                    "r (parámetro del mapa)",
+                    min_value=2.50,
+                    max_value=4.00,
+                    value=R_DEMO,
+                    step=0.01,
+                    help=(
+                        "Prueba r = 3.83: está dentro del rango caótico nominal "
+                        "y sin embargo tiene periodo 3. El módulo lo rechaza."
+                    ),
+                )
+                y0_caos, z0_caos = 1.0, 1.0
+            else:
+                r_caos = R_DEMO
+                y0_caos = st.number_input("y₀", value=1.0, step=0.5, format="%.2f")
+                z0_caos = st.number_input("z₀", value=1.0, step=0.5, format="%.2f")
+                st.markdown(
+                    """
+                    <div class="qpcs-note">
+                        σ, ρ y β son constantes del contrato, no partes de la
+                        clave: por eso λ no depende de lo que muevas aquí.
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+        with st.container(border=True):
+            st.subheader("Imagen")
+            origen = st.radio(
+                "Origen de la imagen",
+                options=["generada", "subida"],
+                format_func=lambda o: {
+                    "generada": "Imagen de prueba generada",
+                    "subida": "Subir una imagen propia",
+                }[o],
+                horizontal=True,
+                help=(
+                    "Las cifras publicadas en el README salen siempre de la "
+                    "imagen generada, que es reproducible. La subida es para "
+                    "la demostración."
+                ),
+            )
+            if origen == "generada":
+                lado_caos = st.select_slider(
+                    "Tamaño",
+                    options=[64, 128, 256, 512],
+                    value=128,
+                    format_func=lambda v: f"{v}×{v}",
+                )
+                imagen_caos = imagen_de_prueba(lado_caos, lado_caos)
+                st.markdown(
+                    """
+                    <div class="qpcs-note">
+                        Cuadrante plano, degradado, bordes duros y textura
+                        sembrada: las cuatro estructuras que las métricas
+                        tienen que ver desaparecer.
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                fichero_subido = st.file_uploader(
+                    "Imagen (PNG, JPG…)", type=["png", "jpg", "jpeg", "bmp", "tif"]
+                )
+                subida = _imagen_subida(fichero_subido)
+                if fichero_subido is not None and subida is None:
+                    st.error(
+                        "No se ha podido abrir ese fichero como imagen. "
+                        "Prueba con un PNG o un JPG."
+                    )
+                imagen_caos = (
+                    subida if subida is not None else imagen_de_prueba(128, 128)
+                )
+                if subida is not None:
+                    st.caption(
+                        f"Convertida a escala de grises de 8 bits, "
+                        f"{subida.shape[1]}×{subida.shape[0]} px. El color está "
+                        f"fuera del alcance declarado de la fase, no es un fallo "
+                        f"de la aplicación."
+                    )
+
+            clave_equivocada = st.toggle(
+                "Descifrar con la clave equivocada",
+                value=False,
+                help=(
+                    "Cambia x₀ en 1e-15, el último bit de la mantisa. El "
+                    "resultado es indistinguible de ruido."
+                ),
+            )
+
+    # -----------------------------------------------------------------------
+    # El semaforo de Lyapunov. Es la pieza que impide cifrar con una clave que
+    # no produce caos, y aqui es tambien la que explica POR QUE cuando el
+    # cifrado se niega a ejecutarse.
+    # -----------------------------------------------------------------------
+
+    with col_diagnostico:
+        with st.container(border=True):
+            st.subheader("Diagnóstico del caos")
+            st.caption(
+                "λ se calcula para la clave que has puesto; no se cita de "
+                "ningún artículo. Es lo que decide si el módulo cifra o no."
+            )
+            diagnostico_caos = _diagnosticar_clave(sistema_caos, x0_caos, r_caos)
+            if diagnostico_caos is None:
+                st.info(
+                    "**Lorenz con los parámetros clásicos (σ = 10, ρ = 28, "
+                    "β = 8/3).** λ₁ ≈ +0.906 está verificado por test contra la "
+                    "suma del espectro, −(σ + 1 + β) = −13.667, que es una "
+                    "comprobación independiente y gratuita del integrador. No "
+                    "depende de la clave, así que no se recalcula aquí."
+                )
+            else:
+                d1, d2, d3 = st.columns(3, gap="medium")
+                d1.metric(
+                    "Exponente λ",
+                    f"{diagnostico_caos.lyapunov:+.4f}",
+                    f"± {diagnostico_caos.sigma:.4f} (1 σ)",
+                    delta_color="off",
+                )
+                d2.metric("Umbral", f"{UMBRAL_LYAPUNOV:.2f}")
+                d3.metric("Iteraciones", _entero_es(diagnostico_caos.n_iteraciones))
+                if diagnostico_caos.es_caotico:
+                    st.success(
+                        f"**Clave aceptada.** λ = {diagnostico_caos.lyapunov:+.4f} "
+                        f"> {UMBRAL_LYAPUNOV}: las trayectorias vecinas se separan "
+                        f"exponencialmente y el flujo de bytes no se repite."
+                    )
+                else:
+                    st.error(
+                        f"**Clave rechazada.** λ = {diagnostico_caos.lyapunov:+.4f} "
+                        f"no supera {UMBRAL_LYAPUNOV}: con r = {r_caos:.2f} el mapa "
+                        f"es periódico y el «cifrado» sería un puñado de bytes "
+                        f"repetidos. El módulo se niega a cifrar en vez de "
+                        f"producir una imagen que parece cifrada y no lo está."
+                    )
+            st.markdown(
+                """
+                <div class="qpcs-note">
+                    Para r = 4 el valor exacto es ln 2 = 0.693147…, y no es una
+                    referencia bibliográfica: el mapa logístico con r = 4 es
+                    conjugado con el mapa de la tienda. El test
+                    <code>test_lyapunov_de_r4_es_ln2</code> lo comprueba con la
+                    tolerancia derivada del propio error estándar.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    # -----------------------------------------------------------------------
+    # La cadena visual. Si la clave no es caotica, cifrar_imagen lanza
+    # ValueError: se captura y se ensena el motivo, que es exactamente lo que
+    # el modulo quiere demostrar, en vez de dejar caer un traceback.
+    # -----------------------------------------------------------------------
+
+    try:
+        etapas_caos = _cifrar_cadena(
+            imagen_caos, sistema_caos, x0_caos, r_caos, y0_caos, z0_caos
+        )
+    except ValueError as error_caos:
+        etapas_caos = None
+        st.error(f"**El módulo se ha negado a cifrar.** {error_caos}")
+
+    if etapas_caos is not None:
+        if clave_equivocada:
+            recuperada = _descifrar_con_otra_clave(
+                imagen_caos, sistema_caos, x0_caos, r_caos, y0_caos, z0_caos
+            )
+            etiqueta_final = "descifrada con la clave equivocada"
+        else:
+            recuperada = etapas_caos["descifrada"]
+            etiqueta_final = "descifrada"
+
+        st.markdown(
+            '<div class="qpcs-kicker">La cadena, paso a paso</div>',
+            unsafe_allow_html=True,
+        )
+        with st.container(border=True):
+            paneles_caos = (
+                ("original", imagen_caos),
+                ("permutada", etapas_caos["permutada"]),
+                ("cifrada", etapas_caos["cifrada"]),
+                (etiqueta_final, recuperada),
+            )
+            fig_cadena, ejes_cadena = plt.subplots(
+                2, 4, figsize=(11.0, 4.8), height_ratios=[5, 2]
+            )
+            fig_cadena.patch.set_facecolor("#ffffff")
+            for columna, (etiqueta, datos) in enumerate(paneles_caos):
+                ax_img = ejes_cadena[0, columna]
+                ax_img.imshow(
+                    datos, cmap="gray", vmin=0, vmax=255, interpolation="nearest"
+                )
+                ax_img.set_xlabel(etiqueta, fontsize=10, color=COLOR_TINTA)
+                ax_img.set_xticks([])
+                ax_img.set_yticks([])
+                for lado in ax_img.spines.values():
+                    lado.set_edgecolor(COLOR_BORDE)
+
+                ax_hist = ejes_cadena[1, columna]
+                ax_hist.bar(
+                    np.arange(256),
+                    np.bincount(datos.ravel(), minlength=256),
+                    width=1.0,
+                    color=COLOR_TEAL if columna == 2 else COLOR_NAVY,
+                )
+                ax_hist.set_xlim(0, 255)
+                ax_hist.set_yticks([])
+                ax_hist.tick_params(labelsize=7, colors=COLOR_MUTED)
+                ax_hist.set_xlabel("valor del píxel", fontsize=8, color=COLOR_TINTA)
+                for lado in ("top", "right"):
+                    ax_hist.spines[lado].set_visible(False)
+            fig_cadena.tight_layout()
+            st.pyplot(fig_cadena, use_container_width=True)
+            plt.close(fig_cadena)
+
+            st.caption(
+                "El histograma de la permutada es IDÉNTICO al del original: "
+                "permutar mueve píxeles, no cambia sus valores. Solo se aplana "
+                "tras la difusión. Ninguna de las dos etapas basta sola."
+            )
+
+        # --- Verificacion del round-trip ----------------------------------
+        exacto = bool(np.array_equal(recuperada, imagen_caos))
+        if clave_equivocada:
+            npcr_ruido = (
+                100.0
+                * float(np.count_nonzero(recuperada != imagen_caos))
+                / imagen_caos.size
+            )
+            st.error(
+                f"**Con la clave equivocada no se recupera nada.** El resultado "
+                f"difiere del original en el {npcr_ruido:.2f} % de los píxeles "
+                f"(el valor esperado entre dos imágenes independientes es "
+                f"99.6094 %). Una diferencia de 1e-15 en x₀ basta: es el "
+                f"exponente de Lyapunov amplificándola como e^(λn) durante las "
+                f"mil iteraciones del transitorio."
+            )
+            st.markdown(
+                """
+                <div class="qpcs-note">
+                    Fíjate en que el módulo <strong>no ha dado ningún error</strong>:
+                    ha devuelto ruido tan tranquilo. Un cifrado sin autenticación
+                    no puede distinguir «clave equivocada» de «cifrado
+                    manipulado», y esa es exactamente la diferencia con AES-GCM
+                    que la tabla de abajo hace visible.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        elif exacto:
+            st.success(
+                f"**Descifrado correcto, byte a byte.** El SHA-256 de la imagen "
+                f"recuperada coincide con el que viaja en el contenedor "
+                f"(`{etapas_caos['hash_plano'][:16]}…`), y el IV de la cadena "
+                f"es {etapas_caos['iv']}."
+            )
+            st.caption(
+                "Ese hash del texto plano FILTRA información: permite confirmar "
+                "una conjetura sobre la imagen sin descifrarla. Se conserva por "
+                "su valor didáctico y está documentado como limitación conocida."
+            )
+        else:
+            st.error(
+                "**El round-trip no ha sido exacto.** Esto no debería ocurrir "
+                "nunca: es el fallo silencioso del capítulo 4 y significa que "
+                "el determinismo está roto en este entorno."
+            )
+
+        # --- Correlacion entre pixeles adyacentes -------------------------
+        st.markdown(
+            '<div class="qpcs-kicker">Correlación entre píxeles adyacentes</div>',
+            unsafe_allow_html=True,
+        )
+        col_disp, col_texto = st.columns([3, 2], gap="large")
+        with col_disp:
+            with st.container(border=True):
+                fig_corr, ejes_corr = plt.subplots(
+                    1, 2, figsize=(7.6, 3.9), sharex=True, sharey=True
+                )
+                fig_corr.patch.set_facecolor("#ffffff")
+                for ax_corr, (etiqueta, datos, color) in zip(
+                    ejes_corr,
+                    (
+                        ("original", imagen_caos, COLOR_NAVY),
+                        ("cifrada", etapas_caos["cifrada"], COLOR_TEAL),
+                    ),
+                    strict=True,
+                ):
+                    x_pares = datos[:, :-1].ravel()
+                    y_pares = datos[:, 1:].ravel()
+                    paso_pares = max(1, x_pares.size // PARES_CORRELACION)
+                    ax_corr.plot(
+                        x_pares[::paso_pares],
+                        y_pares[::paso_pares],
+                        ".",
+                        ms=1.5,
+                        alpha=0.35,
+                        color=color,
+                    )
+                    _preparar_ejes(ax_corr)
+                    ax_corr.set_xlim(0, 255)
+                    ax_corr.set_ylim(0, 255)
+                    ax_corr.set_xlabel(f"píxel (i, j) · {etiqueta}")
+                ejes_corr[0].set_ylabel("píxel adyacente (i, j+1)")
+                fig_corr.tight_layout()
+                st.pyplot(fig_corr, use_container_width=True)
+                plt.close(fig_corr)
+
+        with col_texto:
+            with st.container(border=True):
+                st.subheader("Qué se está viendo")
+                r_original = correlacion_adyacente(imagen_caos, "horizontal")
+                r_cifrada = correlacion_adyacente(etapas_caos["cifrada"], "horizontal")
+                st.metric(
+                    "Correlación horizontal",
+                    f"{r_cifrada:+.4f}",
+                    f"antes de cifrar: {r_original:+.4f}",
+                    delta_color="off",
+                )
+                st.markdown(
+                    f"""
+                    En una imagen natural cada píxel se parece muchísimo a su
+                    vecino y los puntos se agolpan sobre la diagonal. En la
+                    cifrada llenan el cuadrado.
+
+                    La tolerancia no es un 0.05 redondo: para *n* pares
+                    independientes el coeficiente muestral se distribuye como
+                    N(0, 1/√n), así que con {_entero_es(PARES_CORRELACION)} pares
+                    σ = {1 / np.sqrt(PARES_CORRELACION):.4f} y el umbral de 4σ es
+                    **{4 / np.sqrt(PARES_CORRELACION):.4f}**.
+                    """
+                )
+
+        # --- La tabla de las tres columnas --------------------------------
+        st.markdown(
+            '<div class="qpcs-kicker">Las tres columnas, sobre esta misma imagen</div>',
+            unsafe_allow_html=True,
+        )
+        with st.container(border=True):
+            st.dataframe(
+                _tabla_tres_columnas(
+                    imagen_caos, sistema_caos, x0_caos, r_caos, y0_caos, z0_caos
+                ),
+                use_container_width=True,
+            )
+            st.caption(
+                "Medido en vivo sobre la imagen que estás viendo, con las mismas "
+                "funciones para las tres columnas. NPCR y UACI se miden entre dos "
+                "cifrados independientes (dos claves separadas por 1e-15, dos "
+                "nonces de AES, dos claves del contador): es la única lectura en "
+                "la que los tres esquemas son comparables."
+            )
+
+        st.info(
+            "**Lo que se deduce de que las tres columnas salgan iguales, y es la "
+            "lección del módulo.** Las métricas estándar del cifrado caótico son "
+            "condiciones **necesarias, no suficientes**. Detectan defectos "
+            "groseros —un histograma sesgado, una permutación que no permuta, una "
+            "difusión que no propaga— y nada más. Que un esquema las pase "
+            "significa que no tiene errores obvios, no que sea seguro. El "
+            "contador trivial es `SHA256(clave ‖ contador)` usado como flujo, una "
+            "construcción que nadie defendería como cifrado serio, y las pasa "
+            "igual de bien. La seguridad de AES no viene de aprobar estos tests: "
+            "viene de veinticinco años de criptoanálisis público, de un proceso "
+            "de estandarización abierto y de argumentos de resistencia frente a "
+            "familias de ataque conocidas. Nuestro esquema no tiene nada de eso."
+        )
+
+        with st.expander("Limitaciones conocidas de este módulo"):
+            st.markdown(
+                """
+- **Sin seguridad demostrable.** No hay reducción a un problema duro ni prueba
+  en el modelo del oráculo aleatorio. Ninguna.
+- **Sin autenticación.** No hay MAC ni etiqueta: descifrar con la clave
+  equivocada devuelve ruido, nunca un error. Pruébalo con el interruptor.
+- **Determinista y sin nonce.** Cifrar dos veces la misma imagen con la misma
+  clave da exactamente el mismo resultado, y reutilizar la clave con dos
+  imágenes es tan catastrófico como reutilizar un one-time pad.
+- **NPCR y UACI frente a un cambio del *texto plano* no alcanzan sus valores
+  ideales, y no pueden.** Con la difusión XOR encadenada el esquema es afín
+  sobre GF(2): un cambio de un bit se propaga como una diferencia *constante*,
+  toda diferencia de intensidad vale 1 y eso deja UACI por debajo de 0.392 %.
+  Los valores de la tabla son los de **sensibilidad a la clave**, que sí los
+  alcanzan, y están etiquetados como lo que son.
+- **`hash_plano` filtra información.** Viaja junto al cifrado y permite
+  confirmar una conjetura sobre la imagen sin descifrarla.
+- **Ciclos de precisión finita.** Cualquier órbita en float64 es periódica; si
+  cicla antes de agotar la imagen, el keystream se repite. El módulo lo mide y
+  avisa por registro.
+- **Ataques conocidos contra esta familia**, documentados y no implementados:
+  texto plano elegido, reutilización de clave, recuperación del estado y
+  degradación por precisión finita.
+- **Alcance.** Escala de grises de 8 bits. Sin color, vídeo ni audio; sin
+  gestión de claves; sin compresión; sin GPU.
+"""
+            )
