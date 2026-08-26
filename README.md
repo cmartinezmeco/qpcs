@@ -399,12 +399,14 @@ qpcs/
 │
 ├── 📂 src/                  # Source code
 │   ├── 📂 qkd/              # Module 1 · QKD (BB84) + QRNG
-│   └── 📂 pqc/              # Module 2 · Post-Quantum Cryptography + Shor
+│   ├── 📂 pqc/              # Module 2 · Post-Quantum Cryptography + Shor
+│   └── 📂 chaos/            # Module 3 · Deterministic chaos image cipher
 │
-├── 📂 tests/                # Unit tests (pytest) — tests/qkd/, tests/pqc/
-├── 📂 scripts/              # Figure generators (make_qkd_plots, make_pqc_plots)
+├── 📂 tests/                # Unit tests (pytest) — tests/qkd/, /pqc/, /chaos/
+├── 📂 scripts/              # Figure generators, chaos benchmark & determinism harness
 ├── 📂 dashboard/            # Streamlit app (one tab per module)
 ├── 📂 docs/                 # benchmark_pqc.json, img/ (published figures), theory/
+├── 📂 vectors/              # keystream_v1.json — the module 3 determinism vector
 │
 ├── 🐳 Dockerfile            # Reproducible environment (builds liboqs)
 ├── 🐳 docker-compose.yml    # `up` → dashboard on :8501; `run test` → pytest
@@ -415,7 +417,7 @@ qpcs/
 └── 📄 README.md
 ```
 
-> Modules 3 and 4 (`src/chaos/`, particle-detector entropy) are not in the tree yet — they arrive with their own phases.
+> Module 4 (particle-detector entropy) is not in the tree yet — it arrives with its own phase.
 
 ---
 
@@ -532,7 +534,7 @@ The chain has a single source of randomness — the key — and no `np.random` a
 
 `key → orbit → keystream → permutation (index sorting) + two-pass chained XOR diffusion → ciphertext`
 
-The permutation is built by **index sorting** (`np.argsort(..., kind="stable")`) rather than by Arnold's cat map: sorting accepts non-square images and its period is the orbit's, not 192 for N = 256. The diffusion runs **forward and backward** so that a change in the *last* pixel also propagates. Encryption is sequential by nature; decryption is a single vectorized NumPy line, which is why decrypting is far cheaper than encrypting.
+The permutation is built by **index sorting** (`np.argsort(..., kind="stable")`) rather than by Arnold's cat map: sorting accepts non-square images and its period is the orbit's, not 192 for N = 256. The diffusion runs **forward and backward** so that a change in the *last* pixel also propagates. Encryption is sequential by nature; undoing it is a single vectorized NumPy line — **but that asymmetry is invisible end to end, and the measurement says so** (see [the benchmark](#-cost-where-the-time-actually-goes)): the diffusion stage is ~600× cheaper to undo than to apply, and decrypting a whole image is still only ~15 % cheaper than encrypting it, because both directions regenerate the same keystream and that is where 66 % of the time goes.
 
 #### 📊 The three columns — the point of the module
 
@@ -554,6 +556,88 @@ Every tolerance is derived, never invented: entropy against the **Miller–Madow
 
 **What follows from the three columns being identical — and it is the lesson of the module.** The standard metrics of chaotic image encryption are **necessary conditions, not sufficient ones**. They detect gross defects — a skewed histogram, a permutation that does not permute, a diffusion that does not propagate — and nothing else. That a scheme passes them means it has no obvious errors, **not that it is secure**. The third column is what makes the argument airtight: `SHA256(key || counter)` used as a stream is a construction nobody would defend as a serious cipher, and it scores just as well. AES-256-GCM's security does not come from passing these tests; it comes from twenty-five years of public cryptanalysis, an open standardization process and resistance arguments against known families of attack. Our scheme has none of that, so **it is not secure**, however good the table looks.
 
+#### 📈 Figures
+
+![Bifurcation diagram with the Lyapunov exponent below it](docs/img/chaos_bifurcacion.png)
+
+**Figure 1 — bifurcation and Lyapunov, sharing the *r* axis.** The top panel is the classic cascade: a fixed point, the first doubling at r = 3, period 4, 8, 16… and then chaos. The bottom panel is **λ(r) computed, not cited**, and the two curves line up: λ crosses zero exactly where chaos begins and dives back below it inside every periodic window. The dashed line marks r = 3.83, the period-3 window — it sits *inside* the nominal chaotic range (3.57, 4] and yet gives λ = −0.37, so the module refuses that key instead of encrypting with a three-byte keystream. This figure is why task 3.3 exists.
+
+![The chain: original, permuted, encrypted, decrypted, with their histograms](docs/img/chaos_cadena.png)
+
+**Figure 2 — the chain, with histograms.** Original → permuted → encrypted → decrypted, and underneath each one its 256-bin histogram. The point is the second column: the permuted image looks like noise **and its histogram is byte-for-byte identical to the original's** (entropy 5.4525 in both) — permutation moves pixels, it does not change their values. Only diffusion flattens the histogram (7.9971 bits/px). Neither stage would be enough on its own, which is the whole argument of Shannon's confusion/diffusion split.
+
+![Adjacent-pixel correlation, original vs encrypted](docs/img/chaos_correlacion.png)
+
+**Figure 3 — adjacent-pixel correlation.** Scatter of (x_i, x_{i+1}). In the original the points collapse onto the diagonal — a pixel looks enormously like its neighbour, r = +0.9550. In the ciphertext they fill the square, r = +0.0171, against a derived 4σ threshold of 0.0566 (σ = 1/√5000). The most convincing figure of the module, and the one that shows what "breaking the spatial correlation" actually means.
+
+![The Lorenz attractor in 3D, coloured by time](docs/img/chaos_atractor.png)
+
+**Figure 4 — the Lorenz attractor**, 30 000 RK4 steps at h = 0.01, coloured by time. It adds nothing to the cryptography and it is the one most people will look at, so it may as well be right: fixed-step RK4, the declared ranges of `LORENZ_RANGOS` respected, and the trajectory jumping between the two wings with no pattern — which is, visually, the sensitivity to initial conditions the module uses as a generator.
+
+![Encrypting and decrypting, animated](docs/img/chaos_cifrado.gif)
+
+**The GIF** — the image dissolving into noise and coming back **intact**. First half encrypts, second half decrypts; the round trip is exact byte-for-byte, and the script asserts it before writing a single frame.
+
+#### ⏱️ Cost: where the time actually goes
+
+Measured **inside the container**, `time.perf_counter`, 9 repetitions after 2 warm-ups, cyclic GC disabled during each sample — the same conventions as the module 2 benchmark. Every figure carries the σ of its own sample.
+
+| Stage of one 256×256 encryption | Mean (ms) | σ (ms) | Share |
+|---|---:|---:|---:|
+| Keystream, 2M+2 bytes (Python loop over the map) | 38.46 | 1.44 | 49.3 % |
+| Orbit for the permutation (same recipe, float64 kept) | 13.32 | 0.30 | 17.1 % |
+| Stable `argsort` | 6.28 | 0.25 | 8.0 % |
+| **Diffusion, forward — sequential loop** | **6.03** | **0.31** | 7.7 % |
+| **Undoing diffusion — one vectorized line** | **0.01** | **0.00** | 0.0 % |
+
+| Whole image | Encrypt (ms) | Decrypt (ms) | Ratio |
+|---|---:|---:|---:|
+| 128×128 · logistic | 26.25 | 23.35 | 1.12× |
+| 256×256 · logistic | 75.61 | 66.28 | 1.14× |
+| 512×512 · logistic | 296.30 | 252.54 | 1.17× |
+| 64×64 · Lorenz | 257.79 | 254.88 | 1.01× |
+
+**Two honest corrections to what the design predicted.** First, the guide expects decryption to come out one or two orders of magnitude faster than encryption. At **stage** level that is exactly right — 6.03 ms against 0.01 ms, ~600× — but end to end it collapses to ~1.15×, because both directions regenerate the same keystream and that dominates. Publishing the stage ratio as if it were the end-to-end one would have been a nice number and a false one. Second, the bottleneck is **not** the sequential diffusion loop the guide points at: it is orbit generation — **66 %** of one encryption, and the whole of the keystream path. (Both percentages here are shares of the same thing, one complete encryption; the stages listed above do not add up to 100 % because the XOR, the reshapes, the SHA-256 and the λ validation are not stages of their own.)
+
+**The Numba decision, taken after measuring and not before.** `numba` has been declared in `requirements.txt` since phase 1 with **zero** imports anywhere in the repo. The rule for this module was "NumPy first, Numba only after measuring", so: the diffusion loop — the only place the guide suggests compiling — is **15 %** of one encryption (both passes), so compiling it away perfectly would buy at most that. The 66 % that would actually pay is the orbit, which is precisely the keystream path, and that is where `fastmath` reassociation or a fused multiply-add changes the last bit of the mantissa and destroys the orbit within ~50 iterations. **Verdict: the pipeline stays in NumPy and `numba` is not used.** Removing it from `requirements.txt` is deliberately *not* done here: its pin is part of what currently holds `numpy==1.26.4`, the version the published benchmark was measured with, so that goes in its own PR — as the comment in `requirements.txt` already says.
+
+```bash
+docker run --rm -v "$PWD":/app qpcs python scripts/bench_chaos.py           # stages + chain
+docker run --rm -v "$PWD":/app qpcs python scripts/bench_chaos.py --ciclos  # + cycle length
+```
+
+#### 🔁 Determinism, cycle length and regenerating the figures
+
+**The determinism harness.** The module's one catastrophic failure mode is silent: if an orbit comes out different in another environment, decryption returns noise — which is exactly what a *correct* decryption of someone else's ciphertext also returns. There is no exception to catch. So it is checked, in CI, on every PR:
+
+```bash
+python scripts/check_chaos_determinism.py            # contrast against the committed vector
+python scripts/check_chaos_determinism.py --json     # digests only, for diffing environments
+```
+
+It regenerates the keystream from `vectors/keystream_v1.json`, checks the **contract constants** inside the vector still match `types.py`, and fingerprints the **whole cipher chain** for both dynamical systems — which the vector alone does not cover, since the keystream can be untouched while the diffusion order or the keystream slicing changes underneath. Verified local venv vs container, byte-identical:
+
+| Fingerprint | SHA-256 | |
+|---|---|---|
+| keystream, 10⁶ bytes | `e631fba8b44617b1…` | identical |
+| chaotic ciphertext, 128×97 | `26a75b6524740575…` (iv 253) | identical |
+| Lorenz ciphertext, 32×32 | `2128c4024d3d201c…` (iv 31) | identical |
+
+**Cycle length, measured and published rather than ignored.** Any float64 orbit is eventually periodic — the state space is finite — and if it cycles before the image is exhausted the keystream repeats and the scheme falls to key reuse against itself. Practically no paper in this field measures it. Nine keys (x₀ from 0.1 to 0.9, r = 3.99), four million orbit steps each: **none of them cycles**. All four million states are distinct in every run, so the published result is a *lower bound* — no cycle shorter than 4 × 10⁶ steps, i.e. 1.33 × 10⁶ keystream bytes, enough for any image up to ≈ 666 000 pixels (816×816) — and not an invented distribution. The detection is exact and cheap: two identical float64 states have identical futures, so the orbit cycles within a stretch **iff** that stretch repeats a value. And the module does not just measure it offline — `keystream_logistico`/`keystream_lorenz` emit a `logging.WARNING` when the orbit they just generated cycles, pinned by `test_el_modulo_avisa_si_la_orbita_cicla`.
+
+**The figures.** All four PNGs and the GIF regenerate with one command, and CI verifies their MD5 inside the image on every PR, exactly like the figures of modules 1 and 2:
+
+```bash
+docker run --rm -v "$PWD":/app --user "$(id -u):$(id -g)" -e MPLCONFIGDIR=/tmp/mpl \
+  qpcs python scripts/make_chaos_plots.py
+```
+
+Here that check is stronger than for the other two modules: these figures come out of a cipher that is deterministic *by contract*, so a PNG whose MD5 moves is not a drawing detail — it is a symptom that the chain stopped producing the same bytes.
+
+#### 🖥️ The dashboard tab
+
+`docker compose up` → third tab, **Módulo 3 · Caos determinista**. Pick the system (logistic or Lorenz), move x₀ and r, encrypt the generated test image or one of your own, and flip *"descifrar con la clave equivocada"* to see what a 10⁻¹⁵ change in x₀ does. The λ traffic light is computed live from your key: set r = 3.83 and the module refuses to encrypt, with the exponent and the reason in the message. The three-column table is measured on whatever image you are looking at.
+
 #### ⚠️ Known limitations
 
 Written in full, not trimmed:
@@ -563,11 +647,11 @@ Written in full, not trimmed:
 - **Deterministic, no nonce.** Encrypting the same image twice with the same key gives byte-identical output. Reusing a key across two images is as catastrophic as reusing a one-time pad: XOR-ing the two ciphertexts cancels the keystream entirely and leaves a function of the two plaintexts alone. Both facts are pinned by tests rather than merely described (`test_dos_cifrados_de_lo_mismo_son_IGUALES`, `test_la_reutilizacion_de_clave_filtra_la_estructura`).
 - **NPCR/UACI against a *plaintext* change do not reach their ideal values, and cannot.** Measured and derived, not glossed over: with the specified XOR-chained diffusion the whole scheme is affine over GF(2), so a one-bit change in the plaintext propagates as a *constant* XOR delta. Every intensity difference is then exactly 1, which caps UACI at 0.392 % — against the 33.4635 % of the closing criterion — and leaves NPCR dependent on where the touched pixel lands in the permuted order (anywhere from 0 % to 100 %, ≈50 % on average) instead of pinned at 99.6 %. Reaching the ideal figures requires the diffusion to mix **two different group operations** (modular addition and XOR); that is a change of scheme and a team decision, not a tolerance tweak. The exact prediction is asserted against the implementation in `test_avalancha_ante_un_cambio_en_el_plano`, and the cap in `test_uaci_diferencial_esta_acotada_por_la_linealidad_del_XOR`.
 - **`hash_plano` leaks.** The container ships the SHA-256 of the *plaintext* so that round-trip tests and the dashboard can verify a decryption. It also lets an attacker confirm a guess about the image without decrypting it. Kept for its pedagogical value, documented here.
-- **Finite-precision cycles.** Any float64 orbit is eventually periodic; if it cycles before the image is exhausted, the keystream repeats.
+- **Finite-precision cycles.** Any float64 orbit is eventually periodic; if it cycles before the image is exhausted, the keystream repeats. Measured over nine keys and published above — none cycles within 4 × 10⁶ steps — and the module emits a `logging.WARNING` when the orbit it just generated does cycle, instead of encrypting quietly with a repeating stream.
 - **Four known attacks against this family**, documented and not implemented: *chosen plaintext* (the keystream does not depend on the plaintext, so encrypting an all-zero image reveals it — this is the one that sinks the family), *key reuse*, *state recovery* from enough observed output (a low-dimensional smooth map is not designed to resist it, unlike a real stream cipher), and *degradation by finite precision*.
 - **Scope.** 8-bit greyscale only. No colour, video or audio; no key management; no compression; no GPU.
 
-Verified by [`tests/chaos/`](tests/chaos/): the round trip is exact byte-for-byte across six shapes including 1×50, 50×1, 100×37 and 3×3, and the ciphertext is identical bit-for-bit in the local venv and inside the container for both dynamical systems.
+Verified by [`tests/chaos/`](tests/chaos/) — 141 tests in the fast suite, plus two heavy physics checks that run on pushes to `main` (the full Lorenz Lyapunov spectrum and Floyd's cycle search over two million steps). The round trip is exact byte-for-byte across six shapes including 1×50, 50×1, 100×37 and 3×3; the ciphertext is identical bit-for-bit in the local venv and inside the container for both dynamical systems; and two rules that the guide left as "PR review criteria" — no transcendental functions anywhere on the keystream path, no `np.random` in the encryption path — are now checked by walking the AST of every file in that path rather than by remembering to look.
 
 ### ⚛️ Module 4 *(optional)* — Particle detector noise
 
