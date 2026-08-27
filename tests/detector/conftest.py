@@ -8,11 +8,11 @@ desarrollarse en paralelo desde el primer dia.
 Semilla fija siempre, nunca np.random.default_rng() a pelo (regla
 heredada de la Fase 1).
 """
+
 from __future__ import annotations
 
 import numpy as np
 import pytest
-
 
 SEMILLA = 42
 
