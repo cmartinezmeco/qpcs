@@ -7,7 +7,8 @@ por un factor K (numero de tramos) a cambio de resolucion en frecuencia.
 """
 
 from __future__ import annotations
-
+import numpy as np
+from scipy import signal
 from .types import Espectro, Senal
 
 
@@ -34,7 +35,9 @@ def densidad_espectral(
         espectral, y K para poder reportar el error relativo.
     """
 
-    freqs, psd = signal.welch(
-        senal, fs=fs, nperseg=nperseg
-    )  # Aplicamos Welch a la senal centrada
-    return freqs, psd, nperseg
+    freqs, psd = signal.welch(senal, fs=fs, nperseg=nperseg)
+    return (
+        np.asarray(freqs, dtype=np.float64),
+        np.asarray(psd, dtype=np.float64),
+        int(nperseg),
+    )
