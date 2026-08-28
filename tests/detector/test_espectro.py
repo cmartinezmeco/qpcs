@@ -1,4 +1,5 @@
 import numpy as np
+from detector.espectro import densidad_espectral
 
 
 def test_ruido_blanco_da_espectro_plano(rng):
@@ -11,11 +12,13 @@ def test_ruido_blanco_da_espectro_plano(rng):
 
     freqs, psd, _ = densidad_espectral(senal, fs, nperseg)
 
-    # El espectro de ruido blanco normalizado con varianza 1 tiene una PSD teórica esperada
-    # Comprobamos que la media y la fluctuación se ajustan al error estadístico del método de Welch
+    # El espectro de ruido blanco normalizado con varianza 1 tiene una
+    # PSD teorica esperada. Comprobamos que la media y la fluctuacion
+    # se ajustan al error estadistico del metodo de Welch.
     media_psd = np.mean(psd)
-    # La desviación estándar relativa en el método de Welch escala aproximadamente con 1/sqrt(K)
-    # donde K es el número de segmentos promediados.
+    # La desviacion estandar relativa en el metodo de Welch escala
+    # aproximadamente con 1/sqrt(K), donde K es el numero de segmentos
+    # promediados.
     # Aquí validamos que los valores no se desvíen de forma anómala.
     assert np.all(psd > 0)
     assert (
@@ -60,18 +63,19 @@ def test_parseval(rng):
         2.0, 3.5, 10000
     )  # Media 2.0, desviación 3.5 -> Varianza ~ 3.5^2 = 12.25
 
-    varianza_senal = np.var(senal)
-
     freqs, psd, _ = densidad_espectral(senal, fs, nperseg)
 
-    # La integral de la PSD (aproximada por la suma multiplicada por el espaciado en frecuencia)
-    # equivale a la potencia de la señal alterna (varianza si la media es restada, o potencia total)
+    # La integral de la PSD (aproximada por la suma multiplicada por
+    # el espaciado en frecuencia) equivale a la potencia de la senal
+    # alterna (varianza si la media es restada, o potencia total).
     df = freqs[1] - freqs[0]
-    # En scipy.signal.welch con escalado 'density', la suma de la PSD * df aproxima la varianza (si se quita la componente DC)
+    # En scipy.signal.welch con escalado 'density', la suma de la
+    # PSD * df aproxima la varianza (si se quita la componente DC).
     senal_centrada = senal - np.mean(senal)
     varianza_teorica = np.var(senal_centrada)
 
     potencia_espectral = np.sum(psd) * df
 
-    # Comprobación de que la potencia del espectro coincide estrechamente con la varianza
+    # Comprobacion de que la potencia del espectro coincide
+    # estrechamente con la varianza
     np.testing.assert_allclose(potencia_espectral, varianza_teorica, rtol=0.1)

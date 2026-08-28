@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 from scipy import signal, stats
+
 from .types import Espectro, Senal, TipoRuido
 
 
@@ -131,8 +132,8 @@ def identificar_tipo_dominante(alfa: float, fano: float) -> TipoRuido:
     (las interferencias se detectan aparte, con detectar_picos)
     """
     if alfa > 0.2:
-        return "flicker"  # type: ignore[return-value]
+        return "flicker"
     elif abs(fano - 1.0) < 0.2:
-        return "disparo"  # type: ignore[return-value]
+        return "disparo"
     else:
-        return "termico"  # type: ignore[return-value]
+        return "termico"

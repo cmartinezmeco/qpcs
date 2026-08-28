@@ -7,8 +7,10 @@ por un factor K (numero de tramos) a cambio de resolucion en frecuencia.
 """
 
 from __future__ import annotations
+
 import numpy as np
 from scipy import signal
+
 from .types import Espectro, Senal
 
 

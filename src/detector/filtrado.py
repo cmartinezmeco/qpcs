@@ -10,8 +10,10 @@ hay un test obligatorio: filtrar ruido blanco tiene que dejarlo blanco.
 from __future__ import annotations
 
 from typing import Any
+
 import numpy as np
 from scipy import signal
+
 from .types import Espectro, Senal
 
 
@@ -43,7 +45,16 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
         return datos
 
     nyq = fs / 2.0
-    cutoff_hp = max(0.5, fs / 1000.0)
+    # Corte del paso alto: 0.1% de fs, con un minimo de 0.5 Hz y un
+    # maximo de 5 Hz. Antes era fs/1000 sin tope, que con fs=40000 (la
+    # senal sintetica) daba un corte de 40 Hz, demasiado cerca del pico
+    # de interferencia de 50 Hz: el paso alto ya atenuaba parte de esa
+    # zona antes de que actuara el notch, y ademas se comia mas del 5%
+    # permitido de la potencia fuera de la banda del pico. Con un tope
+    # de 5 Hz el corte queda mas de una decada por debajo de cualquier
+    # interferencia tipica (50 Hz de red), donde el Butterworth de
+    # orden 2 apenas atenua.
+    cutoff_hp = min(max(0.5, fs / 1000.0), 5.0)
     if cutoff_hp < nyq:
         b_hp, a_hp = signal.butter(2, cutoff_hp / nyq, btype="high")
         filtrado_hp = signal.filtfilt(b_hp, a_hp, datos)

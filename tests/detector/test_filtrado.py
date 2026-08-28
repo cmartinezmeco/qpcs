@@ -1,3 +1,8 @@
+import numpy as np
+from detector.filtrado import filtrar
+from scipy import signal
+
+
 def test_el_filtro_no_ensucia_ruido_blanco(rng):
     """EL test de esta tarea. Ruido blanco filtrado sigue siendo blanco:
     su autocorrelacion a desplazamiento 1 tiene que quedar dentro de
@@ -24,16 +29,23 @@ def test_el_filtro_no_ensucia_ruido_blanco(rng):
 
 def test_el_pico_desaparece(senal_sintetica):
     """La potencia en 50 Hz tras filtrar cae al menos un factor 100."""
-    fs = senal_sintetica.get("fs", 1000.0)
-    datos = senal_sintetica.get("datos", senal_sintetica)
-
-    # Asumimos que sabemos que hay un pico en 50 Hz en la señal sintética
-    picos_hz = (50.0,)
+    # senal_sintetica es (senal, verdad), no un dict: la fixture de la
+    # tarea 4.1 fija fs=40_000.0 dentro de la propia funcion, no como
+    # clave de verdad. picos_hz sale de verdad["pico_hz"].
+    datos, verdad = senal_sintetica
+    fs = 40_000.0
+    picos_hz = (verdad["pico_hz"],)
 
     # Medir la potencia en 50 Hz antes de filtrar
-    nperseg = 1024
+    # nperseg=1024 daba df=39 Hz, mas ancho que la banda que este test
+    # intenta medir: el bin "mas cercano a 50 Hz" en realidad caia a
+    # decenas de Hz de distancia real, y arrastraba potencia del propio
+    # pico por fuga espectral. Con nperseg=16384, df~2.4 Hz, suficiente
+    # para aislar el pico sin comerse resolucion excesiva (siguen
+    # saliendo >60 tramos de Welch con la senal de 2**20 muestras).
+    nperseg = 16384
     freqs, psd_antes = signal.welch(datos, fs=fs, nperseg=nperseg)
-    idx_50 = np.argmin(np.abs(freqs - 50.0))
+    idx_50 = np.argmin(np.abs(freqs - verdad["pico_hz"]))
     potencia_antes = psd_antes[idx_50]
 
     # Filtrar
@@ -51,18 +63,24 @@ def test_el_resto_del_espectro_sobrevive(senal_sintetica):
     mas de un 5%. Sin este test, un filtro que lo borrara todo pasaria
     el de arriba con nota.
     """
-    fs = senal_sintetica.get("fs", 1000.0)
-    datos = senal_sintetica.get("datos", senal_sintetica)
-    picos_hz = (50.0,)
+    datos, verdad = senal_sintetica
+    fs = 40_000.0
+    picos_hz = (verdad["pico_hz"],)
 
-    nperseg = 1024
+    # nperseg=1024 daba df=39 Hz, mas ancho que la banda que este test
+    # intenta medir: el bin "mas cercano a 50 Hz" en realidad caia a
+    # decenas de Hz de distancia real, y arrastraba potencia del propio
+    # pico por fuga espectral. Con nperseg=16384, df~2.4 Hz, suficiente
+    # para aislar el pico sin comerse resolucion excesiva (siguen
+    # saliendo >60 tramos de Welch con la senal de 2**20 muestras).
+    nperseg = 16384
     freqs, psd_antes = signal.welch(datos, fs=fs, nperseg=nperseg)
 
     senal_filtrada = filtrar(datos, fs, picos_hz)
     _, psd_despues = signal.welch(senal_filtrada, fs=fs, nperseg=nperseg)
 
-    # Excluir la zona cercana al pico de 50 Hz (por ejemplo, banda de ±3 Hz)
-    mascara_fuera = np.abs(freqs - 50.0) > 3.0
+    # Excluir la zona cercana al pico (banda de +-3 Hz)
+    mascara_fuera = np.abs(freqs - verdad["pico_hz"]) > 3.0
 
     psd_antes_fuera = np.mean(psd_antes[mascara_fuera])
     psd_despues_fuera = np.mean(psd_despues[mascara_fuera])
@@ -77,9 +95,9 @@ def test_la_varianza_baja_pero_no_se_desploma(senal_sintetica):
     mas de un orden de magnitud, se esta llevando tambien el ruido
     fundamental.
     """
-    fs = senal_sintetica.get("fs", 1000.0)
-    datos = senal_sintetica.get("datos", senal_sintetica)
-    picos_hz = (50.0,)
+    datos, verdad = senal_sintetica
+    fs = 40_000.0
+    picos_hz = (verdad["pico_hz"],)
 
     var_antes = np.var(datos)
     senal_filtrada = filtrar(datos, fs, picos_hz)
