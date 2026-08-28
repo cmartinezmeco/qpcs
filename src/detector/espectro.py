@@ -34,5 +34,7 @@ def densidad_espectral(
         espectral, y K para poder reportar el error relativo.
     """
 
-    freqs, psd = signal.welch(senal, fs=fs, nperseg=nperseg) # Aplicamos Welch a la senal centrada
+    freqs, psd = signal.welch(
+        senal, fs=fs, nperseg=nperseg
+    )  # Aplicamos Welch a la senal centrada
     return freqs, psd, nperseg
