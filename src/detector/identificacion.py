@@ -42,7 +42,7 @@ def ajustar_alfa(
     mascara_rango = (f >= f_min) & (f <= f_max) & (f > 0) & (psd > 0)
     f_sub = f[mascara_rango]
     psd_sub = psd[mascara_rango]
-    
+
     if len(f_sub) < 3:
         return 0.0, 0.0
 
@@ -50,7 +50,7 @@ def ajustar_alfa(
     mascara_picos = psd_sub <= 3.0 * fondo_local
     f_clean = f_sub[mascara_picos]
     psd_clean = psd_sub[mascara_picos]
-    
+
     if len(f_clean) < 3:
         f_clean, psd_clean = f_sub, psd_sub
 
@@ -75,18 +75,18 @@ def detectar_picos(f: Espectro, psd: Espectro, umbral: float) -> tuple[float, ..
 
     if len(f) == 0 or len(psd) == 0:
         return tuple()
-        
+
     kernel_size = min(31, len(psd) if len(psd) % 2 != 0 else len(psd) - 1)
     if kernel_size < 3:
         kernel_size = 3
-        
+
     fondo_local = signal.medfilt(psd, kernel_size=kernel_size)
     picos_mask = psd > (umbral * fondo_local)
-    
+
     picos_freqs: list[float] = []
     en_pico = False
     pico_actual_max_idx = -1
-    
+
     for i, es_pico in enumerate(picos_mask):
         if es_pico:
             if not en_pico:
@@ -99,10 +99,10 @@ def detectar_picos(f: Espectro, psd: Espectro, umbral: float) -> tuple[float, ..
             if en_pico:
                 picos_freqs.append(float(f[pico_actual_max_idx]))
                 en_pico = False
-                
+
     if en_pico:
         picos_freqs.append(float(f[pico_actual_max_idx]))
-        
+
     return tuple(picos_freqs)
 
 
