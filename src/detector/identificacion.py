@@ -9,6 +9,9 @@ Cada tipo tiene una firma distinta (guia Fase 4, cap. 3.4):
 
 from __future__ import annotations
 
+import numpy as np
+from scipy import signal, stats
+
 from .types import Espectro, Senal, TipoRuido
 
 
@@ -36,7 +39,24 @@ def ajustar_alfa(
     Returns:
         (alfa, error_estandar_de_alfa).
     """
-    raise NotImplementedError
+    f_min, f_max = rango
+    mascara_rango = (f >= f_min) & (f <= f_max) & (f > 0) & (psd > 0)
+    f_sub = f[mascara_rango]
+    psd_sub = psd[mascara_rango]
+
+    if len(f_sub) < 3:
+        return 0.0, 0.0
+
+    fondo_local = signal.medfilt(psd_sub, kernel_size=11)
+    mascara_picos = psd_sub <= 3.0 * fondo_local
+    f_clean = f_sub[mascara_picos]
+    psd_clean = psd_sub[mascara_picos]
+
+    if len(f_clean) < 3:
+        f_clean, psd_clean = f_sub, psd_sub
+
+    slope, _, _, _, stderr = stats.linregress(np.log(f_clean), np.log(psd_clean))
+    return float(-slope), float(stderr)
 
 
 def detectar_picos(f: Espectro, psd: Espectro, umbral: float) -> tuple[float, ...]:
@@ -53,7 +73,37 @@ def detectar_picos(f: Espectro, psd: Espectro, umbral: float) -> tuple[float, ..
     Returns:
         Las frecuencias de los picos detectados, en Hz.
     """
-    raise NotImplementedError
+    if len(f) == 0 or len(psd) == 0:
+        return tuple()
+
+    kernel_size = min(31, len(psd) if len(psd) % 2 != 0 else len(psd) - 1)
+    if kernel_size < 3:
+        kernel_size = 3
+
+    fondo_local = signal.medfilt(psd, kernel_size=kernel_size)
+    picos_mask = psd > (umbral * fondo_local)
+
+    picos_freqs: list[float] = []
+    en_pico = False
+    pico_actual_max_idx = -1
+
+    for i, es_pico in enumerate(picos_mask):
+        if es_pico:
+            if not en_pico:
+                en_pico = True
+                pico_actual_max_idx = i
+            else:
+                if psd[i] > psd[pico_actual_max_idx]:
+                    pico_actual_max_idx = i
+        else:
+            if en_pico:
+                picos_freqs.append(float(f[pico_actual_max_idx]))
+                en_pico = False
+
+    if en_pico:
+        picos_freqs.append(float(f[pico_actual_max_idx]))
+
+    return tuple(picos_freqs)
 
 
 def factor_fano(senal: Senal) -> float:
@@ -64,7 +114,13 @@ def factor_fano(senal: Senal) -> float:
     (guia Fase 4, cap. 3.2.1). Se calcula sobre la senal CON su pedestal,
     no sobre la version centrada: la media es el propio denominador.
     """
-    raise NotImplementedError
+    if len(senal) == 0:
+        return 0.0
+    media = np.mean(senal)
+    if media == 0:
+        return 0.0
+    varianza = np.var(senal, ddof=1)
+    return float(varianza / media)
 
 
 def identificar_tipo_dominante(alfa: float, fano: float) -> TipoRuido:
@@ -75,4 +131,9 @@ def identificar_tipo_dominante(alfa: float, fano: float) -> TipoRuido:
     alfa apreciablemente > 0 -> flicker.
     (las interferencias se detectan aparte, con detectar_picos)
     """
-    raise NotImplementedError
+    if alfa > 0.2:
+        return "flicker"
+    elif abs(fano - 1.0) < 0.2:
+        return "disparo"
+    else:
+        return "termico"

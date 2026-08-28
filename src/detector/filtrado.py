@@ -9,6 +9,11 @@ hay un test obligatorio: filtrar ruido blanco tiene que dejarlo blanco.
 
 from __future__ import annotations
 
+from typing import Any
+
+import numpy as np
+from scipy import signal
+
 from .types import Espectro, Senal
 
 
@@ -17,7 +22,13 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
 
     Filtros de fase cero (filtfilt): se aplica hacia adelante y hacia
     atras, de modo que el desfase que introduce en un sentido se cancela
-    en el otro.
+    en el otro. Importa porque un desfase dependiente de la
+    frecuencia deformaria la senal de una manera que el espectro no ve
+    pero el factor de Fano si.
+
+    OJO (guia Fase 4, cap. 6.5): un filtro tiene memoria y por tanto
+    INTRODUCE correlacion. El orden se mantiene bajo a proposito, y hay
+    un test que comprueba que filtrar ruido blanco lo deja blanco.
 
     Args:
         senal: la senal cruda.
@@ -28,4 +39,33 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
     Returns:
         La senal filtrada, en float64 (ya no son cuentas ADC enteras).
     """
-    raise NotImplementedError
+    datos: np.ndarray[Any, Any] = np.asarray(senal, dtype=np.float64)
+
+    if len(datos) == 0:
+        return datos
+
+    nyq = fs / 2.0
+    # Corte del paso alto: 0.1% de fs, con un minimo de 0.5 Hz y un
+    # maximo de 5 Hz. Antes era fs/1000 sin tope, que con fs=40000 (la
+    # senal sintetica) daba un corte de 40 Hz, demasiado cerca del pico
+    # de interferencia de 50 Hz: el paso alto ya atenuaba parte de esa
+    # zona antes de que actuara el notch, y ademas se comia mas del 5%
+    # permitido de la potencia fuera de la banda del pico. Con un tope
+    # de 5 Hz el corte queda mas de una decada por debajo de cualquier
+    # interferencia tipica (50 Hz de red), donde el Butterworth de
+    # orden 2 apenas atenua.
+    cutoff_hp = min(max(0.5, fs / 1000.0), 5.0)
+    if cutoff_hp < nyq:
+        b_hp, a_hp = signal.butter(2, cutoff_hp / nyq, btype="high")
+        filtrado_hp = signal.filtfilt(b_hp, a_hp, datos)
+        datos = np.asarray(filtrado_hp, dtype=np.float64)
+
+    for pico in picos_hz:
+        if 0 < pico < nyq:
+            w0 = pico / nyq
+            Q = 30.0
+            b_notch, a_notch = signal.iirnotch(w0, Q)
+            filtrado_notch = signal.filtfilt(b_notch, a_notch, datos)
+            datos = np.asarray(filtrado_notch, dtype=np.float64)
+
+    return datos

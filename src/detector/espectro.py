@@ -8,6 +8,9 @@ por un factor K (numero de tramos) a cambio de resolucion en frecuencia.
 
 from __future__ import annotations
 
+import numpy as np
+from scipy import signal
+
 from .types import Espectro, Senal
 
 
@@ -22,7 +25,7 @@ def densidad_espectral(
 
     Con N muestras y tramos de longitud nperseg al 50% de solapamiento,
     K ~ 2N/nperseg - 1 tramos, y el error relativo de cada punto de la
-    PSD es ~1/sqrt(K).
+    PSD es ~1/sqrt(K). Con N = 2^20 y L = 4096: K ~ 511, error ~4.4%.
 
     Args:
         senal: la senal cruda, con su pedestal.
@@ -33,4 +36,10 @@ def densidad_espectral(
         (frecuencias, psd, n_tramos): frecuencias en Hz, la densidad
         espectral, y K para poder reportar el error relativo.
     """
-    raise NotImplementedError
+
+    freqs, psd = signal.welch(senal, fs=fs, nperseg=nperseg)
+    return (
+        np.asarray(freqs, dtype=np.float64),
+        np.asarray(psd, dtype=np.float64),
+        int(nperseg),
+    )
