@@ -37,7 +37,7 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
 
     # Convertir a float64 obligatoriamente
     datos = np.asarray(senal, dtype=np.float64)
-    
+
     if len(datos) == 0:
         return datos
 
@@ -47,7 +47,7 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
     # Se elige un corte muy bajo (ej. 1.0 Hz o adaptativo) para afectar lo menos posible al espectro útil
     cutoff_hp = max(0.5, fs / 1000.0)
     if cutoff_hp < nyq:
-        b_hp, a_hp = signal.butter(2, cutoff_hp / nyq, btype='high')
+        b_hp, a_hp = signal.butter(2, cutoff_hp / nyq, btype="high")
         datos = signal.filtfilt(b_hp, a_hp, datos)
 
     # 2. Filtros notch sucesivos para cada frecuencia de interferencia detectada
