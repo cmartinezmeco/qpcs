@@ -1,6 +1,7 @@
 import numpy as np
-from detector.filtrado import filtrar
 from scipy import signal
+
+from detector.filtrado import filtrar
 
 
 def test_el_filtro_no_ensucia_ruido_blanco(rng):

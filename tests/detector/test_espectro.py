@@ -1,4 +1,5 @@
 import numpy as np
+
 from detector.espectro import densidad_espectral
 
 
@@ -19,11 +20,10 @@ def test_ruido_blanco_da_espectro_plano(rng):
     # La desviacion estandar relativa en el metodo de Welch escala
     # aproximadamente con 1/sqrt(K), donde K es el numero de segmentos
     # promediados.
-    # Aquí validamos que los valores no se desvíen de forma anómala.
     assert np.all(psd > 0)
     assert (
         abs(np.std(psd) / media_psd - 1.0 / np.sqrt(len(psd))) < 0.5
-    )  # Comprobación de estabilidad estadística
+    )
 
 
 def test_el_pico_aparece_donde_se_puso():
@@ -41,14 +41,12 @@ def test_el_pico_aparece_donde_se_puso():
 
     freqs, psd, _ = densidad_espectral(senal, fs, nperseg)
 
-    # Excluimos la zona de baja frecuencia (DC) para buscar el pico real
     idx_valido = freqs > 5.0
     freqs_validas = freqs[idx_valido]
     psd_validas = psd[idx_valido]
 
     pico_freq = freqs_validas[np.argmax(psd_validas)]
 
-    # El pico debe estar en 50 Hz con una tolerancia de +- df
     assert abs(pico_freq - f_seno) <= df
 
 
@@ -59,23 +57,13 @@ def test_parseval(rng):
     """
     fs = 1000.0
     nperseg = 256
-    senal = rng.normal(
-        2.0, 3.5, 10000
-    )  # Media 2.0, desviación 3.5 -> Varianza ~ 3.5^2 = 12.25
+    senal = rng.normal(2.0, 3.5, 10000)
 
     freqs, psd, _ = densidad_espectral(senal, fs, nperseg)
 
-    # La integral de la PSD (aproximada por la suma multiplicada por
-    # el espaciado en frecuencia) equivale a la potencia de la senal
-    # alterna (varianza si la media es restada, o potencia total).
     df = freqs[1] - freqs[0]
-    # En scipy.signal.welch con escalado 'density', la suma de la
-    # PSD * df aproxima la varianza (si se quita la componente DC).
     senal_centrada = senal - np.mean(senal)
     varianza_teorica = np.var(senal_centrada)
-
     potencia_espectral = np.sum(psd) * df
 
-    # Comprobacion de que la potencia del espectro coincide
-    # estrechamente con la varianza
     np.testing.assert_allclose(potencia_espectral, varianza_teorica, rtol=0.1)
