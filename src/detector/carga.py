@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
+
 from .types import Senal
 
 
@@ -17,19 +19,38 @@ def cargar_muestra(
 ) -> tuple[Senal, float]:
     """Carga el subconjunto versionado de la senal de ruido.
 
+    El subconjunto es nPFCands (numero de candidatos de Particle Flow por
+    evento) de un fichero del dataset publico CMS ZeroBias en formato
+    NanoAOD (record 31316 del CERN Open Data Portal). NO es una lectura
+    directa de un ADC: ver data/FUENTE.md para la justificacion completa
+    de por que esta variable, que otras 4 colecciones se probaron primero
+    y fallaron (limitaciones de uproot frente a clases custom de CMSSW),
+    y por que fs=1000.0 es una convencion y no una medida fisica.
+
     Args:
-        ruta: fichero .npz con el array de la senal y la frecuencia de
-            muestreo. Por defecto, el subconjunto del repositorio.
+        ruta: fichero .npz con las claves 'senal' (int32) y 'fs' (float64).
+            Por defecto, el subconjunto del repositorio.
 
     Returns:
-        (senal, fs): la senal en cuentas ADC (int32) y la frecuencia de
-        muestreo en Hz.
+        (senal, fs): la senal en cuentas (int32, aqui numero de candidatos
+        por evento) y la frecuencia de muestreo nominal en Hz.
 
     Raises:
-        FileNotFoundError: con un mensaje que dice como obtener los
-            datos, no solo que faltan.
+        FileNotFoundError: con un mensaje que dice como obtener los datos
+            si el fichero no esta (ver data/FUENTE.md).
     """
-    raise NotImplementedError
+    ruta = Path(ruta)
+    if not ruta.exists():
+        raise FileNotFoundError(
+            f"No se encuentra {ruta}. El subconjunto de datos deberia estar "
+            f"versionado en el repositorio; si falta, ver data/FUENTE.md "
+            f"para el procedimiento completo de regeneracion desde "
+            f"opendata.cern.ch/record/31316."
+        )
+    datos = np.load(ruta)
+    senal = datos["senal"].astype(np.int32)
+    fs = float(datos["fs"])
+    return senal, fs
 
 
 def senal_de_prueba(
