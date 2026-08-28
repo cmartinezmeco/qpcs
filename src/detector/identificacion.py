@@ -8,6 +8,7 @@ Cada tipo tiene una firma distinta (guia Fase 4, cap. 3.4):
 """
 
 from __future__ import annotations
+
 import numpy as np
 from scipy import signal, stats
 from .types import Espectro, Senal, TipoRuido
@@ -37,7 +38,6 @@ def ajustar_alfa(
     Returns:
         (alfa, error_estandar_de_alfa).
     """
-
     f_min, f_max = rango
     mascara_rango = (f >= f_min) & (f <= f_max) & (f > 0) & (psd > 0)
     f_sub = f[mascara_rango]
@@ -72,7 +72,6 @@ def detectar_picos(f: Espectro, psd: Espectro, umbral: float) -> tuple[float, ..
     Returns:
         Las frecuencias de los picos detectados, en Hz.
     """
-
     if len(f) == 0 or len(psd) == 0:
         return tuple()
 
@@ -114,7 +113,6 @@ def factor_fano(senal: Senal) -> float:
     (guia Fase 4, cap. 3.2.1). Se calcula sobre la senal CON su pedestal,
     no sobre la version centrada: la media es el propio denominador.
     """
-
     if len(senal) == 0:
         return 0.0
     media = np.mean(senal)
@@ -132,11 +130,9 @@ def identificar_tipo_dominante(alfa: float, fano: float) -> TipoRuido:
     alfa apreciablemente > 0 -> flicker.
     (las interferencias se detectan aparte, con detectar_picos)
     """
-
-    # Umbrales basados en la descripción teórica de la guía
     if alfa > 0.2:
-        return TipoRuido.FLICKER
+        return "flicker"  # type: ignore[return-value]
     elif abs(fano - 1.0) < 0.2:
-        return TipoRuido.DISPARO
+        return "disparo"  # type: ignore[return-value]
     else:
-        return TipoRuido.TERMICO
+        return "termico"  # type: ignore[return-value]

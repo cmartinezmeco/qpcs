@@ -8,6 +8,8 @@ hay un test obligatorio: filtrar ruido blanco tiene que dejarlo blanco.
 """
 
 from __future__ import annotations
+
+from typing import Any
 import numpy as np
 from scipy import signal
 from .types import Espectro, Senal
@@ -35,6 +37,7 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
     Returns:
         La senal filtrada, en float64 (ya no son cuentas ADC enteras).
     """
+    datos: np.ndarray[Any, Any] = np.asarray(senal, dtype=np.float64)
 
     if len(datos) == 0:
         return datos
@@ -43,15 +46,15 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
     cutoff_hp = max(0.5, fs / 1000.0)
     if cutoff_hp < nyq:
         b_hp, a_hp = signal.butter(2, cutoff_hp / nyq, btype="high")
-        datos = np.asarray(signal.filtfilt(b_hp, a_hp, datos), dtype=np.float64)
+        filtrado_hp = signal.filtfilt(b_hp, a_hp, datos)
+        datos = np.asarray(filtrado_hp, dtype=np.float64)
 
     for pico in picos_hz:
         if 0 < pico < nyq:
             w0 = pico / nyq
             Q = 30.0
             b_notch, a_notch = signal.iirnotch(w0, Q)
-            datos = np.asarray(
-                signal.filtfilt(b_notch, a_notch, datos), dtype=np.float64
-            )
+            filtrado_notch = signal.filtfilt(b_notch, a_notch, datos)
+            datos = np.asarray(filtrado_notch, dtype=np.float64)
 
     return datos
