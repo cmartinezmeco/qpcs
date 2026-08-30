@@ -38,6 +38,27 @@ UMBRAL_PICO: float = 3.0
 EPSILON_PA: float = 1e-9  # el mismo epsilon que la tarea 1.6
 BITS_BAJOS: int = 4  # cuantos bits por muestra se conservan al digitalizar
 
+# --- ANADIDO EN LA TAREA 4.6 (min-entropia) ----------------------------
+# Los dos parametros que gobiernan la estimacion de min-entropia. Van aqui
+# y no dentro de entropia.py por la convencion del modulo: todo parametro
+# que cambie una cifra publicada es parte del contrato. Son ANADIDOS, no
+# cambios: ninguna constante anterior se toca, asi que no invalidan
+# ninguna figura ni ningun resultado de las tareas 4.1-4.5.
+
+# Nivel de significacion de las cotas de confianza de SP 800-90B. El
+# estandar escribe 2.576 en 6.3.1, que es el cuantil 0.995 de la normal,
+# es decir un intervalo bilateral al 99%: alfa = 0.01. Se publica como
+# 1 - ALFA en EstimacionEntropia.intervalo_confianza.
+ALFA_SP80090B: float = 0.01
+
+# Observaciones minimas por celda de la matriz de transicion del estimador
+# de Markov. Con un alfabeto de k simbolos la matriz tiene k^2 celdas, y
+# por debajo de 5 observaciones esperadas por celda las frecuencias no
+# estiman nada (regla de Cochran, la misma que exige >= 5 cuentas
+# esperadas por bin para que un chi2 signifique algo). Con BITS_BAJOS = 4
+# -> k = 16 -> el minimo son 5 * 256 = 1280 muestras.
+MUESTRAS_POR_CELDA: int = 5
+
 
 @dataclass(frozen=True)
 class AnalisisEspectral:
