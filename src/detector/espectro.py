@@ -35,7 +35,22 @@ def densidad_espectral(
     Returns:
         (frecuencias, psd, n_tramos): frecuencias en Hz, la densidad
         espectral, y K para poder reportar el error relativo.
+
+    Raises:
+        ValueError: si nperseg no cabe en la senal. Anadido como caso
+            borde en la tarea 4.8: scipy.signal.welch, en ese caso, avisa
+            por warnings y RECORTA nperseg a la longitud de la senal, de
+            modo que la resolucion en frecuencia del resultado no es la
+            que dice el contrato y el K devuelto seria mentira. Mejor
+            parar que publicar un espectro calculado con otros parametros.
     """
+    if nperseg <= 0:
+        raise ValueError(f"nperseg debe ser positivo, recibido {nperseg}")
+    if nperseg > len(senal):
+        raise ValueError(
+            f"nperseg ({nperseg}) es mayor que la senal ({len(senal)} "
+            f"muestras): Welch no puede partirla en tramos de esa longitud"
+        )
 
     freqs, psd = signal.welch(senal, fs=fs, nperseg=nperseg)
     return (

@@ -7,11 +7,14 @@ completo, si hace falta, se trae con scripts/descargar_datos.py.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import numpy as np
 
 from .types import Espectro, Senal
+
+logger = logging.getLogger(__name__)
 
 
 def cargar_muestra(
@@ -38,6 +41,15 @@ def cargar_muestra(
     Raises:
         FileNotFoundError: con un mensaje que dice como obtener los datos
             si el fichero no esta (ver data/FUENTE.md).
+
+    Avisa por logging (no lanza) si el canal esta muerto, es decir, si la
+    senal es constante. Caso borde anadido en la tarea 4.8: los detectores
+    tienen canales muertos, saturados o averiados (guia Fase 4, cap.
+    6.2.2), y un canal plano recorre toda la cadena sin fallar -espectro
+    plano, cero picos, filtro que no quita nada- hasta que la 4.6 mide
+    min-entropia cero. No se lanza porque cargar el fichero SI ha
+    funcionado: quien decide si eso es un error es quien llama, igual que
+    con el aviso de ciclo corto del modulo 3.
     """
     ruta = Path(ruta)
     if not ruta.exists():
@@ -50,6 +62,16 @@ def cargar_muestra(
     datos = np.load(ruta)
     senal = datos["senal"].astype(np.int32)
     fs = float(datos["fs"])
+    if senal.size and senal.min() == senal.max():
+        logger.warning(
+            "el canal cargado desde %s esta MUERTO: las %d muestras valen "
+            "todas %d. Una senal constante no tiene ruido que analizar y su "
+            "min-entropia es cero; hay que elegir otro canal (guia Fase 4, "
+            "cap. 6.2.2).",
+            ruta,
+            senal.size,
+            int(senal[0]),
+        )
     return senal, fs
 
 
