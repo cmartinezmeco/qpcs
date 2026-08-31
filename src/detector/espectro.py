@@ -53,8 +53,24 @@ def densidad_espectral(
         )
 
     freqs, psd = signal.welch(senal, fs=fs, nperseg=nperseg)
+
+    # BUG ENCONTRADO EN LA TAREA 4.8 (Marco) y ARREGLADO AQUI EN LA 4.9:
+    # aqui se devolvia int(nperseg) en vez del numero real de tramos K.
+    # types.py documenta AnalisisEspectral.n_tramos como "K de Welch,
+    # para el error relativo", y el error relativo de cada punto de la
+    # PSD es ~1/sqrt(K): con K=nperseg en vez del K real, ese error
+    # relativo se publicaria mal por un factor de varias unidades.
+    #
+    # K exacto (no la aproximacion 2N/nperseg - 1 del docstring de
+    # arriba, que es solo la cifra de referencia para el caso tipico):
+    # scipy.signal.welch usa noverlap = nperseg // 2 por defecto, y
+    # trocea la senal en K = floor((N - noverlap) / (nperseg - noverlap))
+    # tramos.
+    noverlap = nperseg // 2
+    k_tramos = (len(senal) - noverlap) // (nperseg - noverlap)
+
     return (
         np.asarray(freqs, dtype=np.float64),
         np.asarray(psd, dtype=np.float64),
-        int(nperseg),
+        int(k_tramos),
     )
