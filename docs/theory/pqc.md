@@ -91,7 +91,7 @@ con `N`, la probabilidad de que `r` sea par y `a^(r/2) ≢ −1` es **al menos 1
 basta con uno o dos intentos, y la probabilidad de necesitar más de `k` decrece exponencialmente. No
 se está barriendo un espacio grande: se están esquivando unos pocos casos degenerados.
 
-**Verificación.** `test_reduccion_es_correcta_para_todo_a` (la reducción clásica, para las seis bases
+**Verificación.** `test_el_orden_que_publica_shor_es_el_orden_de_verdad` (la reducción clásica, para las seis bases
 coprimas con 15, sin tocar el circuito) y `test_shor_factoriza_15` (el bucle completo devuelve
 `{3, 5}` de forma reproducible con semilla 42).
 
@@ -600,7 +600,7 @@ A diferencia de RSA-OAEP, el híbrido **no tiene límite de tamaño de mensaje**
 algoritmo asimétrico. Esa es toda la gracia del patrón.
 
 **Verificación.** `test_cifrado_hibrido_roundtrip`; las **tres vías de manipulación**
-(`test_manipular_el_cifrado`, `test_manipular_el_kem_ciphertext`, `test_manipular_el_nonce`), que
+(`test_manipular_el_cifrado_lo_detecta`, `test_manipular_el_kem_ciphertext_lo_detecta`, `test_manipular_el_nonce_lo_detecta`), que
 acaban las tres en la misma `InvalidTag` por caminos distintos; `test_nonce_y_cifrado_nunca_se_repiten`;
 y `test_mensaje_largo_y_mensaje_vacio` (mensaje vacío y mensaje de 70 000 bytes, este último para
 demostrar que el híbrido no tiene el límite de tamaño de RSA-OAEP).
@@ -640,8 +640,8 @@ apreciable**, algo que el benchmark del módulo captura en su columna de desviac
 > ha alterado. Para ocultarlo está el cifrado híbrido de la sección 11. El propio dashboard lo señala
 > en su panel de PQC.
 
-**Verificación.** `test_firma_valida_verifica`; los **tres rechazos** (`test_mensaje_manipulado`,
-`test_firma_manipulada`, `test_de_otra_clave`); `test_tamanos_fips_204` y figura 2
+**Verificación.** `test_firma_valida_verifica`; los **tres rechazos** (`test_mensaje_manipulado_se_rechaza`,
+`test_firma_manipulada_se_rechaza`, `test_firma_de_otra_clave_se_rechaza`); `test_tamanos_fips_204` y figura 2
 (`docs/img/pqc_tamanos.png`); y `test_firmar_no_oculta_el_mensaje`.
 
 ## 13. El coste, en una frase: gana en tiempo, pierde en bytes
@@ -722,7 +722,7 @@ fuera de este documento, salvo el resultado de la sección 13 (ver
 |---|---|---|---|
 | La fase medida es múltiplo de `1/r` | 3.2 | §3 | `test_fase_es_multiplo_de_1_sobre_4_para_a7`; fig. 3 |
 | Las fracciones continuas recuperan `r` | 3.5 | §6 | `test_fracciones_continuas_recuperan_denominador` |
-| La reducción factorización→orden | 3.1 | §1 | `test_reduccion_es_correcta_para_todo_a` |
+| La reducción factorización→orden | 3.1 | §1 | `test_el_orden_que_publica_shor_es_el_orden_de_verdad` |
 | Shor factoriza `15 = 3 × 5` | 3.1 | §1 | `test_shor_factoriza_15` |
 | OAEP es probabilístico | 3.7 | §8.1 | `test_rsa_oaep_es_probabilistico` |
 | PSS es probabilístico | 3.7 | §8.1 | `test_rsa_pss_es_probabilistico` |
@@ -733,11 +733,11 @@ fuera de este documento, salvo el resultado de la sección 13 (ver
 | Cada encapsulamiento da secreto fresco | 3.8 | §10 | `test_dos_encapsulamientos_dan_secretos_distintos` |
 | Rechazo implícito de ML-KEM | 3.8 | §10.1 | `test_ciphertext_manipulado_da_otro_secreto_sin_lanzar` |
 | El híbrido cifra un mensaje real | 3.9 | §11 | `test_cifrado_hibrido_roundtrip` |
-| AEAD detecta manipulación (3 vías) | 3.9 | §11 | `test_manipular_el_cifrado` / `_el_kem_ciphertext` / `_el_nonce` |
+| AEAD detecta manipulación (3 vías) | 3.9 | §11 | `test_manipular_el_cifrado_lo_detecta` / `_el_kem_ciphertext` / `_el_nonce` |
 | El nonce nunca se repite | 3.9 | §11 | `test_nonce_y_cifrado_nunca_se_repiten` |
 | El híbrido no tiene límite de tamaño | 3.9 | §11 | `test_mensaje_largo_y_mensaje_vacio` |
 | Firma válida verifica | 3.10 | §12 | `test_firma_valida_verifica` |
-| Los tres rechazos de la firma | 3.10 | §12 | `test_mensaje_manipulado` / `_firma_manipulada` / `_de_otra_clave` |
+| Los tres rechazos de la firma | 3.10 | §12 | `test_mensaje_manipulado_se_rechaza` / `_firma_manipulada` / `_de_otra_clave` |
 | Tamaños de FIPS 204 | 3.10 | §12 | `test_tamanos_fips_204`; fig. 2 |
 | Firmar no oculta el mensaje | 3.10 | §12 | `test_firmar_no_oculta_el_mensaje` |
 | Nomenclatura NIST disponible | 1.4 | Preámbulo | `test_liboqs_trae_mecanismos_nist` |
