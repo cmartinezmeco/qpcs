@@ -262,7 +262,7 @@ Install these extensions:
 **In your local venv:**
 
 ```bash
-python -c "import qiskit, oqs, numpy, scipy, matplotlib, cryptography, streamlit, numba; print('Qiskit:', qiskit.__version__); print('liboqs C:', oqs.oqs_version()); print('liboqs-python:', oqs.oqs_python_version()); print('All OK')"
+python -c "import qiskit, oqs, numpy, scipy, matplotlib, cryptography, streamlit; print('Qiskit:', qiskit.__version__); print('liboqs C:', oqs.oqs_version()); print('liboqs-python:', oqs.oqs_python_version()); print('All OK')"
 ```
 
 **Inside the container:**
@@ -599,7 +599,7 @@ Measured **inside the container**, `time.perf_counter`, 9 repetitions after 2 wa
 
 **Two honest corrections to what the design predicted.** First, the guide expects decryption to come out one or two orders of magnitude faster than encryption. At **stage** level that is exactly right — 6.03 ms against 0.01 ms, ~600× — but end to end it collapses to ~1.15×, because both directions regenerate the same keystream and that dominates. Publishing the stage ratio as if it were the end-to-end one would have been a nice number and a false one. Second, the bottleneck is **not** the sequential diffusion loop the guide points at: it is orbit generation — **66 %** of one encryption, and the whole of the keystream path. (Both percentages here are shares of the same thing, one complete encryption; the stages listed above do not add up to 100 % because the XOR, the reshapes, the SHA-256 and the λ validation are not stages of their own.)
 
-**The Numba decision, taken after measuring and not before.** `numba` has been declared in `requirements.txt` since phase 1 with **zero** imports anywhere in the repo. The rule for this module was "NumPy first, Numba only after measuring", so: the diffusion loop — the only place the guide suggests compiling — is **15 %** of one encryption (both passes), so compiling it away perfectly would buy at most that. The 66 % that would actually pay is the orbit, which is precisely the keystream path, and that is where `fastmath` reassociation or a fused multiply-add changes the last bit of the mantissa and destroys the orbit within ~50 iterations. **Verdict: the pipeline stays in NumPy and `numba` is not used.** Removing it from `requirements.txt` is deliberately *not* done here: its pin is part of what currently holds `numpy==1.26.4`, the version the published benchmark was measured with, so that goes in its own PR — as the comment in `requirements.txt` already says.
+**The Numba decision, taken after measuring and not before.** `numba` has been declared in `requirements.txt` since phase 1 with **zero** imports anywhere in the repo. The rule for this module was "NumPy first, Numba only after measuring", so: the diffusion loop — the only place the guide suggests compiling — is **15 %** of one encryption (both passes), so compiling it away perfectly would buy at most that. The 66 % that would actually pay is the orbit, which is precisely the keystream path, and that is where `fastmath` reassociation or a fused multiply-add changes the last bit of the mantissa and destroys the orbit within ~50 iterations. **Verdict: the pipeline stays in NumPy and `numba` is not used.** It has since been removed from `requirements.txt` (phase 4, task 4.11): `numpy==1.26.4` was already pinned explicitly, so dependency resolution does not change — only the extra constraint numba placed on the numpy range is gone.
 
 ```bash
 docker run --rm -v "$PWD":/app qpcs python scripts/bench_chaos.py           # stages + chain
