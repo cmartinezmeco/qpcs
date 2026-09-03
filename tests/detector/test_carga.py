@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pytest
 from detector.carga import _ruido_potencia, cargar_muestra, senal_de_prueba
@@ -80,3 +82,38 @@ def test_ruido_potencia_alfa_positivo_decrece_con_la_frecuencia():
     potencia_baja = psd[1:mitad].mean()
     potencia_alta = psd[mitad:].mean()
     assert potencia_baja > potencia_alta
+
+
+# --- casos borde de la tarea 4.8 ---------------------------------------
+
+
+def test_un_canal_muerto_se_detecta_y_se_avisa(tmp_path, caplog):
+    """Caso borde de la tarea 4.8: un canal muerto (todo ceros) se carga
+    sin problemas y recorre la cadena entera sin fallar -espectro plano,
+    cero picos, filtro que no quita nada- hasta que la min-entropia sale
+    cero. Tiene que avisar al cargarlo, cuando todavia se puede cambiar
+    de canal.
+
+    Avisa por logging y NO lanza: cargar el fichero ha funcionado, y quien
+    decide si un canal plano es un error es quien llama. Mismo criterio
+    que el aviso de ciclo corto del modulo 3.
+    """
+    ruta = tmp_path / "canal_muerto.npz"
+    np.savez_compressed(
+        ruta, senal=np.zeros(1000, dtype=np.int32), fs=np.float64(1000.0)
+    )
+
+    with caplog.at_level(logging.WARNING, logger="detector.carga"):
+        senal, fs = cargar_muestra(ruta)
+
+    assert senal.size == 1000
+    assert fs == 1000.0
+    assert "MUERTO" in caplog.text
+
+
+def test_una_senal_viva_no_dispara_el_aviso(caplog):
+    """La contraparte del test de arriba: sin ella, un aviso que saltara
+    siempre pasaria igual de desapercibido que uno que no salta nunca."""
+    with caplog.at_level(logging.WARNING, logger="detector.carga"):
+        cargar_muestra()
+    assert "MUERTO" not in caplog.text

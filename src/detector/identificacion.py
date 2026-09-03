@@ -15,6 +15,39 @@ from scipy import signal, stats
 from .types import Espectro, Senal, TipoRuido
 
 
+def rango_alfa_en_hz(
+    rango_fraccion_nyquist: tuple[float, float], fs: float
+) -> tuple[float, float]:
+    """Convierte RANGO_ALFA (fraccion de la frecuencia de Nyquist, tal
+    como types.py lo documenta) a Hz reales, que es lo que ajustar_alfa
+    espera recibir en su parametro 'rango'.
+
+    BUG ENCONTRADO EN LA TAREA 4.8 (Marco) y ARREGLADO AQUI EN LA 4.9:
+    types.py documenta RANGO_ALFA = (1e-4, 1e-2) como fraccion de
+    Nyquist, pero ajustar_alfa() compara ese rango directamente contra
+    las frecuencias en Hz que devuelve densidad_espectral(). Con
+    fs=1000 Hz (los datos reales, convencion de la tarea 4.2),
+    RANGO_ALFA interpretado como Hz no contiene ningun bin del
+    espectro, y ajustar_alfa devuelve (0.0, 0.0) por su salida de
+    seguridad de "menos de 3 puntos", no porque no haya componente 1/f.
+
+    Esta funcion hace la conversion que faltaba: multiplica por la
+    frecuencia de Nyquist (fs/2). Con fs=1000, RANGO_ALFA se convierte
+    en (0.05, 5.0) Hz, que si contiene bins del espectro.
+
+    No se ha cambiado la firma de ajustar_alfa() (fijada en la tarea
+    4.1) ni RANGO_ALFA en types.py (fijada en la 4.1, y usar la unidad
+    de fraccion de Nyquist en el contrato es razonable: hace que el
+    mismo rango sirva para cualquier fs sin cambiar la constante).
+    Se ha anadido esta funcion como el punto unico de conversion, para
+    que cualquier consumidor (la tarea 4.9, el dashboard, o quien
+    llame a ajustar_alfa en el futuro) no tenga que repetir la formula.
+    """
+    f_min_frac, f_max_frac = rango_fraccion_nyquist
+    nyquist = fs / 2.0
+    return f_min_frac * nyquist, f_max_frac * nyquist
+
+
 def ajustar_alfa(
     f: Espectro, psd: Espectro, rango: tuple[float, float]
 ) -> tuple[float, float]:

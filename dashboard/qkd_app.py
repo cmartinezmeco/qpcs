@@ -53,7 +53,7 @@ se puede usar mathtext, porque ahi no hay Streamlit.
 from __future__ import annotations
 
 import math
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -77,6 +77,21 @@ from chaos import (
 from chaos.cipher import _valores_de_permutacion
 from chaos.types import UMBRAL_LYAPUNOV
 from cryptography.exceptions import InvalidTag
+from detector import (
+    EstimacionEntropia,
+    ResultadoExtraccion,
+    ajustar_alfa,
+    cargar_muestra,
+    densidad_espectral,
+    detectar_picos,
+    digitalizar,
+    estimar_entropia,
+    extraer,
+    factor_fano,
+    filtrar,
+    rango_alfa_en_hz,
+)
+from detector.types import BITS_BAJOS, EPSILON_PA, NPERSEG, RANGO_ALFA, UMBRAL_PICO
 from matplotlib.ticker import FuncFormatter, PercentFormatter
 from PIL import Image
 from pqc.benchmark import (
@@ -616,6 +631,30 @@ def _imagen_subida(fichero) -> np.ndarray | None:
         return None
 
 
+@dataclass(frozen=True)
+class AnalisisDetector:
+    """Resultado tipado del analisis completo de la pestana del modulo 4
+    (tarea 4.9). Reemplaza a un dict[str, object]: con un dataclass,
+    mypy --strict sabe el tipo exacto de cada campo sin necesitar
+    ningun type: ignore en el resto del bloque de la pestana.
+    """
+
+    n: int
+    fs: float
+    frecuencias: np.ndarray
+    psd: np.ndarray
+    k_tramos: int
+    picos: tuple[float, ...]
+    rango_hz: tuple[float, float]
+    alfa: float
+    alfa_error: float
+    fano: float
+    suelo_blanco: float
+    estimacion: EstimacionEntropia
+    resultado: ResultadoExtraccion
+    bits_bajos: int
+
+
 def _hex_previa(datos: bytes) -> str:
     """Los primeros bytes en hexadecimal, para ensenar un artefacto binario."""
     return datos[:BYTES_PREVIA].hex() + (" ..." if len(datos) > BYTES_PREVIA else "")
@@ -828,11 +867,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab_qkd, tab_pqc, tab_chaos = st.tabs(
+tab_qkd, tab_pqc, tab_chaos, tab_detector = st.tabs(
     [
         "Módulo 1 · Distribución de claves",
         "Módulo 2 · Amenaza y defensa",
         "Módulo 3 · Caos determinista",
+        "Módulo 4 · Ruido de detectores",
     ]
 )
 
@@ -2015,4 +2055,314 @@ with tab_chaos:
 - **Alcance.** Escala de grises de 8 bits. Sin color, vídeo ni audio; sin
   gestión de claves; sin compresión; sin GPU.
 """
+            )
+
+# ===========================================================================
+# PESTANA 4 - Modulo 4: ruido de detectores y extraccion de entropia
+# (tarea 4.9). Mismo patron que las pestanas 2 y 3: reutiliza styles.css,
+# _cabecera_seccion y _preparar_ejes.
+# ===========================================================================
+
+with tab_detector:
+    _cabecera_seccion(
+        "Módulo 4",
+        "Ruido de detectores y extracción de entropía",
+        "Se extrae min-entropía de ruido físico real de un detector de "
+        "CMS (CERN Open Data), y se destila con el mismo extractor de "
+        "Toeplitz que la tarea 1.6 usa para BB84.",
+    )
+
+    st.markdown(
+        """
+        <div class="qpcs-note">
+            <strong>No es un generador de números aleatorios certificado.</strong>
+            No hay tests de salud en tiempo real de la fuente ni modelo de
+            atacante: es una demostración de la cadena completa de
+            extracción de entropía sobre ruido físico real, con la
+            min-entropía estimada según los estimadores de NIST SP 800-90B.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_control, col_resultado = st.columns([2, 3], gap="large")
+
+    with col_control:
+        with st.container(border=True):
+            st.subheader("Señal")
+            st.caption(
+                "nPFCands (candidatos de Particle Flow) de un evento "
+                "ZeroBias de CMS. Es un PROXY de ruido, no una lectura "
+                "directa de ADC: ver data/FUENTE.md."
+            )
+            muestras_pct = st.slider(
+                "Cuántas muestras usar (%)",
+                min_value=10,
+                max_value=100,
+                value=100,
+                step=10,
+                help=(
+                    "El subconjunto versionado tiene ~495.000 muestras. "
+                    "Menos muestras: análisis más rápido, menos resolución "
+                    "en el espectro (K de Welch más pequeño)."
+                ),
+            )
+            aplicar_filtro = st.checkbox(
+                "Aplicar filtrado (notch + paso alto)",
+                value=True,
+                help=(
+                    "Sin filtrar, los picos de interferencia inflan "
+                    "artificialmente la min-entropía estimada, porque su "
+                    "componente determinista se confunde con variación real."
+                ),
+            )
+            bits_bajos_ui = st.slider(
+                "Bits bajos conservados al digitalizar",
+                min_value=1,
+                max_value=8,
+                value=BITS_BAJOS,
+                help=(
+                    "Los bits de orden ALTO llevan el sesgo de la "
+                    "distribución de la fuente; los de orden BAJO son, a "
+                    "efectos prácticos, uniformes (misma idea que la "
+                    "cuantización del módulo 3)."
+                ),
+            )
+
+    @st.cache_data(show_spinner="Calculando el espectro y la entropía...")
+    def _analisis_detector_cacheado(
+        muestras_pct: int, aplicar_filtro: bool, bits_bajos: int
+    ) -> tuple[
+        int,
+        float,
+        np.ndarray,
+        np.ndarray,
+        int,
+        tuple[float, ...],
+        tuple[float, float],
+        float,
+        float,
+        float,
+        float,
+        EstimacionEntropia,
+        ResultadoExtraccion,
+    ]:
+        """Toda la cadena del modulo, cacheada: un Welch sobre cientos
+        de miles de muestras no es instantaneo, y sin cache cada
+        movimiento de un control la relanzaria entera (guia Fase 4,
+        cap. 6.9.2).
+
+        Devuelve una TUPLA de tipos simples, no AnalisisDetector: un
+        dataclass definido en este mismo script se redefine en cada
+        rerun de Streamlit (exec() del propio script), asi que pickle
+        lo rechaza con "it's not the same object as
+        __main__.AnalisisDetector" aunque el nombre y los campos
+        coincidan. EstimacionEntropia y ResultadoExtraccion SI vienen
+        de un modulo importado normal (detector), que no se redefine,
+        asi que esos dos si se pueden devolver tal cual.
+        """
+        senal_completa, fs = cargar_muestra()
+        n = max(1000, int(len(senal_completa) * muestras_pct / 100))
+        senal = senal_completa[:n]
+
+        freqs, psd, k_tramos = densidad_espectral(senal, fs, NPERSEG)
+        picos = detectar_picos(freqs, psd, UMBRAL_PICO)
+        rango_hz = rango_alfa_en_hz(RANGO_ALFA, fs)
+        alfa, alfa_error = ajustar_alfa(freqs, psd, rango_hz)
+        fano = factor_fano(senal)
+        suelo_blanco = float(np.median(psd[len(psd) // 2 :]))
+
+        if aplicar_filtro:
+            senal_para_digitalizar = filtrar(senal, fs, picos)
+        else:
+            senal_para_digitalizar = senal.astype(np.float64)
+
+        simbolos = digitalizar(senal_para_digitalizar, bits_bajos)
+        estimacion = estimar_entropia(simbolos)
+        resultado = extraer(simbolos, estimacion, EPSILON_PA)
+
+        return (
+            n,
+            fs,
+            freqs,
+            psd,
+            k_tramos,
+            picos,
+            rango_hz,
+            alfa,
+            alfa_error,
+            fano,
+            suelo_blanco,
+            estimacion,
+            resultado,
+        )
+
+    _resultado_cacheado = _analisis_detector_cacheado(
+        muestras_pct, aplicar_filtro, bits_bajos_ui
+    )
+    analisis = AnalisisDetector(
+        n=_resultado_cacheado[0],
+        fs=_resultado_cacheado[1],
+        frecuencias=_resultado_cacheado[2],
+        psd=_resultado_cacheado[3],
+        k_tramos=_resultado_cacheado[4],
+        picos=_resultado_cacheado[5],
+        rango_hz=_resultado_cacheado[6],
+        alfa=_resultado_cacheado[7],
+        alfa_error=_resultado_cacheado[8],
+        fano=_resultado_cacheado[9],
+        suelo_blanco=_resultado_cacheado[10],
+        estimacion=_resultado_cacheado[11],
+        resultado=_resultado_cacheado[12],
+        bits_bajos=bits_bajos_ui,
+    )
+
+    with col_resultado:
+        with st.container(border=True):
+            st.subheader("Espectro de potencia (Welch)")
+            fig_espectro, ax_espectro = plt.subplots(figsize=(7.2, 4.2))
+            mascara_valida = (analisis.frecuencias > 0) & (analisis.psd > 0)
+            ax_espectro.loglog(
+                analisis.frecuencias[mascara_valida],
+                analisis.psd[mascara_valida],
+                lw=1.0,
+                color=COLOR_TINTA,
+            )
+            f_min, f_max = analisis.rango_hz
+            if analisis.alfa != 0.0:
+                mascara_ajuste = (
+                    (analisis.frecuencias >= f_min)
+                    & (analisis.frecuencias <= f_max)
+                    & mascara_valida
+                )
+                if mascara_ajuste.any():
+                    idx_ref = len(analisis.frecuencias[mascara_ajuste]) // 2
+                    f_ref = analisis.frecuencias[mascara_ajuste][idx_ref]
+                    a_const = (
+                        analisis.psd[mascara_ajuste][idx_ref] * f_ref**analisis.alfa
+                    )
+                    f_recta = np.array([f_min, f_max])
+                    ax_espectro.loglog(
+                        f_recta,
+                        a_const / f_recta**analisis.alfa,
+                        "--",
+                        lw=1.6,
+                        color=COLOR_TEAL,
+                    )
+            for pico in analisis.picos:
+                ax_espectro.axvline(pico, ls="-", lw=0.9, color=COLOR_ERROR, alpha=0.5)
+            ax_espectro.set_xlabel("frecuencia (Hz)")
+            ax_espectro.set_ylabel("densidad espectral")
+            # El formateador logaritmico por defecto de matplotlib genera
+            # etiquetas MathText ($10^{...}$), y la cache de mathtext no
+            # es segura entre los hilos de sesiones concurrentes de
+            # Streamlit (guia Fase 4, cap. 6.9.2; mismo bug que la Fase 2
+            # documento con el benchmark en escala logaritmica). Se
+            # sustituye por texto plano con FuncFormatter.
+            formateador_log = FuncFormatter(
+                lambda valor, _pos: (f"{valor:g}" if valor != 0 else "0")
+            )
+            ax_espectro.xaxis.set_major_formatter(formateador_log)
+            ax_espectro.yaxis.set_major_formatter(formateador_log)
+            # Sustituir SOLO el formateador principal no basta: un eje log
+            # tambien genera ticks MENORES con su propio formateador por
+            # defecto (tambien generador de MathText), y como el bug es
+            # una condicion de carrera entre hilos de Streamlit, a veces
+            # no llega a dispararse y a veces si (visto en produccion:
+            # una recarga funciono, la siguiente crasheo en exactamente
+            # este punto). minorticks_off() quita el origen del problema
+            # en vez de parchear un formateador mas.
+            ax_espectro.minorticks_off()
+            _preparar_ejes(ax_espectro)
+            fig_espectro.tight_layout()
+            st.pyplot(fig_espectro)
+            plt.close(fig_espectro)
+
+            picos_texto = (
+                ", ".join(f"{p:.3g} Hz" for p in analisis.picos)
+                if analisis.picos
+                else "sin picos detectados"
+            )
+            st.caption(
+                f"α = {analisis.alfa:.4f} ± {analisis.alfa_error:.4f}  ·  "
+                f"Fano = {analisis.fano:.2f}  ·  "
+                f"K = {analisis.k_tramos} tramos  ·  picos: {picos_texto}"
+            )
+
+        with st.container(border=True):
+            st.subheader("Estimadores de min-entropía")
+            est = analisis.estimacion
+            filas_estimadores = [
+                ("Valor más común", est.h_mas_comun),
+                ("Colisión", est.h_colision),
+                ("Markov", est.h_markov),
+            ]
+            df_estimadores = pd.DataFrame(
+                filas_estimadores, columns=["Estimador", "bits/símbolo"]
+            )
+            df_estimadores["Es el mínimo"] = df_estimadores["bits/símbolo"].apply(
+                lambda v: "← se usa este" if abs(v - est.h_min) < 1e-9 else ""
+            )
+            st.dataframe(
+                df_estimadores.style.format({"bits/símbolo": "{:.4f}"}),
+                hide_index=True,
+                use_container_width=True,
+            )
+            st.caption(
+                "Se toma el MÍNIMO de los tres (regla de NIST SP 800-90B): "
+                "cada estimador es ciego a cierto tipo de estructura, y el "
+                "que da el valor más bajo es el que encontró la que los "
+                f"demás no vieron. Mínimo usado: {est.h_min:.4f} bits/símbolo."
+            )
+
+        with st.container(border=True):
+            st.subheader("Del ruido a los bits")
+            bits_conservados = analisis.n * analisis.bits_bajos
+            bits_min_entropia = analisis.n * est.h_min
+            bits_extraidos = analisis.resultado.longitud_segura
+            peaje = bits_min_entropia - bits_extraidos
+
+            fig_embudo, ax_embudo = plt.subplots(figsize=(7.2, 3.4))
+            etapas_ui = [
+                ("muestras", float(analisis.n), COLOR_MUTED),
+                (
+                    f"bits (×{analisis.bits_bajos})",
+                    float(bits_conservados),
+                    COLOR_TINTA,
+                ),
+                ("min-entropía", bits_min_entropia, COLOR_TEAL),
+                ("extraídos", float(bits_extraidos), COLOR_ERROR),
+            ]
+            y_pos = list(range(len(etapas_ui)))[::-1]
+            for (_etiqueta, valor, color), y in zip(etapas_ui, y_pos, strict=True):
+                ax_embudo.barh(y, valor, height=0.55, color=color, alpha=0.85)
+            ax_embudo.set_xscale("log")
+            ax_embudo.set_yticks(y_pos)
+            ax_embudo.set_yticklabels([e[0] for e in etapas_ui], fontsize=9)
+            ax_embudo.set_xlabel("cantidad (escala logarítmica)")
+            ax_embudo.xaxis.set_major_formatter(formateador_log)
+            ax_embudo.minorticks_off()
+            _preparar_ejes(ax_embudo)
+            fig_embudo.tight_layout()
+            st.pyplot(fig_embudo)
+            plt.close(fig_embudo)
+
+            col_a, col_b, col_c = st.columns(3)
+            col_a.metric("Bits de min-entropía", _entero_es(int(bits_min_entropia)))
+            col_b.metric("Bits extraídos", _entero_es(bits_extraidos))
+            col_c.metric("Peaje (leftover hash lemma)", f"−{peaje:.0f} bits")
+
+        with st.container(border=True):
+            st.subheader("Bits extraídos")
+            bits_bytes = np.packbits(analisis.resultado.bits).tobytes()
+            hex_o_aviso = _hex_previa(bits_bytes) or (
+                "(sin bits: la fuente no tenía min-entropía suficiente)"
+            )
+            st.code(hex_o_aviso, language=None)
+            st.caption(
+                f"z (monobit) = {analisis.resultado.z_monobit:.4f}  ·  "
+                f"χ² = {analisis.resultado.chi2:.2f}  ·  "
+                f"{_entero_es(len(analisis.resultado.bits))} bits totales. "
+                "El CONTENIDO no es reproducible entre ejecuciones: la "
+                "semilla de Toeplitz sale de os.urandom, nunca sembrada."
             )

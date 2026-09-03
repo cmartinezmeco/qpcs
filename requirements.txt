@@ -16,18 +16,14 @@ streamlit==1.33.0
 # serializar DataFrames en st.dataframe (reproducido el 2026-07-18 con la
 # tabla de sifting del dashboard). 16.1.0 es la contemporanea de 1.33.
 pyarrow==16.1.0
-# numba NO la importa nadie en el repositorio (ni la Fase 1 ni la Fase 2: cero
-# resultados de `grep -rn numba src/ tests/ scripts/ dashboard/`). Se queda, y
-# no por inercia: su pin arrastra un rango estrecho de numpy -la 0.59 no admite
-# numpy >= 1.27- y hoy es parte de lo que clava numpy en la 1.26.4, que es la
-# version con la que esta medido el benchmark publicado y con la que corre toda
-# la Fase 1. Quitarla afloja esa restriccion sin que nadie lo pida, asi que
-# antes de tocarla hay que comprobar que la imagen sigue resolviendo
-# numpy==1.26.4 y actualizar el README (el comando de verificacion la importa).
+# numba: retirada en la tarea 4.11 (cierra la deuda I2, abierta desde la
+# Fase 3). Cero usos en todo el repositorio, confirmado de nuevo antes de
+# quitarla (`grep -rn numba src/ tests/ scripts/ dashboard/`). numpy se
+# mantiene fijado explicitamente en numpy==1.26.4 arriba, asi que la
+# resolucion de dependencias no cambia; lo unico que se pierde es la
+# atadura adicional que numba imponia sobre el rango de numpy.
 #
-# seaborn SI se ha quitado en esta pasada: tambien tenia cero usos, pero no
-# ataba ninguna otra version ni aparecia en ningun comando del README.
-numba==0.59.1
+# seaborn ya se habia quitado en un pase anterior: mismo motivo, cero usos.
 # MEJORA D4 (cierra I7): aqui habia un pytest==7.4.4 mientras
 # requirements-dev.txt fija pytest==8.4.0, asi que la version dependia de
 # DONDE se corrieran los tests. pytest es herramienta de desarrollo, igual

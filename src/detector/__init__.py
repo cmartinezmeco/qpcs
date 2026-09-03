@@ -21,6 +21,7 @@ from .identificacion import (
     detectar_picos,
     factor_fano,
     identificar_tipo_dominante,
+    rango_alfa_en_hz,
 )
 from .types import (
     AnalisisEspectral,
@@ -41,6 +42,7 @@ __all__ = [
     "detectar_picos",
     "factor_fano",
     "identificar_tipo_dominante",
+    "rango_alfa_en_hz",
     "filtrar",
     "digitalizar",
     "h_min_mas_comun",

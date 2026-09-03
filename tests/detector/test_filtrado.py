@@ -108,3 +108,48 @@ def test_la_varianza_baja_pero_no_se_desploma(senal_sintetica):
     assert var_despues < var_antes
     # Pero no debe reducirse en más de un orden de magnitud (factor 10)
     assert var_despues >= var_antes / 10.0
+
+
+# --- casos borde de la tarea 4.8 ---------------------------------------
+
+
+def test_sin_picos_que_filtrar_el_notch_no_hace_nada(rng):
+    """Caso borde de la tarea 4.8: sin picos detectados, el filtro no
+    falla y no aplica ningun notch. Lo unico que queda es el paso alto,
+    que es lo que quita la deriva y va siempre.
+
+    Se comprueba comparando con una senal sin interferencia: filtrar con
+    picos_hz = () tiene que dejar el espectro de frecuencias medias y
+    altas practicamente intacto (menos del 5% de cambio), que es lo que
+    significa "no hace nada" para un filtro que solo quita deriva.
+    """
+    fs = 1000.0
+    senal = rng.normal(0, 1, 20_000)
+
+    filtrada = filtrar(senal, fs, ())
+
+    assert filtrada.shape == senal.shape
+    assert np.all(np.isfinite(filtrada))
+
+    freqs, psd_antes = signal.welch(senal, fs=fs, nperseg=1024)
+    _, psd_despues = signal.welch(filtrada, fs=fs, nperseg=1024)
+    lejos_de_la_deriva = freqs > 20.0
+    cambio = np.abs(
+        psd_despues[lejos_de_la_deriva].mean() / psd_antes[lejos_de_la_deriva].mean()
+        - 1.0
+    )
+    assert cambio < 0.05
+
+
+def test_con_picos_el_filtro_si_hace_algo(rng):
+    """La contraparte del test de arriba: si filtrar con picos diera lo
+    mismo que sin ellos, el de arriba pasaria sin comprobar nada."""
+    fs = 1000.0
+    t = np.arange(20_000) / fs
+    senal = rng.normal(0, 1, 20_000) + 5.0 * np.sin(2 * np.pi * 50.0 * t)
+
+    sin_notch = filtrar(senal, fs, ())
+    con_notch = filtrar(senal, fs, (50.0,))
+
+    assert not np.allclose(sin_notch, con_notch)
+    assert np.var(con_notch) < np.var(sin_notch)

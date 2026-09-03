@@ -1,6 +1,8 @@
 import numpy as np
+import pytest
 
 from detector.espectro import densidad_espectral
+from detector.types import NPERSEG
 
 
 def test_ruido_blanco_da_espectro_plano(rng):
@@ -67,3 +69,28 @@ def test_parseval(rng):
     potencia_espectral = np.sum(psd) * df
 
     np.testing.assert_allclose(potencia_espectral, varianza_teorica, rtol=0.1)
+
+
+# --- casos borde de la tarea 4.8 ---------------------------------------
+
+
+def test_nperseg_mayor_que_la_senal_da_un_error_explicito(rng):
+    """Caso borde de la tarea 4.8: ValueError explicito, no truncar.
+
+    scipy.signal.welch, ante un nperseg mayor que la senal, avisa por
+    warnings y lo RECORTA a la longitud de la senal. El resultado sale con
+    otra resolucion en frecuencia que la que dice el contrato, y el numero
+    de tramos devuelto ya no describe el calculo que se ha hecho: es
+    justo el tipo de fallo silencioso que este proyecto convierte en
+    excepcion.
+    """
+    corta = rng.normal(0, 1, 500)
+    with pytest.raises(ValueError, match="mayor que la senal"):
+        densidad_espectral(corta, 1000.0, NPERSEG)
+
+
+def test_nperseg_no_positivo_da_un_error_explicito(rng):
+    """La otra mitad del mismo guardarrail."""
+    senal = rng.normal(0, 1, 5000)
+    with pytest.raises(ValueError, match="positivo"):
+        densidad_espectral(senal, 1000.0, 0)
