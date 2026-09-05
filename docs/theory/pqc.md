@@ -792,3 +792,12 @@ Por tanto, **antes de dar por cerrada la tarea 2.10, cada firma, nombre de test,
 comportamiento citados aquí deben contrastarse contra el código real de `src/pqc/` y `tests/pqc/`**, y
 donde el código haya avanzado respecto del documento de la fase, gana el código. Este documento no
 resuelve esa comprobación: las fuentes utilizadas para redactarlo no la incluyen.
+
+## Limitaciones
+
+Lo que este módulo **no** hace —Shor sobre N = 15 con un oráculo compilado a mano
+y N = 21 sin implementar, sin atacar la dureza de los retículos, un «híbrido» que
+es KEM + AEAD y no clásico + post-cuántico, sin gestión de claves ni TLS, y unos
+tiempos que no dicen nada sobre canales laterales— está recogido, con su porqué y
+con qué haría falta para levantarlo, en
+[`docs/limitaciones.md`](../limitaciones.md), sección «Módulo 2».

@@ -140,3 +140,12 @@ En resumen, la combinación de corrección de errores (Cascade) y amplificación
 El análisis paso a paso del protocolo BB84 confirma que, bajo los principios cuánticos básicos (superposición, colapso, no-clonación), Alice y Bob pueden detectar intercepciones y limitar la información de Eve. La tasa de error del 25% para un ataque sencillo de interceptar-reenviar coincide con las predicciones formales. El umbral de tolerancia (~11%) proviene de las pruebas de seguridad cuánticas y guía cuándo abortar o proceder con seguridad. Finalmente, con un correcto diseño de los pasos de reconciliación y amplificación (siguiendo el **Definition of Done** de la tarea), se obtiene una clave final limpia y verificable, adecuada para cifrar futuros mensajes con confidencialidad.
 
 **Referencias:** Se han citado fuentes académicas y de divulgación relevantes (p.ej. Wikipedia en español sobre cúbits, Born y teorema de no-clonación, así como trabajos de QKD y manuales recientes) para fundamentar cada afirmación.
+
+## Limitaciones
+
+Lo que este módulo **no** hace —sin *decoy states* ni defensa frente a PNS, cota
+de clave segura asintótica en vez de análisis de clave finita, canal clásico
+autenticado por hipótesis, un solo ataque implementado (intercept-resend) y un
+QRNG que es pseudoaleatorio porque corre en simulador— está recogido, con su
+porqué y con qué haría falta para levantarlo, en
+[`docs/limitaciones.md`](../limitaciones.md), sección «Módulo 1».

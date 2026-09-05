@@ -254,3 +254,16 @@ El desarrollo anterior deja tres ideas que condicionan todo el código del módu
 **Tercera: la física explica directamente una propiedad criptográfica.** El descarte de las mil iteraciones iniciales no es higiene numérica: es exactamente lo que produce la sensibilidad a la clave. Una diferencia de 10⁻¹⁵ en x₀ se amplifica como e^(λn), y con λ ≈ 0.7 bastan unas cincuenta iteraciones para que esa diferencia sea del orden de la unidad. Tras mil pasos, dos claves vecinas generan órbitas sin ninguna relación. Es el mismo mecanismo, visto desde el otro lado, que obliga a que el keystream sea idéntico bit a bit en todas las máquinas: la exponencial que garantiza la sensibilidad a la clave es la misma que convierte un error de redondeo en un fallo silencioso de descifrado.
 
 **Referencias.** May (1976) para el mapa logístico; Lorenz (1963) para el sistema y el efecto mariposa; Feigenbaum (1978) para la universalidad de δ; Benettin, Galgani, Giorgilli y Strelcyn (1980) para el algoritmo de cálculo de exponentes en sistemas continuos; y Goldberg (1991) para la aritmética de coma flotante que sostiene la viabilidad del determinismo entre plataformas.
+
+## Limitaciones
+
+Lo que este módulo **no** hace —sin prueba de seguridad y con cuatro ataques
+conocidos contra la familia, sin autenticación, determinista y sin *nonce*, con
+`hash_plano` filtrando información, con ciclos finitos inevitables en `float64` y
+solo para escala de grises de 8 bits— está recogido, con su porqué y con qué
+haría falta para levantarlo, en [`docs/limitaciones.md`](../limitaciones.md),
+sección «Módulo 3».
+
+Allí está también por qué NPCR y UACI frente a un cambio en el texto **plano** no
+pueden alcanzar sus valores canónicos (§ M3.7), que es la decisión abierta **A1**
+de [`docs/decisiones.md`](../decisiones.md).
