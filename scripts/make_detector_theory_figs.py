@@ -48,10 +48,14 @@ def _caja(ax, x, y, w, h, texto, borde, relleno, color_texto, fs=9, discont=Fals
         zorder=2,
     )
     ax.add_patch(p)
-    ax.text(x, y, texto, ha="center", va="center", fontsize=fs, color=color_texto, zorder=3)
+    ax.text(
+        x, y, texto, ha="center", va="center", fontsize=fs, color=color_texto, zorder=3
+    )
 
 
-def _flecha(ax, xy_a, xy_b, color="#4a4f57", discont=False, etiqueta=None, dx=0.0, dy=0.0):
+def _flecha(
+    ax, xy_a, xy_b, color="#4a4f57", discont=False, etiqueta=None, dx=0.0, dy=0.0
+):
     ax.add_patch(
         FancyArrowPatch(
             xy_a,
@@ -121,7 +125,9 @@ def cadena_de_lectura() -> None:
     y_r = 0.30
     for x, t in ruidos:
         _flecha(ax, (x, y - h / 2), (x, y_r + 0.095), color=AMBAR_B, discont=True)
-        _caja(ax, x, y_r, 0.145, 0.19, t, AMBAR_B, AMBAR_L, AMBAR_T, fs=7.6, discont=True)
+        _caja(
+            ax, x, y_r, 0.145, 0.19, t, AMBAR_B, AMBAR_L, AMBAR_T, fs=7.6, discont=True
+        )
 
     ax.text(
         0.5,
@@ -143,8 +149,30 @@ def estrategia_del_analisis() -> None:
     """Esquema 2: los cuatro pasos, y por que el Fano va el ultimo."""
     fig, ax = _lienzo(9.5, 5.4)
 
-    _caja(ax, 0.5, 0.94, 0.30, 0.085, "señal cruda (cuentas ADC)", GRIS_B, GRIS_L, GRIS_T, fs=9)
-    _caja(ax, 0.5, 0.79, 0.30, 0.085, "1 · PSD por el método de Welch", AZUL_B, AZUL_L, AZUL_T, fs=9)
+    _caja(
+        ax,
+        0.5,
+        0.94,
+        0.30,
+        0.085,
+        "señal cruda (cuentas ADC)",
+        GRIS_B,
+        GRIS_L,
+        GRIS_T,
+        fs=9,
+    )
+    _caja(
+        ax,
+        0.5,
+        0.79,
+        0.30,
+        0.085,
+        "1 · PSD por el método de Welch",
+        AZUL_B,
+        AZUL_L,
+        AZUL_T,
+        fs=9,
+    )
     _flecha(ax, (0.5, 0.897), (0.5, 0.833))
 
     ax.text(
@@ -160,24 +188,101 @@ def estrategia_del_analisis() -> None:
         zorder=5,
     )
 
-    _caja(ax, 0.16, 0.575, 0.28, 0.105, "picos estrechos\n3 · detección de picos", AMBAR_B, AMBAR_L, AMBAR_T, fs=8.4)
-    _caja(ax, 0.5, 0.575, 0.28, 0.105, "pendiente en f^(−α)\n2 · ajuste de α", AMBAR_B, AMBAR_L, AMBAR_T, fs=8.4)
-    _caja(ax, 0.845, 0.575, 0.28, 0.105, "plano\nel espectro NO los separa", GRIS_B, GRIS_L, GRIS_T, fs=8.4)
+    _caja(
+        ax,
+        0.16,
+        0.575,
+        0.28,
+        0.105,
+        "picos estrechos\n3 · detección de picos",
+        AMBAR_B,
+        AMBAR_L,
+        AMBAR_T,
+        fs=8.4,
+    )
+    _caja(
+        ax,
+        0.5,
+        0.575,
+        0.28,
+        0.105,
+        "pendiente en f^(−α)\n2 · ajuste de α",
+        AMBAR_B,
+        AMBAR_L,
+        AMBAR_T,
+        fs=8.4,
+    )
+    _caja(
+        ax,
+        0.845,
+        0.575,
+        0.28,
+        0.105,
+        "plano\nel espectro NO los separa",
+        GRIS_B,
+        GRIS_L,
+        GRIS_T,
+        fs=8.4,
+    )
 
     _flecha(ax, (0.44, 0.748), (0.20, 0.628))
     _flecha(ax, (0.5, 0.748), (0.5, 0.628))
     _flecha(ax, (0.56, 0.748), (0.80, 0.628))
 
-    _caja(ax, 0.33, 0.395, 0.34, 0.095, "filtrado: notch + paso alto\n(fase cero, orden bajo)", AZUL_B, AZUL_L, AZUL_T, fs=8.4)
+    _caja(
+        ax,
+        0.33,
+        0.395,
+        0.34,
+        0.095,
+        "filtrado: notch + paso alto\n(fase cero, orden bajo)",
+        AZUL_B,
+        AZUL_L,
+        AZUL_T,
+        fs=8.4,
+    )
     _flecha(ax, (0.16, 0.522), (0.27, 0.443))
     _flecha(ax, (0.5, 0.522), (0.40, 0.443))
 
-    _caja(ax, 0.5, 0.235, 0.30, 0.085, "4 · factor de Fano  F = Var / E", AZUL_B, AZUL_L, AZUL_T, fs=9)
+    _caja(
+        ax,
+        0.5,
+        0.235,
+        0.30,
+        0.085,
+        "4 · factor de Fano  F = Var / E",
+        AZUL_B,
+        AZUL_L,
+        AZUL_T,
+        fs=9,
+    )
     _flecha(ax, (0.33, 0.347), (0.44, 0.278))
     _flecha(ax, (0.845, 0.522), (0.60, 0.278))
 
-    _caja(ax, 0.235, 0.075, 0.29, 0.095, "ruido de disparo\nPoisson · fundamental", VERDE_B, VERDE_L, VERDE_T, fs=8.4)
-    _caja(ax, 0.765, 0.075, 0.29, 0.095, "ruido térmico\ngaussiano", VERDE_B, VERDE_L, VERDE_T, fs=8.4)
+    _caja(
+        ax,
+        0.235,
+        0.075,
+        0.29,
+        0.095,
+        "ruido de disparo\nPoisson · fundamental",
+        VERDE_B,
+        VERDE_L,
+        VERDE_T,
+        fs=8.4,
+    )
+    _caja(
+        ax,
+        0.765,
+        0.075,
+        0.29,
+        0.095,
+        "ruido térmico\ngaussiano",
+        VERDE_B,
+        VERDE_L,
+        VERDE_T,
+        fs=8.4,
+    )
     _flecha(ax, (0.42, 0.192), (0.29, 0.123), etiqueta="F ≈ 1", dx=-0.03, dy=0.012)
     _flecha(ax, (0.58, 0.192), (0.71, 0.123), etiqueta="F ≠ 1", dx=0.03, dy=0.012)
 
