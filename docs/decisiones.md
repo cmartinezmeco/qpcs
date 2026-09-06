@@ -311,6 +311,66 @@ ACORDADO POR: ____________
 
 ---
 
+## B3 — Qué licencia
+
+**De donde viene.** Sin fichero `LICENSE`, por defecto nadie puede usar, copiar ni distribuir
+este codigo, aunque el repositorio sea publico. Declarada en la guia de la Fase 4 (cap. 7.7,
+tarea 4.17).
+
+### Las licencias de las dependencias, comprobadas (no supuestas)
+
+Verificado con `pip-licenses` sobre el entorno real, mas la licencia de `liboqs` (biblioteca en
+C, no esta en PyPI) comprobada en su repositorio:
+
+| Paquete | Licencia |
+|---|---|
+| Qiskit, Qiskit-Aer, Streamlit | Apache-2.0 |
+| `liboqs` (C) y `liboqs-python` | MIT |
+| `cryptography` | Apache-2.0 / BSD (dual) |
+| NumPy, SciPy | BSD |
+| `uproot` | BSD-3-Clause |
+| `matplotlib` | PSF License |
+
+Todas permisivas. **Ninguna es incompatible con MIT, Apache 2.0 ni GPL-3.0.** Una salvedad
+honesta: `liboqs` incluye implementaciones de terceros de algunos algoritmos bajo licencias
+distintas, en sus propias subcarpetas (documentado en su propio `LICENSE.txt`); no afecta a
+este proyecto, que solo consume la libreria compilada a traves de `liboqs-python`, pero se dice
+en vez de asumir que "MIT en general" cubre absolutamente todo.
+
+### Opciones
+
+| Opcion | Que permite | Que exige |
+|---|---|---|
+| **MIT** | Todo: usar, copiar, modificar, distribuir, uso comercial. | Mantener el aviso de copyright y la licencia en las copias. |
+| **Apache 2.0** | Lo mismo que MIT. | Lo mismo que MIT, mas una clausula explicita de concesion de patentes -relevante si alguien quisiera usar esto comercialmente y le preocupara litigio de patentes. |
+| **GPL-3.0** | Usar, copiar, modificar. | Que cualquier derivado se distribuya tambien bajo GPL-3.0 (copyleft). Incompatible en la practica con que una empresa integre el codigo en un producto propietario. |
+
+### Recomendacion
+
+**MIT.** Es la opcion mas simple, la mas comun en portafolios, y no impone nada a quien lo use
+salvo mantener el aviso. Dado el proposito declarado del proyecto -demostrar dominio tecnico
+ante quien lo revise, no proteger un producto-, GPL-3.0 desincentivaria precisamente la lectura
+que se busca: una empresa evaluando un candidato no va a integrar copyleft en nada, y podria
+simplemente no mirarlo. Apache 2.0 es una alternativa razonable si se prefiere la clausula de
+patentes, pero para un proyecto sin pretension comercial esa clausula no aporta nada que MIT no
+de ya.
+
+**Lo que hay que hacer con esto, en orden:**
+
+1. Cerrar esta decision en la reunion del bloque B (puede ir en la misma reunion que B1/B2).
+2. Crear `LICENSE` en la raiz con el texto de la licencia elegida.
+3. Añadir el badge de licencia al README y el campo `license-url` a `CITATION.cff` (dejado sin
+   rellenar a proposito en este PR, ver su comentario).
+
+```
+ESTADO      : PENDIENTE DE REUNIÓN
+FECHA       : ____________
+ACORDADO POR: ____________
+```
+
+
+---
+
 ## Decisiones que llegan con tareas posteriores
 
 No se deciden aquí, pero se anotan para que no se pierdan entre tareas. Cuando se
@@ -318,8 +378,7 @@ tomen, su entrada se añade a este mismo fichero con el mismo bloque de estado.
 
 | Ref. | Decisión | Tarea que la cierra |
 |---|---|---|
-| **B2** | **Si el repositorio va a ser público.** Condiciona a B1 (arriba, ya con opciones preparadas) y a la licencia. | 4.15 / 4.17 |
-| **B3** | **Qué licencia** (MIT, Apache 2.0 o GPL-3.0), y comprobar —no suponer— que ninguna licencia de las dependencias (`liboqs`, Qiskit, `cryptography`, NumPy, SciPy, `uproot`, Streamlit) es incompatible con la elegida. | 4.17 |
+| **B2** | **Si el repositorio va a ser público.** Condiciona a B1 y a B3 (ambas arriba, ya con opciones preparadas). | 4.15 / 4.17 |
 
 ---
 
