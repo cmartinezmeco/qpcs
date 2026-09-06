@@ -110,7 +110,7 @@ def cadena_de_lectura() -> None:
         ("ADC", AZUL_B, AZUL_L, AZUL_T, 0.115),
         ("número\nen disco", GRIS_B, GRIS_L, GRIS_T, 0.125),
     ]
-    for x, (t, b, r, c, ww) in zip(xs, cajas):
+    for x, (t, b, r, c, ww) in zip(xs, cajas, strict=False):
         _caja(ax, x, y, ww, h, t, b, r, c, fs=8.6)
 
     for i in range(len(xs) - 1):
@@ -132,7 +132,8 @@ def cadena_de_lectura() -> None:
     ax.text(
         0.5,
         0.07,
-        "Cada eslabón añade ruido de una naturaleza distinta: esa diferencia es lo que permite separarlos después.",
+        "Cada eslabón añade ruido de una naturaleza distinta: esa diferencia es lo\n"
+        "que permite separarlos después.",
         ha="center",
         va="center",
         fontsize=8,
