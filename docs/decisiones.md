@@ -254,6 +254,63 @@ ACORDADO POR: ____________
 
 ---
 
+## B1 — Publicar la imagen en GitHub Container Registry
+
+**De donde viene.** Declarada en la guia de la Fase 4 (cap. 7.5, tarea 4.15):
+si el arranque compila liboqs cada vez, la primera experiencia de un revisor
+son varios minutos de `docker build` antes de ver nada.
+
+### El hecho, medido (no supuesto)
+
+En esta misma tarea se cronometraron dos builds reales, en la misma maquina:
+
+| Build | Tiempo | Contexto |
+|---|---|---|
+| Con cache de Buildx (CI, PR #48) | ~15 min la primera vez que se activo la cache; bajara en ejecuciones siguientes | Runner de GitHub Actions |
+| Sin cache (`--no-cache`, local) | ~17 min (197s el `git clone` + compilacion de liboqs, ~756s instalando requirements, resto en exportar capas) | Maquina de Carlos, WSL2 |
+| `docker pull` de una imagen ya publicada | Segundos (no medido aqui: no hay imagen publicada todavia) | — |
+
+El numero que importa para la decision no es el de la CI (esa cache ya esta
+resuelta, tarea 4.14): es el de alguien que clona el repo por primera vez y
+sigue el Quick Start del README. Hoy son minutos de compilacion antes de ver
+el dashboard.
+
+### Opciones
+
+| Opcion | Que gana | Que cuesta |
+|---|---|---|
+| **1. Publicar en GHCR** (`ghcr.io/cmartinezmeco/qpcs`) | El Quick Start pasa de `docker build` (~10-17 min) a `docker pull` (segundos). Primera impresion mucho mejor para un revisor. | Hay que mantener la imagen al dia: un paso de CI que la reconstruya y la suba en cada push a `main`, y decidir el etiquetado (`latest`, por commit, por version). Exige que el repositorio sea publico (GHCR gratuito solo lo es para repos publicos) -ver B2-. |
+| **2. Dejarlo como esta** (`docker build` local, con la cache de Buildx de la tarea 4.14 acelerando reconstrucciones sucesivas) | Cero mantenimiento extra. Ninguna dependencia de que el repo sea publico. | El primer build de cualquiera sigue tardando minutos. La cache de Buildx solo ayuda en la CI (GitHub Actions), no en la maquina de quien clona el repo por primera vez. |
+
+### Recomendacion
+
+**Publicar en GHCR (opcion 1), pero solo cuando B2 (repositorio publico) este
+decidido primero** -B1 no se puede cerrar en el vacio, depende de esa otra
+decision-. Si el repositorio se queda privado, la opcion 2 es la unica viable
+y esta decision se cierra sola por descarte.
+
+Coste de mantenimiento estimado: un job de CI adicional (`push` a `main` ->
+`docker build` + `docker push` a GHCR), unas 15-20 lineas de YAML siguiendo el
+mismo patron que `build-limpio` de la tarea 4.14.
+
+**Lo que hay que hacer con esto, en orden:**
+
+1. Cerrar primero B2 (repositorio publico) en la reunion del bloque B.
+2. Si B2 sale que si: implementar el job de publicacion en GHCR (encaja en
+   `ci/cache-y-endurecimiento` o en una tarea propia; se decide en la reunion),
+   y cambiar el paso 3 del Quick Start del README de `docker build` a
+   `docker pull ghcr.io/cmartinezmeco/qpcs`.
+3. Si B2 sale que no: esta decision se cierra como "opcion 2, por descarte",
+   sin trabajo adicional.
+
+```
+ESTADO      : PENDIENTE DE REUNIÓN
+FECHA       : ____________
+ACORDADO POR: ____________
+```
+
+---
+
 ## Decisiones que llegan con tareas posteriores
 
 No se deciden aquí, pero se anotan para que no se pierdan entre tareas. Cuando se
@@ -261,8 +318,7 @@ tomen, su entrada se añade a este mismo fichero con el mismo bloque de estado.
 
 | Ref. | Decisión | Tarea que la cierra |
 |---|---|---|
-| **B1** | **Publicar la imagen** en GitHub Container Registry, para que el arranque rápido haga `docker pull` en vez de `build`. Cambia «compila diez minutos» por «descarga treinta segundos», a cambio de mantener la imagen al día. Va atada a si el repositorio va a ser público. | 4.15 |
-| **B2** | **Si el repositorio va a ser público.** Condiciona a B1 y a la licencia. | 4.15 / 4.17 |
+| **B2** | **Si el repositorio va a ser público.** Condiciona a B1 (arriba, ya con opciones preparadas) y a la licencia. | 4.15 / 4.17 |
 | **B3** | **Qué licencia** (MIT, Apache 2.0 o GPL-3.0), y comprobar —no suponer— que ninguna licencia de las dependencias (`liboqs`, Qiskit, `cryptography`, NumPy, SciPy, `uproot`, Streamlit) es incompatible con la elegida. | 4.17 |
 
 ---
