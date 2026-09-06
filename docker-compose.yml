@@ -23,3 +23,22 @@ services:
     build: .
     # La suite rapida, igual que la CI (los tests slow solo en main).
     command: pytest tests/ -m "not slow"
+
+  # TAREA 4.15: tercer servicio, regenera las figuras de los CUATRO modulos
+  # con un solo comando. Sin --medir en make_pqc_plots.py: solo redibuja del
+  # JSON versionado, no vuelve a medir tiempos dentro del contenedor (eso
+  # daria cifras de esta maquina, no las publicadas). Monta el repo como
+  # volumen para que los PNG/GIF regenerados aparezcan en docs/img/ del
+  # host, no solo dentro del contenedor efimero.
+  figuras:
+    build: .
+    volumes:
+      - .:/app
+    command: >
+      bash -c "
+      python scripts/make_qkd_plots.py &&
+      python scripts/make_pqc_plots.py &&
+      python scripts/make_chaos_plots.py &&
+      python scripts/make_detector_plots.py &&
+      python scripts/make_detector_theory_figs.py
+      "

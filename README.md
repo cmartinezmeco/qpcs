@@ -70,7 +70,15 @@ docker build -t qpcs .
 docker run --rm -it -p 8501:8501 qpcs
 ```
 
-✅ If you see `QPCS - proyecto inicializado correctamente`, you're done.
+✅ If Streamlit starts and prints a `URL: http://0.0.0.0:8501` line, open [http://localhost:8501](http://localhost:8501) — you're done.
+
+**Alternative: Docker Compose.** Three services share the same image:
+
+```bash
+docker compose up                # dashboard on :8501 (Ctrl+C to stop)
+docker compose run --rm test     # fast test suite, then exits
+docker compose run --rm figuras  # regenerates all published plots in docs/img/
+```
 
 ---
 
@@ -409,7 +417,7 @@ qpcs/
 ├── 📂 vectors/              # keystream_v1.json — the module 3 determinism vector
 │
 ├── 🐳 Dockerfile            # Reproducible environment (builds liboqs)
-├── 🐳 docker-compose.yml    # `up` → dashboard on :8501; `run test` → pytest
+├── 🐳 docker-compose.yml    # `up` → dashboard :8501; `run test` → pytest; `run figuras` → regenerate all plots
 ├── 📄 requirements.txt      # Pinned runtime deps (==, never >=)
 ├── 📄 requirements-dev.txt  # Pinned dev deps (ruff, black, mypy, pytest)
 ├── 📄 .dockerignore
