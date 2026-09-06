@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "Si usas este software, por favor cita este repositorio."
+type: software
+title: "QPCS — Quantum & Physics Cryptography Suite"
+authors:
+  - family-names: "Martínez-Meco López"
+    given-names: "Carlos"
+    alias: "cmartinezmeco"
+  - family-names: "Zaballos Galán"
+    given-names: "Gonzalo"
+    alias: "gonzaloz-hub"
+  - family-names: "López Ballestrino"
+    given-names: "Marco"
+    alias: "Marcociber"
+repository-code: "https://github.com/cmartinezmeco/qpcs"
+abstract: >-
+  Cuatro módulos de criptografía —cuántica, post-cuántica, caótica y entropía
+  física— implementados, medidos y verificados: distribución cuántica de
+  claves (BB84), criptografía post-cuántica (ML-KEM/ML-DSA sobre liboqs) y
+  el algoritmo de Shor, cifrado de imágenes por caos determinista, y
+  extracción de entropía de ruido de detector real del CERN.
+keywords:
+  - quantum-cryptography
+  - post-quantum-cryptography
+  - bb84
+  - chaos-encryption
+  - entropy-extraction
+# license-url se anade cuando se cierre la decision B3 (docs/decisiones.md)
