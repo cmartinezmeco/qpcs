@@ -40,4 +40,14 @@ COPY . .
 # cifrar_imagen" fallan en el dashboard y en pytest dentro del contenedor.
 RUN pip install --no-cache-dir -e .
 
-CMD ["python", "main.py"]
+# TAREA 4.14: el CMD por defecto lanzaba "python main.py" (un placeholder del
+# setup inicial de la Fase 1, commit 5eac863, que solo imprime una linea y
+# termina). Con eso, el paso 4 del Quick Start del README
+# ("docker run --rm -it -p 8501:8501 qpcs") NO levantaba el dashboard: el
+# contenedor arrancaba, imprimia el mensaje y salia. Nadie lo habia probado
+# de forma automatica hasta el paso "Arranque rapido" de la CI (tarea 4.14),
+# que lo destapo. docker-compose.yml ya sobreescribia este comando para el
+# servicio "app" con las mismas flags (--server.address=0.0.0.0 es
+# obligatorio, ver su comentario); ahora es tambien el comportamiento por
+# defecto de la imagen, que es lo que el README promete.
+CMD ["streamlit", "run", "dashboard/qkd_app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]

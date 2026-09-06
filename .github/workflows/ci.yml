@@ -5,6 +5,13 @@ on:
     branches: [main]
   push:
     branches: [main]
+  schedule:
+    # Construccion semanal SIN cache (tarea 4.14). La cache de Buildx puede
+    # esconder un fallo real (ver el comentario del paso "Build image (con
+    # cache)" mas abajo): si una dependencia sin version fijada desaparece
+    # de su indice, una cache de dias antes lo tapa. Este job corre en
+    # limpio cada semana para destaparlo antes de que lo haga un PR.
+    - cron: "0 4 * * 1"
 
 jobs:
   test:
@@ -22,8 +29,39 @@ jobs:
       # completos (liboqs-python, cryptography, qiskit, ruff/black/mypy...), asi
       # que la CI ahora construye esa imagen y corre TODO dentro de ella. Por
       # eso desaparece requirements-qkd.txt.
-      - name: Build image
-        run: docker build -t qpcs:ci .
+      # TAREA 4.14: caché de Docker en la CI (issue #36, deuda I1 desde la
+      # Fase 2). Cada ejecución recompilaba liboqs desde cero: 9-16 min por
+      # PR. Buildx con cache-from/cache-to type=gha reutiliza las capas del
+      # cache de GitHub Actions entre ejecuciones.
+      #
+      # LA CACHE PUEDE ESCONDER UN FALLO REAL: liboqs-python 0.14.1
+      # desapareció de PyPI en su día y la CI de una máquina siguió en verde
+      # porque Docker reutilizaba una capa cacheada de días antes. Por eso
+      # esta caché se añade JUNTO CON el job build-limpio de abajo
+      # (--no-cache, semanal), nunca la primera sin el segundo.
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (con cache)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: qpcs:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # HALLAZGO DE LA TAREA 4.14: pyproject.toml tiene [tool.ruff] configurado
+      # desde el principio del proyecto, pero nunca hubo un paso de CI que lo
+      # ejecutara. Ni una sola vez. Es mas grave que el hallazgo N2 de la
+      # auditoria del Modulo 2 (que solo señalaba que ruff no cubria scripts/
+      # ni dashboard/): en realidad no cubria nada, ni siquiera src/. El
+      # arbol ya estaba limpio al comprobarlo (con la excepcion de dos avisos
+      # en scripts/make_detector_theory_figs.py, corregidos en el mismo PR
+      # que añade este paso), asi que activarlo no rompe nada retroactivamente
+      # - pero a partir de aqui, cualquier violacion futura si para la CI.
+      - name: Ruff (lint)
+        run: docker run --rm qpcs:ci ruff check src/ tests/ scripts/ dashboard/
 
       # scripts/ y dashboard/ entran en ruff y black (no en mypy). Eran 1200
       # lineas sin lint ni formato verificado, justo las dos piezas que la
@@ -152,3 +190,87 @@ jobs:
             python scripts/make_pqc_plots.py
             md5sum -c /tmp/figuras_pqc.md5
           '
+
+      # TAREA 4.14: el arranque rapido del README (seccion "Quick start") nunca
+      # se habia probado de forma automatica, y al probarlo aqui aparecio un
+      # bug real: el CMD por defecto del Dockerfile era "python main.py" (un
+      # placeholder desde el primer commit, Fase 1) en vez de Streamlit, asi
+      # que el paso 4 del Quick Start ("docker run --rm -it -p 8501:8501
+      # qpcs", sin comando explicito) NO levantaba el dashboard. Corregido en
+      # el mismo PR (ver Dockerfile). El comando de aqui es LITERAL el del
+      # README, sin -it (exige una TTY que no hay en el runner). Se lanza en
+      # segundo plano, se espera a que Streamlit responda en /_stcore/health
+      # (su endpoint de salud interno) con un timeout, y se para el
+      # contenedor al final pase lo que pase.
+      - name: Arranque rapido del README (el dashboard responde)
+        run: |
+          docker run --rm -d -p 8501:8501 --name qpcs-arranque-rapido qpcs:ci
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8501/_stcore/health > /dev/null 2>&1; then
+              echo "Dashboard responde tras ${i}s"
+              docker stop qpcs-arranque-rapido
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "El dashboard no respondio en 30s"
+          docker logs qpcs-arranque-rapido
+          docker stop qpcs-arranque-rapido
+          exit 1
+
+      # TAREA 4.14: el README nunca se comprobaba automaticamente. Solo
+      # enlaces relativos (internos al repo); los http(s) externos se dejan
+      # fuera a proposito, para no depender de la disponibilidad de sitios de
+      # terceros ni de rate limits.
+      - name: Enlaces del README resuelven a ficheros que existen
+        run: bash scripts/check_enlaces_readme.sh
+
+      # TAREA 4.14: la regla de oro (D1, tarea 4.11) pasa de comprobacion
+      # manual a paso de CI. El script vive en scripts/check_regla_de_oro.sh
+      # (no embebido aqui: era shell anidado dentro de docker dentro de YAML,
+      # dificil de leer y de probar). Corre directo en el runner porque solo
+      # toca ficheros de texto ya presentes tras el checkout, no hace falta
+      # el contenedor.
+      - name: Regla de oro (tests citados en la teoria existen de verdad)
+        run: bash scripts/check_regla_de_oro.sh
+
+      # TAREA 4.14: gemelo de los pasos de figuras de arriba, para el Modulo
+      # 4, que no lo tenia. OJO, asimetria real y documentada: de las cuatro
+      # figuras del modulo, tres son deterministas (detector_espectro.png,
+      # detector_filtro.png, detector_estimadores.png) pero detector_embudo.png
+      # (fig. 3) NO lo es -su propio docstring en make_detector_plots.py lo
+      # dice: la semilla de Toeplitz es de os.urandom sin sembrar, decision
+      # consciente de la guia cap. 4.4-. Comparar esa por MD5 pondria la CI
+      # roja al azar. El script se ejecuta igualmente (si revienta, el paso
+      # falla: eso ya cubre "se regenera sin reventar"), pero detector_embudo.png
+      # queda fuera de la lista que se compara por MD5.
+      #
+      # Los dos esquemas de teoria (detector_cadena_lectura.png,
+      # detector_estrategia.png, tarea 4.10) SI son deterministas -son
+      # diagramas sin datos, sin RNG- y entran en el MD5 estricto.
+      - name: Figuras del detector reproducibles bit a bit (menos el embudo)
+        run: |
+          docker run --rm qpcs:ci bash -c '
+            set -e
+            cd /app
+            md5sum docs/img/detector_espectro.png \
+                   docs/img/detector_filtro.png \
+                   docs/img/detector_estimadores.png \
+                   docs/img/detector_cadena_lectura.png \
+                   docs/img/detector_estrategia.png > /tmp/figuras_detector.md5
+            python scripts/make_detector_plots.py
+            python scripts/make_detector_theory_figs.py
+            md5sum -c /tmp/figuras_detector.md5
+          '
+
+  build-limpio:
+    # Companero del cache de arriba: mismo PR, nunca uno sin el otro (ver el
+    # comentario de "Build image (con cache)"). Corre solo en el disparador
+    # schedule, no en cada PR/push -si corriera siempre no aportaria nada
+    # sobre el job "test", que ya construye la imagen.
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image (sin cache, para destapar lo que la cache esconde)
+        run: docker build --no-cache -t qpcs:limpio .
