@@ -1,9 +1,12 @@
-# docker-compose.yml — tarea 1.9 (Carlos), descrito en la seccion 5.1.4 de
-# la guia de Fase 1: dos servicios sobre la MISMA imagen del Dockerfile.
+# docker-compose.yml — tarea 1.9 (Carlos, Fase 1), ampliado en la 4.15.
+# Tres servicios sobre la MISMA imagen del Dockerfile. Solo "app" arranca
+# con "up"; "test" y "figuras" llevan profiles: ["herramientas"] a proposito
+# (hallazgo post-4.15: sin eso, "docker compose up" a secas lanzaba los tres
+# a la vez) y solo se activan si se invocan por su nombre:
 #
-#   docker compose up            -> levanta el dashboard en localhost:8501
-#                                   (el servicio test corre pytest y sale)
-#   docker compose run --rm test -> solo la suite de tests
+#   docker compose up               -> el dashboard en localhost:8501
+#   docker compose run --rm test    -> solo la suite de tests, y sale
+#   docker compose run --rm figuras -> regenera las 17 figuras y sale
 services:
   app:
     build: .
@@ -21,6 +24,15 @@ services:
 
   test:
     build: .
+    # HALLAZGO (post 4.15): sin "profiles", "docker compose up" a secas
+    # arrancaba los TRES servicios a la vez (test y figuras terminan solos,
+    # pero durante ese rato comparten log con app y confunden). El perfil
+    # "herramientas" hace que test y figuras SOLO se activen si se invocan
+    # explicitamente con "run --rm <servicio>", que es como se documentan
+    # en el README. "docker compose run" activa el profile del servicio
+    # apuntado automaticamente, sin necesidad de --profile (comportamiento
+    # documentado de Compose): la orden del README sigue funcionando igual.
+    profiles: ["herramientas"]
     # La suite rapida, igual que la CI (los tests slow solo en main).
     command: pytest tests/ -m "not slow"
 
@@ -32,6 +44,7 @@ services:
   # host, no solo dentro del contenedor efimero.
   figuras:
     build: .
+    profiles: ["herramientas"]
     volumes:
       - .:/app
     command: >
