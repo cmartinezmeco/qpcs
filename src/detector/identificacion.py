@@ -67,7 +67,8 @@ def ajustar_alfa(
     Args:
         f: frecuencias.
         psd: densidad espectral.
-        rango: (f_min, f_max) como fraccion de Nyquist, donde ajustar.
+        rango: (f_min, f_max) en Hz, donde ajustar. RANGO_ALFA esta en
+            fraccion de Nyquist: convertirlo con rango_alfa_en_hz.
 
     Returns:
         (alfa, error_estandar_de_alfa).

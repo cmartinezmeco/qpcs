@@ -1,8 +1,8 @@
 """src/detector/carga.py - lectura de la senal de ruido de detector.
 
 El subconjunto versionado en data/muestra_pedestal.npz permite ejecutar
-todo el modulo sin descargar nada (guia Fase 4, cap. 5.1). El conjunto
-completo, si hace falta, se trae con scripts/descargar_datos.py.
+todo el modulo sin descargar nada (guia Fase 4, cap. 5.1). El procedimiento
+para regenerarlo desde el fichero original esta en data/FUENTE.md.
 """
 
 from __future__ import annotations

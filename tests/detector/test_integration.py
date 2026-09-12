@@ -105,12 +105,12 @@ def test_la_cadena_completa():
 
     # El analisis espectral se rellena entero (contrato de la tarea 4.4).
     assert analisis.frecuencias.size == analisis.psd.size == NPERSEG // 2 + 1
-    # NOTA (tarea 4.8): types.py documenta n_tramos como "K de Welch, para
-    # el error relativo", y con 495.562 muestras y tramos de 4096 al 50%
-    # ese K vale ~241; densidad_espectral devuelve hoy el propio nperseg
-    # (4096) en esa tercera posicion. Es la segunda discrepancia anotada
-    # para la tarea 4.3/4.4, asi que aqui solo se exige que el campo venga
-    # relleno y sea positivo, sin fijar el valor equivocado en un test.
+    # NOTA (discrepancia de la tarea 4.8, ARREGLADA en la 4.9): types.py
+    # documenta n_tramos como "K de Welch, para el error relativo", y
+    # densidad_espectral devolvia el propio nperseg (4096) en esa tercera
+    # posicion en vez del K real. Ya devuelve el K real -240 con 495.562
+    # muestras y tramos de 4096 al 50%, ver el comentario de espectro.py-,
+    # y aqui se sigue exigiendo solo que el campo venga relleno y positivo.
     assert analisis.n_tramos > 0
     assert analisis.suelo_blanco > 0.0
     assert analisis.fano > 0.0

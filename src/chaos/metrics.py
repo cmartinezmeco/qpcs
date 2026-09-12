@@ -52,7 +52,7 @@ def entropia_esperada(n_pixeles: int, k: int = 256) -> float:
         El valor esperado de la entropia estimada, en bits/pixel.
     """
     if n_pixeles < 1:
-        raise ValueError("hacen falta al menos 1 pixel para estimar la entropia")
+        raise ValueError("hace falta al menos 1 pixel para estimar la entropia")
     return float(np.log2(k) - (k - 1) / (2.0 * n_pixeles * np.log(2.0)))
 
 
