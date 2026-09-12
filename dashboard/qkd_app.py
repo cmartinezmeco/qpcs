@@ -1,4 +1,4 @@
-"""dashboard/qkd_app.py — tareas 1.9, 2.9 y 3.10 (Carlos). Dashboard Streamlit.
+"""dashboard/qkd_app.py — tareas 1.9, 2.9, 3.10 y 4.9 (Carlos). Dashboard Streamlit.
 
 Arranque local:
 
@@ -22,8 +22,8 @@ histograma de fases de Shor, que se ejecutaba a mano porque medir_fase_15
 devuelve una sola fase por llamada- ya no hace falta: esa logica vive ahora en
 `shor.histograma_fases_15`, que es lo que consume _muestrear_fases.
 
-UN SOLO FICHERO, TRES MODULOS (tareas 2.9 y 3.10)
-------------------------------------------------
+UN SOLO FICHERO, CUATRO MODULOS (tareas 2.9, 3.10 y 4.9)
+-------------------------------------------------------
 El panel del modulo 2 (PQC + Shor) vive aqui dentro, en su propia pestana, y no
 en un dashboard/pqc_app.py aparte. La alternativa -pasar a una app multipagina
 de Streamlit- obliga a mover ficheros a un directorio pages/ y a cambiar el
@@ -194,7 +194,7 @@ def _cargar_estilos() -> None:
 
 
 def _cabecera_seccion(etiqueta: str, titulo: str, descripcion: str) -> None:
-    """Cabecera editorial comun a los dos modulos y sus apartados."""
+    """Cabecera editorial comun a los cuatro modulos y sus apartados."""
     st.markdown(
         f"""
         <div class="qpcs-section">
@@ -842,7 +842,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.divider()
-    st.caption("QPCS · Módulos 1 y 2 · Entorno educativo y reproducible")
+    st.caption("QPCS · Módulos 1 a 4 · Entorno educativo y reproducible")
 
 r = _simular(int(n), float(p), float(noise), float(sample_fraction), seed)
 
@@ -2065,7 +2065,7 @@ with tab_chaos:
 
 with tab_detector:
     _cabecera_seccion(
-        "Módulo 4",
+        "Módulo 04 · Ruido de detectores",
         "Ruido de detectores y extracción de entropía",
         "Se extrae min-entropía de ruido físico real de un detector de "
         "CMS (CERN Open Data), y se destila con el mismo extractor de "

@@ -18,7 +18,7 @@ def test_longitud_no_multiplo_del_bloque():
 
 
 def test_monobit_dentro_de_4_sigma():
-    """Test monobit del NIST: z = (ceros - unos) / sqrt(n) ~ N(0,1)."""
+    """Test monobit del NIST: z = |ceros - unos| / sqrt(n) ~ N(0,1)."""
     n = 20_000
     bits = QRNG(seed=7).random_bits(n)
     z = abs(2 * bits.sum() - n) / np.sqrt(n)

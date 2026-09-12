@@ -30,9 +30,9 @@ def senal_sintetica() -> tuple[np.ndarray, dict[str, float]]:
     RK4 del modulo 3: se valida contra la teoria, no contra otra
     implementacion.
 
-    Mezcla ruido blanco gaussiano, ruido 1/f, una interferencia senoidal
-    de 50 Hz y ruido de disparo (Poisson), sobre un pedestal de 1000
-    cuentas (los datos reales tampoco estan centrados en cero).
+    Mezcla ruido blanco gaussiano, una interferencia senoidal de 50 Hz y
+    ruido de disparo (Poisson), sobre un pedestal de 1000 cuentas (los
+    datos reales tampoco estan centrados en cero).
     """
     rng = np.random.default_rng(SEMILLA)
     n, fs = 2**20, 40_000.0  # ~1e6 muestras a 40 kHz
