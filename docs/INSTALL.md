@@ -113,6 +113,12 @@ versionado y configura Black y el intérprete del `.venv` para todo el equipo.
 
 En el entorno local:
 
+Primero movernos a /qpcs
+
+```bash
+cd ~\qpcs
+```
+
 ```bash
 python -c "import qiskit, oqs, numpy, scipy, matplotlib, cryptography, streamlit; print('Qiskit:', qiskit.__version__); print('liboqs C:', oqs.oqs_version()); print('liboqs-python:', oqs.oqs_python_version()); print('OK')"
 ```
