@@ -147,6 +147,15 @@ Y la suite de tests:
 ```bash
 pytest tests/ -m "not slow"
 ```
+---
+
+## Arrancar el contenedor
+
+### Comando docker para arrancar el contenedor
+
+```bash
+docker compose up -d --build app
+```
 
 ---
 
