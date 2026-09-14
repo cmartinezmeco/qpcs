@@ -37,7 +37,7 @@ jobs:
       # actions/checkout@v4 apunta a donde su autor decida en cada
       # momento; el SHA es inmutable. El numero de version va al lado
       # para saber que se esta usando sin tener que resolver el hash.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # MIGRACION A DOCKER (Fase 2, tarea 2.1). Hasta ahora la CI instalaba
       # requirements-qkd.txt (un subconjunto minimo) en el runner para no tener
@@ -320,7 +320,7 @@ jobs:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build image (sin cache, para destapar lo que la cache esconde)
         run: docker build --no-cache -t qpcs:limpio .
 
@@ -354,7 +354,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
