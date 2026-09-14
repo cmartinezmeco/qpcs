@@ -110,8 +110,8 @@ def cascade(
     #       p que contiene la posicion pos. Precomputarlo cuesta O(n) por
     #       pasada y hace el backtracking O(1). (La alternativa ingenua
     #       "if pos in bloque" es O(k) dentro de dos bucles: el algoritmo se
-    #       vuelve O(n^2) y con n = 40 000 no termina. Ver seccion 5.5.4 de
-    #       la guia: la version que se mergea lleva block_of.)
+    #       vuelve O(n^2) y con n = 40 000 no termina. La version que se
+    #       mergea lleva block_of.)
     #   alice_parity_by_pass[p][j] -> paridad que Alice YA publico del bloque
     #       j. Se cachea para re-comprobar bloques sin volver a preguntar al
     #       oraculo: la paridad ya es publica, re-preguntar contaria fugas
@@ -189,7 +189,7 @@ def cascade(
     # publica nada y no cuenta como fuga).
     ok = bool(np.array_equal(alice, bob))
 
-    # La metrica de calidad de la tarea (seccion 5.5.5): f_EC = leak/(n h(Q)).
+    # La metrica de calidad de la tarea: f_EC = leak/(n h(Q)).
     # ~1.1-1.2 excelente; ~1.5 mal afinado; < 1 imposible (Shannon) = bug.
     # Convencion del equipo: logging, nada de print.
     h = binary_entropy(qber)

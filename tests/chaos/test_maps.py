@@ -66,7 +66,7 @@ def test_rk4_converge_con_el_orden_correcto():
 
 @pytest.mark.parametrize("x0", [0.0, 1.0])
 def test_x0_en_un_punto_fijo_se_rechaza(x0):
-    """Caso borde de la tabla del cap. 8.9 (tarea 3.9): x0 = 0 y x0 = 1 son
+    """Caso borde de la tarea 3.9: x0 = 0 y x0 = 1 son
     los dos puntos fijos triviales del mapa y tienen que dar ValueError.
 
     Con x0 = 0 la orbita es cero para siempre; con x0 = 1 el primer paso la

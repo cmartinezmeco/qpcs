@@ -8,6 +8,7 @@ Cuatro módulos de criptografía —cuántica, post-cuántica, caótica y entrop
 [![liboqs](https://img.shields.io/badge/liboqs-0.16.0-00A3E0)](https://openquantumsafe.org/)
 [![Tests](https://img.shields.io/badge/tests-378-0A9EDC?logo=pytest&logoColor=white)](tests/)
 [![Cobertura](https://img.shields.io/badge/cobertura-%E2%89%A585%25-brightgreen)](.github/workflows/ci.yml)
+[![Licencia](https://img.shields.io/badge/licencia-Apache%202.0-blue)](LICENSE)
 
 ![QBER frente a la fracción de fotones interceptados por Eve](docs/img/qber_vs_eve.png)
 
@@ -59,18 +60,36 @@ levantarla, están sin recortar en [`docs/limitaciones.md`](docs/limitaciones.md
 compilar `liboqs`, ni instalar nada más.
 
 ```bash
+docker run --rm -p 8501:8501 ghcr.io/cmartinezmeco/qpcs:main
+```
+
+Esa imagen la construye y publica la CI cada vez que algo entra en `main`, así que trae
+`liboqs` ya compilado. La descarga son unos cientos de megas y menos de un minuto.
+
+Cuando Streamlit imprima la línea `URL: http://0.0.0.0:8501`, abre
+[http://localhost:8501](http://localhost:8501). El panel tiene una pestaña por módulo.
+
+### Visualización
+
+La vista de la página, si se ha ejecutado correctamente, es la siguiente:
+
+![Vista del dashboard de QPCS](docs/img/index.jpg)
+
+### Si prefieres construirla tú
+
+Vale igual, y es lo que hay que hacer para probar un cambio propio:
+
+```bash
 git clone https://github.com/cmartinezmeco/qpcs.git
 cd qpcs
 docker build -t qpcs .
 docker run --rm -it -p 8501:8501 qpcs
 ```
 
-> La tercera orden **tarda entre 10 y 17 minutos la primera vez**: compila `liboqs` desde
+> `docker build` **tarda entre 10 y 17 minutos la primera vez**: compila `liboqs` desde
 > código fuente, que es una biblioteca en C sin *wheel*. No se ha colgado. Las siguientes
-> reconstrucciones reutilizan las capas y tardan segundos.
-
-Cuando Streamlit imprima la línea `URL: http://0.0.0.0:8501`, abre
-[http://localhost:8501](http://localhost:8501). El panel tiene una pestaña por módulo.
+> reconstrucciones reutilizan las capas y tardan segundos. Esa espera es justo la que se
+> ahorra quien usa la imagen publicada.
 
 Con Docker Compose, tres servicios sobre la misma imagen:
 
@@ -115,9 +134,14 @@ La mitad de la amenaza y la mitad de la defensa, en el mismo módulo. Shor facto
 estimación de fase: las fases medidas caen exactamente sobre los cuatro múltiplos de 1/r con
 r = 4, el orden real de 7 módulo 15.
 
-La defensa no es una simulación. ML-KEM-768 y ML-DSA-65 corren sobre `liboqs`, la misma
-implementación que se usa en producción, y cifran un mensaje real con el patrón híbrido
-KEM → HKDF-SHA256 → AES-256-GCM. El resumen de la migración en dos cifras:
+La defensa no es una simulación. ML-KEM-768 y ML-DSA-65 corren sobre `liboqs`, la
+implementación de referencia del Open Quantum Safe Project —no una reimplementación
+nuestra—, y cifran un mensaje real con el patrón híbrido KEM → HKDF-SHA256 → AES-256-GCM.
+Conviene decir lo que el propio proyecto advierte: `liboqs` está pensado para prototipado
+y evaluación y sus autores desaconsejan usarlo en producción. Aquí se usa exactamente para
+eso, y por eso la cifra de abajo es una medida y no una promesa.
+
+El resumen de la migración en dos cifras:
 
 - ML-KEM-768 genera un par de claves unas **11 000 veces más rápido** que RSA-3072
   (0,019 ms contra 212 ms) y desencapsula unas **120 veces más rápido** de lo que RSA descifra.
@@ -174,14 +198,17 @@ qpcs/
 ├── dashboard/          Panel de Streamlit, una pestaña por módulo
 ├── docs/
 │   ├── theory/         Los cuatro documentos de teoría
-│   ├── img/            Las 17 figuras publicadas
+│   ├── img/            Las 17 figuras publicadas y la captura del panel
 │   ├── limitaciones.md Las 28 limitaciones, con su porqué
-│   ├── decisiones.md   Lo que sigue abierto, con opciones y estado
+│   ├── decisiones.md   Las decisiones del proyecto, con sus opciones y lo acordado
 │   └── benchmark_pqc.json
 ├── data/               La muestra del detector y su procedencia
 ├── vectors/            keystream_v1.json · el vector de determinismo del Módulo 3
 ├── Dockerfile          El entorno reproducible (compila liboqs)
-└── docker-compose.yml  app · test · figuras
+├── docker-compose.yml  app · test · figuras
+├── .mailmap            Las identidades de git unificadas en tres personas
+├── LICENSE             Apache 2.0
+└── SECURITY.md         Dónde avisar de un fallo, y qué NO protege esto
 ```
 
 ---
@@ -230,24 +257,50 @@ la regla que la CI comprueba en cada *pull request*.
 
 ## Reparto y licencia
 
-Tres personas, medido sobre `main` con `git shortlog -sn --no-merges`, consolidando las dos
-identidades de git que usa cada uno:
+Tres personas. Lo que llevó cada una:
 
-| | Commits | Responsabilidad |
-|---|---:|---|
-| **Carlos Martínez-Meco López** ([@cmartinezmeco](https://github.com/cmartinezmeco)) | 31 | Infraestructura, CI, contenedores, datos, benchmarking, visualización e integración |
-| **Marco** ([@Marcociber](https://github.com/Marcociber)) | 16 | Reconciliación de claves, criptografía post-cuántica, análisis de entropía y seguridad |
-| **Gonzalo** ([@gonzaloz-hub](https://github.com/gonzaloz-hub)) | 10 | Física y modelado teórico: BB84, Shor, sistemas caóticos, ruido de detector |
+| | Responsabilidad |
+|---|---|
+| **Carlos Martínez-Meco López** ([@cmartinezmeco](https://github.com/cmartinezmeco)) | Infraestructura, CI, contenedores, datos, benchmarking, visualización e integración |
+| **Marco López Ballestrino** ([@Marcociber](https://github.com/Marcociber)) | Reconciliación de claves, criptografía post-cuántica, análisis de entropía y seguridad |
+| **Gonzalo Zaballos Galán** ([@gonzaloz-hub](https://github.com/gonzaloz-hub)) | Física y modelado teórico: BB84, Shor, sistemas caóticos, ruido de detector |
 
-Un commit no es una unidad de trabajo y `git log` no mide autoría de líneas. La medida completa,
-con sus advertencias, está en [`docs/decisiones.md`](docs/decisiones.md).
+Aquí había una columna con el número de *commits* de cada uno y ya no está. El motivo es que
+no medía lo que parecía medir: un *commit* cuenta cuántas veces alguien guardó, no cuánto
+hizo, y además cualquier cifra de esas caduca con el *commit* siguiente —incluido el que la
+corrigiera—. La columna de la derecha es la información útil, y esa no se queda vieja.
 
-**Licencia: pendiente.** Sin fichero `LICENSE`, por defecto nadie puede usar, copiar ni
-distribuir este código. La elección está abierta y documentada; se cierra en la tarea 4.17.
+Quien quiera los números los tiene a mano, y son más fiables recién sacados que copiados aquí:
+
+```bash
+git shortlog -sn --no-merges
+```
+
+El `.mailmap` de la raíz se encarga de que salgan tres personas y no las seis identidades de
+git que hemos ido usando entre el portátil, la web de GitHub y alguna máquina prestada.
+
+**Licencia: [Apache 2.0](LICENSE).** Puedes usar, copiar, modificar y redistribuir el código,
+también con fines comerciales, manteniendo el aviso de copyright y la nota de los cambios. Se
+eligió sobre MIT por la cláusula explícita de patentes, que en un repositorio de criptografía
+pesa más que en otros campos. Para citarlo, [`CITATION.cff`](CITATION.cff).
 
 ---
 
-## Contribuir
+## Cómo participar
+
+Este es un proyecto académico cerrado, de tres personas, y el código lo escribimos nosotros.
+No buscamos colaboradores externos, y eso no es desinterés: es que el reparto de autoría
+forma parte de lo que se evalúa.
+
+**Lo que sí agradecemos, y mucho, son las *issues*.** Si encuentras un error, una cifra que no
+cuadra, una explicación que se entiende mal o algo del arranque rápido que no funciona en tu
+máquina, [ábrela](https://github.com/cmartinezmeco/qpcs/issues). Es la forma más útil de
+echar una mano y se lee toda.
+
+Si has encontrado un fallo de seguridad, no lo pongas en una *issue*: mira
+[`SECURITY.md`](SECURITY.md), que explica por dónde avisar en privado.
+
+### Para nosotros tres
 
 Nunca se trabaja directamente sobre `main`. Una rama por tarea, un *pull request* por rama, y
 al menos una aprobación de otra persona antes de mergear. La CI tiene que estar en verde: no

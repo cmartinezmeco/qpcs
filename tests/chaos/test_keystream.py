@@ -83,7 +83,7 @@ def test_floyd_encuentra_un_ciclo_de_longitud_CONOCIDA(r, periodo):
 @pytest.mark.parametrize("sistema", ["logistico", "lorenz"])
 @pytest.mark.parametrize("n_bytes", [1, 2, 3, 4, 100, 1021])
 def test_el_keystream_mide_exactamente_lo_que_se_le_pide(sistema, n_bytes):
-    """Caso borde de la tabla del cap. 8.9 (tarea 3.9), primera mitad: un
+    """Caso borde de la tarea 3.9, primera mitad: un
     keystream mas corto que la imagen no se puede truncar en silencio.
 
     La primera linea de defensa es que no ocurra: `keystream` devuelve
@@ -109,11 +109,11 @@ def test_un_keystream_corto_da_error_y_no_cifra_a_medias():
     difusion un keystream mas corto que los datos, tiene que ser un error
     CLARO y no un cifrado truncado.
 
-    Es el tercero de los errores tipicos de la tarea 3.6 (cap. 5.4): un
+    Es el tercero de los errores tipicos de la tarea 3.6: un
     keystream regenerado con otra longitud desalinea el flujo desde el
     primer byte, y el sintoma -ruido- es identico al de un descifrado
     correcto de datos cifrados. Silencio aqui es el fallo silencioso del
-    capitulo 4 otra vez.
+    determinismo otra vez.
     """
     clave = ClaveCaotica("logistico", 0.4, r=3.99)
     datos = np.zeros(1000, dtype=np.uint8)
@@ -127,11 +127,11 @@ def test_un_keystream_corto_da_error_y_no_cifra_a_medias():
 
 
 def test_el_modulo_avisa_si_la_orbita_cicla(caplog):
-    """Caso borde de la tabla del cap. 8.9 (tarea 3.9): ciclo mas corto que
+    """Caso borde de la tarea 3.9: ciclo mas corto que
     la imagen, aviso explicito.
 
-    Cualquier orbita en float64 es periodica y la guia (cap. 4.5) no pide
-    resolverlo -no se puede-, pide MEDIRLO y avisar. r = 3.2 da periodo 2,
+    Cualquier orbita en float64 es periodica, y eso no se puede resolver:
+    lo que el modulo hace es MEDIRLO y avisar. r = 3.2 da periodo 2,
     asi que el keystream son dos bytes repetidos hasta el final: el caso
     extremo del que hay que enterarse.
 

@@ -1,7 +1,7 @@
 """src/chaos/testimg.py - imagen de prueba generada de forma determinista.
 
 No se versiona ningun binario: la imagen se genera por codigo con semilla
-fija, lo que hace reproducibles NPCR y UACI (guia Fase 3, cap. 1.2).
+fija, lo que hace reproducibles NPCR y UACI.
 """
 
 from __future__ import annotations
@@ -31,8 +31,8 @@ _ANCHO_BANDA = 32
 # modulo. Replicar cada valor sorteado en un bloque de 8x8 da una textura
 # con estructura local, que es lo que hay que ver desaparecer al cifrar.
 # Medido sobre 256x256: H 0.954, V 0.977, D 0.934, entropia 5.45, que cae
-# dentro de los rangos que la guia da para una imagen natural (cap. 6.2)
-# y cumple la comprobacion de cordura (corr > 0.9, entropia < 7.5).
+# dentro de lo que cabe esperar de una imagen natural y cumple la
+# comprobacion de cordura (corr > 0.9, entropia < 7.5).
 _LADO_BLOQUE = 8
 
 

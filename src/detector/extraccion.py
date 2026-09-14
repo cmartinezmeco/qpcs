@@ -3,7 +3,7 @@
 Reutiliza qkd.privacy_amplify, el mismo extractor de la tarea 1.6. El
 leftover hash lemma no sabe de donde viene la min-entropia, solo necesita
 saber cuanta hay: por eso el mismo codigo sirve para destilar una clave
-de BB84 y para destilar entropia de un detector (guia Fase 4, cap. 4.4).
+de BB84 y para destilar entropia de un detector.
 
 ell = floor(n * H_min - 2 log2(1/eps))
 
@@ -17,8 +17,8 @@ Porque no calcula esta formula: la suya es ell = n(1 - h(Q)) - leak_ec -
 2 log2(1/eps), con la entropia binaria de un QBER dentro. Para reutilizarla
 habria que inventarse un QBER ficticio Q = h^-1(1 - H_min) y un leak_ec = 0,
 es decir, mentir sobre el significado de los dos parametros para que la
-aritmetica cuadrase. Lo que se reutiliza -y es lo que pide la guia- es
-privacy_amplify, que es el extractor; el peaje del leftover hash lemma se
+aritmetica cuadrase. Lo que se reutiliza es privacy_amplify, que es el
+extractor de verdad; el peaje del leftover hash lemma se
 escribe aqui, en tres lineas, con su propio nombre.
 
 LA CUENTA DE UNIDADES, QUE ES LA TRAMPA DE ESTA TAREA
@@ -30,10 +30,10 @@ por BIT. Las dos son la misma cifra vista con distinta unidad:
     n_bits * H_por_bit = n_simbolos * H_por_simbolo
 
 asi que ell no depende de en cual de las dos se piense. Se calcula con la
-version por bit (que es como la escribe la guia) y se publica en
+version por bit, que es la forma en que se escribe siempre, y se publica en
 ResultadoExtraccion.h_min_por_bit, para que nadie confunda "4 bits
 conservados por muestra" con "4 bits de entropia por muestra": el error
-mas comun del campo (guia Fase 4, cap. 6.6).
+mas comun del campo.
 """
 
 from __future__ import annotations
@@ -100,7 +100,8 @@ def _semilla_urandom(n_bits: int) -> Bits:
 
     La semilla de Toeplitz tiene que ser independiente de la fuente: si
     saliera del propio ruido, el leftover hash lemma dejaria de aplicar
-    (guia Fase 4, cap. 4.4.1). Por eso no hay parametro `semilla` en toda
+    y el resultado dejaria de estar garantizado. Por eso no hay
+    parametro `semilla` en toda
     esta cadena, al reves que en la senal sintetica de los tests. Mismo
     criterio que las claves de ML-KEM de la fase 2.
 
@@ -137,7 +138,7 @@ def _chi2_de_bytes(bits: Bits) -> float:
     MISMO estadistico que chaos.histograma_chi2 del modulo 3 (hay un test
     que comprueba que los dos dan el mismo numero sobre los mismos datos);
     no se importa de alli para no atar el modulo 4 al 3 por cuatro lineas
-    de bincount, cuando lo unico que la guia manda reutilizar es el
+    de bincount, cuando lo unico que hace falta compartir es el
     extractor del modulo 1.
 
     Se usan solo los bytes COMPLETOS: np.packbits rellenaria el ultimo con
@@ -173,7 +174,7 @@ def extraer(
     comprimen a ell con la matriz de Toeplitz de n + ell - 1 bits de
     semilla. Los dos estadisticos de validacion (monobit y chi2 de bytes)
     se calculan sobre la salida y viajan en el resultado: son condiciones
-    NECESARIAS, no suficientes (guia Fase 4, cap. 4.5). Lo que garantiza
+    NECESARIAS, no suficientes. Lo que garantiza
     que la salida sea buena es la estimacion conservadora de la 4.6 mas el
     leftover hash lemma, no que estos dos numeros salgan bonitos.
 

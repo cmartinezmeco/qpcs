@@ -12,7 +12,7 @@ figuras leen de ahi: retocar un color no obliga a re-medir ni cambia los
 numeros del README. --medir es lo que se lanza DENTRO del contenedor cuando se
 quieren cifras nuevas (ver el README del modulo).
 
-Reglas de la tarea (seccion 5.9.2 de la guia):
+Reglas de la tarea:
   - Tres figuras, ni una mas. Salida versionada en docs/img/ (PNG, dpi=150,
     fondo blanco).
   - Semilla fija donde aplique: la parte Shor es reproducible bit a bit. La
@@ -284,7 +284,7 @@ def figura_2_tamanos(tamanos: list[Tamanos]) -> None:
 
     ancho = 0.8 / len(MECANISMOS)
     for j, mecanismo in enumerate(MECANISMOS):
-        # .get y no [ ]: si el JSON viene de una version que aun no medía uno
+        # .get y no [ ]: si el JSON viene de una version que aun no media uno
         # de los cinco mecanismos, la figura se dibuja sin esa serie en vez de
         # morir con un KeyError a mitad del script.
         tam = por_mecanismo.get(mecanismo)

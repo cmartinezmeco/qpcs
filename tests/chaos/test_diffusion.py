@@ -14,7 +14,7 @@ def _datos(n, semilla):
     return np.random.default_rng(semilla).integers(0, 256, n, dtype=np.uint8)
 
 
-def test_la_formula_es_la_de_la_guia():
+def test_la_formula_es_la_especificada():
     """c_i = p_i XOR k_i XOR c_{i-1}, con c_{-1} = iv. Calculado a mano
     sobre cuatro bytes para que el test no repita el codigo que prueba."""
 
@@ -44,7 +44,7 @@ def test_round_trip_de_la_etapa(n):
 
 def test_el_resultado_es_uint8():
     """Un float en el camino del XOR es un TypeError en el mejor caso y
-    una conversion silenciosa en el peor (guia Fase 3, cap. 7.2)."""
+    una conversion silenciosa en el peor."""
 
     p, k = _datos(64, 1), _datos(64, 2)
     assert difundir_adelante(p, k, 0).dtype == np.uint8
@@ -53,7 +53,7 @@ def test_el_resultado_es_uint8():
 
 def test_no_muta_las_entradas():
     """Operaciones in place sobre la entrada destruyen el original que el
-    test de round-trip necesita para comparar (guia Fase 3, ap. B)."""
+    test de round-trip necesita para comparar."""
 
     p, k = _datos(256, 3), _datos(256, 4)
     copia_p, copia_k = p.copy(), k.copy()
@@ -67,7 +67,7 @@ def test_la_avalancha_va_solo_hacia_adelante():
     """Cambiar p_j no toca ningun c_t con t < j, y toca TODOS los t >= j.
 
     Es la limitacion real que obliga a la segunda pasada del cifrado
-    (guia Fase 3, cap. 5.3.2): la avalancha es unidireccional, asi que
+    la avalancha es unidireccional, asi que
     cambiar el ULTIMO pixel solo afectaria al ultimo byte del cifrado.
     """
     n, j = 512, 300
@@ -101,7 +101,7 @@ def test_el_iv_forma_parte_de_la_cadena():
 def test_longitudes_distintas_dan_error_y_no_truncan(funcion):
     """Regenerar el keystream con distinta longitud desalinea el flujo
     desde el primer byte. Es uno de los tres errores tipicos de la tarea
-    (cap. 5.4) y tiene que doler, no truncar en silencio."""
+    y tiene que doler, no truncar en silencio."""
 
     p, k = _datos(100, 9), _datos(64, 10)
     with pytest.raises(ValueError, match="64 bytes para 100"):

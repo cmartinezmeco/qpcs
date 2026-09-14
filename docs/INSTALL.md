@@ -104,8 +104,14 @@ source ~/.bashrc
 ## Paso 7 — VS Code
 
 Abre el proyecto desde WSL con `code .` e instala **Python** y **Pylance** (Microsoft) como
-mínimo; **Docker**, **Jupyter** y **GitLens** ayudan. El fichero `.vscode/settings.json` está
-versionado y configura Black y el intérprete del `.venv` para todo el equipo.
+mínimo; **Docker**, **Jupyter** y **GitLens** ayudan.
+
+La configuración del editor no va versionada: cada uno usa el suyo y el
+`.vscode/` está en el `.gitignore`. Lo único que conviene apuntar a mano es el intérprete
+(**Python: Select Interpreter** → el `.venv` del proyecto) y el formateador (**Black**, con
+formato al guardar). Las reglas de verdad —longitud de línea, versión de Python, qué revisa
+cada herramienta— viven en `pyproject.toml`, que sí está versionado, así que son las mismas
+para todos con editor o sin él.
 
 ---
 
@@ -113,10 +119,10 @@ versionado y configura Black y el intérprete del `.venv` para todo el equipo.
 
 En el entorno local:
 
-Primero movernos a /qpcs
+Primero hay que situarse en la carpeta del proyecto:
 
 ```bash
-cd ~\qpcs
+cd ~/qpcs
 ```
 
 ```bash
@@ -151,15 +157,58 @@ pytest tests/ -m "not slow"
 
 ## Arrancar el contenedor
 
-### Comando docker para arrancar el contenedor
-
 ```bash
 docker compose up -d --build app
 ```
 
+La primera vez tarda un rato porque compila `liboqs`; las siguientes son segundos. El `-d`
+lo deja corriendo en segundo plano, así que la terminal vuelve enseguida y no hay nada más
+que esperar en ella.
+
+**Ahora abre [http://localhost:8501](http://localhost:8501) en el navegador.** Ahí está el
+panel. Si en vez de `-d` lo arrancas en primer plano, Streamlit imprime una línea
+`URL: http://0.0.0.0:8501`: es la dirección **desde dentro** del contenedor, y desde tu
+navegador no funciona. La buena es siempre `localhost:8501`.
+
+Esto es lo que tiene que salir:
+
+![El panel de QPCS recién arrancado, con la pestaña del Módulo 1 abierta](img/index.jpg)
+
+Una pestaña por módulo, arriba. Si ves esto, el entorno está montado y funcionando.
+
+Para pararlo:
+
+```bash
+docker compose down
+```
+
+Y si el navegador no carga nada, mira [«El puerto 8501 no responde»](#el-puerto-8501-no-responde)
+más abajo.
+
 ---
 
 ## Problemas conocidos
+
+### El puerto 8501 no responde
+
+El contenedor arrancó pero el navegador no carga nada en `localhost:8501`. Por orden de
+probabilidad:
+
+1. **Todavía está construyendo.** La primera vez compila `liboqs` y son entre diez y
+   diecisiete minutos. Míralo con `docker compose logs -f app`: hasta que no aparezca la
+   línea de Streamlit, no hay nada escuchando.
+2. **El contenedor se cayó.** `docker compose ps` te dice si sigue en pie. Si no está, el
+   motivo estará en `docker compose logs app`.
+3. **Ya tenías algo en el 8501.** Si `docker compose up` se quejó de que el puerto está
+   ocupado, cambia el lado izquierdo del mapeo en `docker-compose.yml` (por ejemplo
+   `"8502:8501"`) y entra por `localhost:8502`.
+4. **Estás en Windows sin la integración de WSL2.** Docker Desktop tiene que tener activada
+   la integración con tu distribución, o el puerto se publica en un sitio al que tu
+   navegador no llega.
+
+Lo que **no** es la causa: la línea `URL: http://0.0.0.0:8501` que imprime Streamlit. Esa
+dirección es la de dentro del contenedor y no se escribe en el navegador. La buena siempre es
+`localhost:8501`.
 
 ### `RuntimeError: No oqs shared libraries found`
 

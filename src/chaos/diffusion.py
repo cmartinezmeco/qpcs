@@ -4,7 +4,7 @@ La difusion hacia adelante es intrinsecamente SECUENCIAL (cada byte
 depende del anterior) y no se puede vectorizar. Deshacerla SI es
 vectorizable, porque los c_{i-1} ya son la entrada conocida. Esa
 asimetria es la razon de que descifrar sea mas rapido que cifrar en el
-benchmark (guia Fase 3, cap. 5.3).
+benchmark.
 
 Por que encadenado y no un XOR simple: con c_i = p_i XOR k_i, cambiar un
 pixel del plano cambia UN pixel del cifrado y NPCR saldria 1/M (0.0015 %)
@@ -35,7 +35,7 @@ def difundir_adelante(p: Keystream, k: Keystream, iv: int) -> Keystream:
 
     Raises:
         ValueError: si k es mas corto que p. Es el tercero de los errores
-            tipicos de la tarea 3.6 (guia Fase 3, cap. 5.4): un keystream
+            tipicos de la tarea 3.6: un keystream
             regenerado con otra longitud desalinea el flujo desde el primer
             byte, y truncar en silencio convertiria eso en ruido en vez de
             en un error.
@@ -73,7 +73,7 @@ def deshacer_adelante(c: Keystream, k: Keystream, iv: int) -> Keystream:
     Vectorizable: c_{i-1} es la entrada, no hay que calcularla paso a paso.
     De ahi que descifrar salga uno o dos ordenes de magnitud mas rapido que
     cifrar en el benchmark, y hay que decirlo en el README para que no
-    parezca un error de medida (guia Fase 3, cap. 5.3).
+    parezca un error de medida.
 
     Args:
         c: datos difundidos.

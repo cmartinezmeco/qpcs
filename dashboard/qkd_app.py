@@ -137,6 +137,19 @@ SHOTS_FASE = 2048
 # Cuantos bytes en hexadecimal se ensenan de cada artefacto binario.
 BYTES_PREVIA = 16
 
+# --- Constantes del modulo 4 (tarea 4.9) -----------------------------------
+# Ancho de linea del volcado hexadecimal que se DESCARGA. Son unos 450 000
+# digitos: en una sola linea el fichero es incomodo de abrir, y en renglones
+# de 64 se lee como cualquier volcado hexadecimal de toda la vida. Los saltos
+# son de presentacion, no forman parte del dato.
+ANCHO_HEX = 64
+# Cuantos digitos se mandan al HTML para la linea de muestra de la pantalla.
+# No es lo que se ve: lo que se ve lo decide el ancho disponible, y del
+# recorte se encarga la hoja de estilo. Este numero solo tiene que ser
+# holgado para que nunca falte texto que ensenar, ni siquiera en una pantalla
+# muy ancha.
+VISTA_HEX = 320
+
 # --- Constantes del modulo 3 (tarea 3.10) ----------------------------------
 # Clave por defecto de la demostracion. r = 3.99 es caotico sin ambiguedad y
 # esta lejos de la ventana de periodo 3 en 3.83, que es la trampa del modulo.
@@ -148,7 +161,7 @@ R_DEMO = 3.99
 # reescalan en vez de rechazarse, que para una demostracion es mas util.
 LADO_MAXIMO_SUBIDA = 512
 # Perturbacion de la clave equivocada. 1e-15 es del orden del ultimo bit de
-# la mantisa de un float64: es la sensibilidad a la clave del cap. 6.5, que
+# la mantisa de un float64: es la sensibilidad a la clave, que
 # no es una propiedad del cifrado sino del exponente de Lyapunov.
 EPSILON_CLAVE = 1e-15
 # Clave AES de la tabla comparativa. Fija y visible A PROPOSITO: esto es una
@@ -175,7 +188,9 @@ st.set_page_config(
     page_title="QPCS · Criptografía cuántica y poscuántica",
     page_icon="🔐",
     layout="wide",
-    initial_sidebar_state="expanded",
+    # Ya no hay barra lateral: los parametros de BB84 viven dentro de su
+    # pestana desde el rediseno del modulo 1.
+    initial_sidebar_state="collapsed",
     menu_items={
         "About": (
             "QPCS · Quantum & Physics Cryptography Suite. "
@@ -241,7 +256,7 @@ _cargar_estilos()
 # ---------------------------------------------------------------------------
 # Simulaciones cacheadas. Streamlit reejecuta el script ENTERO en cada
 # interaccion: sin @st.cache_data, mover cualquier slider relanzaria la
-# simulacion completa y la interfaz se arrastraria (seccion 5.9 de la guia).
+# simulacion completa y la interfaz se arrastraria.
 # ---------------------------------------------------------------------------
 
 
@@ -340,10 +355,14 @@ def _datos_sifting(n: int, p: float, noise: float, seed: int) -> pd.DataFrame | 
             # publicarse, no hay nada que ensenar.
             resultado = "descartado"
             bob_txt = "-"
+        # Todas las celdas van como texto. Una columna numerica la alinea
+        # Streamlit a la derecha y las de texto a la izquierda, y la tabla
+        # salia con dos columnas escoradas a un lado y cinco al otro. Aqui
+        # no hay nada que sumar ni ordenar: son etiquetas de posicion.
         filas.append(
             {
-                "Fotón": i,
-                "Bit de Alice": int(alice_bits[i]),
+                "Fotón": str(i),
+                "Bit de Alice": str(int(alice_bits[i])),
                 "Base de Alice": base_txt[int(alice_bases[i])],
                 "Base de Bob": base_txt[int(bob_bases[i])],
                 "Bases iguales": "Sí" if coincide else "No",
@@ -504,7 +523,7 @@ def _descifrar_con_otra_clave(
     diferencia se amplifica como e^(lambda*n) y tras el transitorio de mil
     iteraciones que descarta el keystream las dos orbitas no tienen ninguna
     relacion. El descarte del transitorio no es higiene numerica, es lo que
-    produce la sensibilidad a la clave (cap. 6.5).
+    produce la sensibilidad a la clave.
 
     No lanza ni avisa: un cifrado sin autenticacion NO PUEDE distinguir
     "clave equivocada" de "cifrado manipulado", y fingir que si es
@@ -521,7 +540,7 @@ def _descifrar_con_otra_clave(
 def _tabla_tres_columnas(
     imagen: np.ndarray, sistema: str, x0: float, r: float, y0: float, z0: float
 ) -> pd.DataFrame:
-    """La tabla del cap. 6.6, medida en vivo sobre la imagen que se ve.
+    """La tabla comparativa, medida en vivo sobre la imagen que se ve.
 
     Las tres columnas se miden con las MISMAS funciones sobre la MISMA
     imagen: es lo que la convierte en una comparacion y no en tres medidas
@@ -605,8 +624,8 @@ def _imagen_subida(fichero) -> np.ndarray | None:
     """Convierte lo que suba el usuario en una imagen uint8 en escala de grises.
 
     El modulo trabaja en 8 bits y en escala de grises, y eso no es una
-    limitacion de la interfaz sino del alcance declarado de la fase (cap.
-    2.3): el color es una extension trivial en volumen que no anade nada
+    limitacion de la interfaz sino del alcance declarado de la fase: el
+    color es una extension trivial en volumen que no anade nada
     conceptual, y esta fuera a proposito. Aqui se convierte en vez de
     rechazar el fichero, y se dice en pantalla.
 
@@ -615,8 +634,21 @@ def _imagen_subida(fichero) -> np.ndarray | None:
     """
     if fichero is None:
         return None
+    # Restriccion explicita de formatos: sin esto, Image.open() autodetecta
+    # el formato por el CONTENIDO del fichero, no por su extension, y el
+    # selector del navegador (el "type" de st.file_uploader) es solo un
+    # filtro de interfaz, no una barrera de seguridad -se puede renombrar
+    # cualquier fichero con extension .png y Pillow lo abrira igual si
+    # reconoce su firma interna-. Varios complementos de formato que Pillow
+    # trae activados por defecto (PSD, FITS, PCF, BDF, GD, McIdas, TGA,
+    # JPEG2000, entre otros) han tenido vulnerabilidades de lectura/escritura
+    # fuera de limites explotables con un fichero manipulado. Restringir a
+    # los cuatro formatos que la interfaz ofrece de verdad cierra esa via
+    # de entrada, tanto para las vulnerabilidades ya conocidas como para
+    # las que puedan aparecer en otros complementos en el futuro.
+    formatos_permitidos = ("PNG", "JPEG", "BMP", "TIFF")
     try:
-        with Image.open(fichero) as abierta:
+        with Image.open(fichero, formats=formatos_permitidos) as abierta:
             gris = abierta.convert("L")
             lado_mayor = max(gris.size)
             if lado_mayor > LADO_MAXIMO_SUBIDA:
@@ -666,35 +698,35 @@ def _entero_es(valor: int) -> str:
 
 
 def _mostrar_flujo_qkd(resultado: ProtocolResult) -> None:
-    """Resume la perdida de bits a lo largo de la cadena BB84."""
+    """Resume la perdida de bits a lo largo de la cadena BB84.
+
+    Las cuatro etapas van dentro de un solo rectangulo y con las flechas
+    entre medias, igual que las cadenas de los modulos 2 y 3. Antes eran
+    cuatro tarjetas separadas: se leian como cuatro medidas independientes
+    cuando lo que cuentan es una sola cifra perdiendo bits por el camino.
+    """
     tras_muestra = int(resultado.qber.remaining.alice.size)
     final = 0 if resultado.final_key is None else int(resultado.final_key.size)
     estado_final = "Protocolo abortado" if resultado.aborted else "Clave destilada"
+    etapas = (
+        ("Preparación", _entero_es(resultado.n_photons), "fotones enviados"),
+        ("Cribado", _entero_es(resultado.sifted_len), "bases coincidentes"),
+        ("Estimación", _entero_es(tras_muestra), "bits tras medir el QBER"),
+        ("Privacidad", _entero_es(final), estado_final),
+    )
+    piezas: list[str] = []
+    for posicion, (etiqueta, valor, detalle) in enumerate(etapas):
+        if posicion:
+            piezas.append('<div class="qpcs-flow__arrow">→</div>')
+        piezas.append(
+            '<div class="qpcs-flow__step">'
+            f'<span class="qpcs-flow__label">{etiqueta}</span>'
+            f'<span class="qpcs-flow__value">{valor}</span>'
+            f'<span class="qpcs-flow__detail">{detalle}</span>'
+            "</div>"
+        )
     st.markdown(
-        f"""
-        <div class="qpcs-flow">
-            <div class="qpcs-flow__step">
-                <span class="qpcs-flow__label">Preparación</span>
-                <span class="qpcs-flow__value">{_entero_es(resultado.n_photons)}</span>
-                <span class="qpcs-flow__detail">fotones enviados</span>
-            </div>
-            <div class="qpcs-flow__step">
-                <span class="qpcs-flow__label">Cribado</span>
-                <span class="qpcs-flow__value">{_entero_es(resultado.sifted_len)}</span>
-                <span class="qpcs-flow__detail">bases coincidentes</span>
-            </div>
-            <div class="qpcs-flow__step">
-                <span class="qpcs-flow__label">Estimación</span>
-                <span class="qpcs-flow__value">{_entero_es(tras_muestra)}</span>
-                <span class="qpcs-flow__detail">bits tras medir el QBER</span>
-            </div>
-            <div class="qpcs-flow__step">
-                <span class="qpcs-flow__label">Privacidad</span>
-                <span class="qpcs-flow__value">{_entero_es(final)}</span>
-                <span class="qpcs-flow__detail">{estado_final}</span>
-            </div>
-        </div>
-        """,
+        f'<div class="qpcs-flow">{"".join(piezas)}</div>',
         unsafe_allow_html=True,
     )
 
@@ -762,89 +794,8 @@ def _grafico_benchmark(df: pd.DataFrame) -> plt.Figure:
 
 
 # ---------------------------------------------------------------------------
-# Controles del modulo 1 (barra lateral)
+# Cabecera y pestanas
 # ---------------------------------------------------------------------------
-
-with st.sidebar:
-    st.markdown(
-        """
-        <div class="qpcs-sidebar-brand">
-            <div class="qpcs-sidebar-brand__mark">Q</div>
-            <div class="qpcs-sidebar-brand__text">
-                <strong>QPCS</strong>
-                <span>CRYPTOGRAPHY SUITE</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.header("Configuración de BB84")
-    st.markdown(
-        '<div class="qpcs-note">Estos parámetros afectan únicamente al '
-        "experimento del Módulo 1.</div>",
-        unsafe_allow_html=True,
-    )
-    n = st.select_slider(
-        "Fotones enviados",
-        options=[1_000, 5_000, 10_000, 50_000],
-        value=10_000,
-        format_func=_entero_es,
-        help="Número de fotones preparados por Alice para esta ejecución.",
-    )
-    p_porcentaje = st.slider(
-        "Intercepción de Eve",
-        0,
-        100,
-        0,
-        5,
-        format="%d %%",
-        help="Porcentaje de fotones que Eve intercepta y reenvía.",
-    )
-    ruido_porcentaje = st.slider(
-        "Ruido del canal",
-        0,
-        10,
-        1,
-        1,
-        format="%d %%",
-        help="Probabilidad de error físico independiente del espionaje.",
-    )
-    muestra_porcentaje = st.slider(
-        "Muestra pública para el QBER",
-        5,
-        50,
-        20,
-        5,
-        format="%d %%",
-        help=(
-            "Una muestra mayor reduce la incertidumbre, pero sacrifica más bits "
-            "de la clave."
-        ),
-    )
-    seed = int(
-        st.number_input(
-            "Semilla de la simulación",
-            value=42,
-            step=1,
-            help="La misma semilla y los mismos parámetros reproducen el resultado.",
-        )
-    )
-    p = p_porcentaje / 100
-    noise = ruido_porcentaje / 100
-    sample_fraction = muestra_porcentaje / 100
-    st.markdown(
-        """
-        <div class="qpcs-note">
-            Motor NumPy exacto y vectorizado. Es el único backend interactivo
-            que modela a Eve y admite hasta 50.000 fotones con fluidez.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.divider()
-    st.caption("QPCS · Módulos 1 a 4 · Entorno educativo y reproducible")
-
-r = _simular(int(n), float(p), float(noise), float(sample_fraction), seed)
 
 st.markdown(
     """
@@ -877,8 +828,14 @@ tab_qkd, tab_pqc, tab_chaos, tab_detector = st.tabs(
 )
 
 # ===========================================================================
-# PESTANA 1 - Modulo QKD (Fase 1, tarea 1.9). Contenido intacto: lo unico que
-# cambia respecto a la Fase 1 es que ahora vive dentro de su pestana.
+# PESTANA 1 - Modulo QKD (Fase 1, tarea 1.9).
+#
+# DONDE VIVEN LOS CONTROLES. Hasta ahora los parametros de BB84 estaban en la
+# barra lateral, y hacia falta una nota aclarando que solo afectaban a este
+# modulo: el panel tiene cuatro y la barra lateral se lee como global. Ahora
+# estan dentro de la pestana, a la izquierda de las figuras que gobiernan,
+# que es donde los modulos 3 y 4 pusieron los suyos desde el principio. La
+# barra lateral ya no existe.
 # ===========================================================================
 
 with tab_qkd:
@@ -889,71 +846,88 @@ with tab_qkd:
         "canal, y cómo BB84 decide si todavía es posible destilar una clave segura.",
     )
 
-    # -----------------------------------------------------------------------
-    # Metricas grandes
-    # -----------------------------------------------------------------------
-
-    # MEJORA D1: f_EC sale ya de la property del contrato
-    # (ReconciliationResult.efficiency), no de una copia local de la formula.
-    # La property devuelve NaN cuando no esta definida (h(Q) = 0 o n = 0) y
-    # aqui eso se ensena como "—", igual que antes.
-    f_ec: float | None = None
-    if r.reconciliation is not None:
-        eficiencia = r.reconciliation.efficiency
-        if math.isfinite(eficiencia):
-            f_ec = eficiencia
-
-    st.markdown(
-        '<div class="qpcs-kicker">Resultado de la ejecución</div>',
-        unsafe_allow_html=True,
-    )
-    c1, c2, c3, c4 = st.columns(4, gap="medium")
-    c1.metric(
-        "QBER observado",
-        f"{r.qber.qber:.2%}",
-        f"Incertidumbre ± {r.qber.sigma:.2%} (1 σ)",
-        delta_color="off",
-        help="Proporción de errores observados en la muestra pública.",
-    )
-    c2.metric(
-        "Clave final segura",
-        "0 bits" if r.final_key is None else f"{_entero_es(r.final_key.size)} bits",
-        help="Longitud después de reconciliar errores y amplificar la privacidad.",
-    )
-    c3.metric(
-        "Rendimiento",
-        f"{r.secret_fraction:.1%}",
-        help="Bits de clave final por cada fotón enviado.",
-    )
-    c4.metric(
-        "Eficiencia de Cascade",
-        "—" if f_ec is None else f"{f_ec:.2f}",
-        help="f_EC = 1 sería el límite ideal de Shannon; Cascade suele quedar cerca.",
-    )
-
-    # --- El semaforo -------------------------------------------------------
-
-    if r.aborted:
-        st.error(f"**Protocolo abortado.** {_motivo_aborto_legible(r.abort_reason)}")
-    else:
-        assert r.final_key is not None
-        st.success(
-            f"**Canal aceptado.** Se ha destilado una clave segura de "
-            f"{_entero_es(r.final_key.size)} bits."
-        )
-
-    st.markdown(
-        '<div class="qpcs-kicker">Recorrido de los bits</div>', unsafe_allow_html=True
-    )
-    _mostrar_flujo_qkd(r)
+    col_parametros, col_figuras = st.columns([2, 3], gap="large")
 
     # -----------------------------------------------------------------------
-    # Figura Q(p) recalculada + tabla del sifting
+    # Los controles del experimento
     # -----------------------------------------------------------------------
 
-    col_fig, col_tabla = st.columns([3, 2], gap="large")
+    with col_parametros:
+        with st.container(border=True):
+            st.subheader("Parámetros del experimento")
+            st.caption(
+                "Mueve cualquiera de los cinco y todo lo de esta pestaña se "
+                "vuelve a calcular con ellos."
+            )
+            n = st.select_slider(
+                "Fotones enviados",
+                options=[1_000, 5_000, 10_000, 50_000],
+                value=10_000,
+                format_func=_entero_es,
+                help="Número de fotones preparados por Alice para esta ejecución.",
+            )
+            p_porcentaje = st.slider(
+                "Intercepción de Eve",
+                0,
+                100,
+                0,
+                5,
+                format="%d %%",
+                help="Porcentaje de fotones que Eve intercepta y reenvía.",
+            )
+            ruido_porcentaje = st.slider(
+                "Ruido del canal",
+                0,
+                10,
+                1,
+                1,
+                format="%d %%",
+                help="Probabilidad de error físico independiente del espionaje.",
+            )
+            muestra_porcentaje = st.slider(
+                "Muestra pública para el QBER",
+                5,
+                50,
+                20,
+                5,
+                format="%d %%",
+                help=(
+                    "Una muestra mayor reduce la incertidumbre, pero sacrifica más "
+                    "bits de la clave."
+                ),
+            )
+            seed = int(
+                st.number_input(
+                    "Semilla de la simulación",
+                    value=42,
+                    step=1,
+                    help=(
+                        "La misma semilla y los mismos parámetros reproducen el "
+                        "resultado."
+                    ),
+                )
+            )
+            st.markdown(
+                """
+                <div class="qpcs-note">
+                    Motor NumPy exacto y vectorizado. Es el único backend
+                    interactivo que modela a Eve y admite hasta 50.000 fotones
+                    con fluidez.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    with col_fig:
+    p = p_porcentaje / 100
+    noise = ruido_porcentaje / 100
+    sample_fraction = muestra_porcentaje / 100
+    r = _simular(int(n), float(p), float(noise), float(sample_fraction), seed)
+
+    # -----------------------------------------------------------------------
+    # Las dos figuras, una encima de la otra
+    # -----------------------------------------------------------------------
+
+    with col_figuras:
         with st.container(border=True):
             st.subheader("QBER frente a la interceptación de Eve")
             st.caption(
@@ -1031,7 +1005,6 @@ with tab_qkd:
                 "de Shor–Preskill."
             )
 
-    with col_tabla:
         with st.container(border=True):
             st.subheader(f"Cribado de los primeros {N_FILAS_TABLA} fotones")
             st.caption("Una vista posición a posición del intercambio cuántico.")
@@ -1043,21 +1016,79 @@ with tab_qkd:
                     "`dashboard/qkd_app.py`."
                 )
             else:
+                # Todas las columnas son texto (ver _datos_sifting), asi que la
+                # tabla sale alineada a la izquierda de punta a punta en vez de
+                # mezclar dos numeros a la derecha con cinco textos a la
+                # izquierda.
                 st.dataframe(
                     df.style.apply(_colorea_fila, axis=1),
                     hide_index=True,
-                    height=500,
+                    height=440,
                     use_container_width=True,
-                    column_config={
-                        "Fotón": st.column_config.NumberColumn(format="%d"),
-                        "Bit de Alice": st.column_config.NumberColumn(format="%d"),
-                    },
                 )
                 st.caption(
                     "Solo sobreviven las bases coincidentes. Los errores se "
                     "resaltan en rojo y los fotones descartados aparecen atenuados; "
                     "el significado nunca depende únicamente del color."
                 )
+
+    # -----------------------------------------------------------------------
+    # El resultado de la ejecucion, a lo ancho
+    # -----------------------------------------------------------------------
+
+    # MEJORA D1: f_EC sale ya de la property del contrato
+    # (ReconciliationResult.efficiency), no de una copia local de la formula.
+    # La property devuelve NaN cuando no esta definida (h(Q) = 0 o n = 0) y
+    # aqui eso se ensena como "—", igual que antes.
+    f_ec: float | None = None
+    if r.reconciliation is not None:
+        eficiencia = r.reconciliation.efficiency
+        if math.isfinite(eficiencia):
+            f_ec = eficiencia
+
+    st.markdown(
+        '<div class="qpcs-kicker">Resultado de la ejecución</div>',
+        unsafe_allow_html=True,
+    )
+    c1, c2, c3, c4 = st.columns(4, gap="medium")
+    c1.metric(
+        "QBER observado",
+        f"{r.qber.qber:.2%}",
+        f"Incertidumbre ± {r.qber.sigma:.2%} (1 σ)",
+        delta_color="off",
+        help="Proporción de errores observados en la muestra pública.",
+    )
+    c2.metric(
+        "Clave final segura",
+        "0 bits" if r.final_key is None else f"{_entero_es(r.final_key.size)} bits",
+        help="Longitud después de reconciliar errores y amplificar la privacidad.",
+    )
+    c3.metric(
+        "Rendimiento",
+        f"{r.secret_fraction:.1%}",
+        help="Bits de clave final por cada fotón enviado.",
+    )
+    c4.metric(
+        "Eficiencia de Cascade",
+        "—" if f_ec is None else f"{f_ec:.2f}",
+        help="f_EC = 1 sería el límite ideal de Shannon; Cascade suele quedar cerca.",
+    )
+
+    # --- El semaforo -------------------------------------------------------
+
+    if r.aborted:
+        st.error(f"**Protocolo abortado.** {_motivo_aborto_legible(r.abort_reason)}")
+    else:
+        assert r.final_key is not None
+        st.success(
+            f"**Canal aceptado.** Se ha destilado una clave segura de "
+            f"{_entero_es(r.final_key.size)} bits."
+        )
+
+    st.markdown(
+        '<div class="qpcs-kicker">Recorrido de los bits</div>', unsafe_allow_html=True
+    )
+    _mostrar_flujo_qkd(r)
 
 # ===========================================================================
 # PESTANA 2 - Modulo PQC + Shor (Fase 2, tarea 2.9). Tres sub-pestanas: la
@@ -1139,7 +1170,7 @@ with tab_pqc:
             # Limitacion conocida, y se dice en la interfaz en vez de esconder
             # la opcion: factorizar 21 necesita su propio oraculo compilado
             # (c_amod21, 5 qubits de trabajo). Queda documentado como trabajo
-            # pendiente en el README, igual que la guia decidio en la tarea 2.3.
+            # pendiente en el README, igual que se decidio en la tarea 2.3.
             with col_res, st.container(border=True):
                 st.subheader("Resultado")
                 st.info(
@@ -1243,23 +1274,52 @@ with tab_pqc:
                 with col_texto:
                     with st.container(border=True):
                         st.subheader("Cómo leer el resultado")
-                        st.markdown(
-                            f"""
+                        st.markdown(f"""
 1. **Estimación de fase.** El circuito (8 qubits de conteo y 4 de trabajo)
    mide una fase y/2⁸ ≈ s/r del operador |y⟩ → |{res.a}·y mod 15⟩.
 2. **Fracciones continuas.** El denominador del mejor convergente proporciona
    el orden **r = {res.orden}** mediante un cálculo clásico inmediato.
 3. **Reducción clásica.** gcd({res.a}^(r/2) ± 1, 15) produce
    **{res.factores[0]} y {res.factores[1]}**.
-"""
-                        )
-                        st.warning(
-                            "**Modelo de amenaza, no herramienta de ataque.** "
-                            "El oráculo está compilado para números de juguete. "
-                            "Factorizar RSA-2048 requeriría miles de qubits lógicos "
-                            "con corrección de errores, una capacidad que todavía no "
-                            "existe."
-                        )
+""")
+
+                # El aviso del modelo de amenaza va a lo ancho y no dentro de
+                # la columna estrecha de al lado del histograma: son tres
+                # parrafos, y en dos quintos de pagina se convertian en una
+                # tira estrecha larguisima con medio panel vacio al lado. Es
+                # ademas lo mas importante de esta pestana, asi que ocupa el
+                # ancho entero.
+                st.warning(
+                    "**Modelo de amenaza, no herramienta de ataque.** "
+                    "Lo que acabas de ejecutar factoriza el número 15. El "
+                    "oráculo de exponenciación modular está escrito a mano "
+                    "para cada pareja (a, N), y construirlo en general para "
+                    "un número grande es justamente el trabajo que nadie "
+                    "sabe hacer todavía.\n\n"
+                    "Conviene decir con todas las letras dónde está hoy la "
+                    "frontera. **A fecha de septiembre de 2026 esa máquina "
+                    "no existe, ni de lejos.** Los procesadores cuánticos "
+                    "disponibles se cuentan en cientos o unos pocos miles "
+                    "de qubits *físicos*, ruidosos y sin corrección de "
+                    "errores en funcionamiento continuo. Romper una clave "
+                    "RSA-2048 con Shor exige unos pocos miles de qubits "
+                    "*lógicos*, y cada qubit lógico se construye encima de "
+                    "miles de físicos que se dedican solo a corregir los "
+                    "errores de los demás. Las estimaciones publicadas de "
+                    "cuántos qubits físicos harían falta se han ido "
+                    "revisando a la baja con los años, pero ninguna baja "
+                    "del orden del millón, y todas dan por hecha una "
+                    "corrección de errores que hoy no está resuelta. La "
+                    "distancia no es de ingeniería: son varios órdenes de "
+                    "magnitud.\n\n"
+                    "Entonces, ¿por qué migrar ya? Porque el tráfico "
+                    "cifrado se puede guardar. Quien archive hoy una "
+                    "conversación protegida con RSA o con curvas podrá "
+                    "descifrarla el día que esa máquina llegue, y ese día "
+                    "no hay forma de retirar lo que ya se envió. Es lo que "
+                    "se conoce como *harvest now, decrypt later*, y es de "
+                    "lo que trata la pestaña siguiente."
+                )
 
     # -----------------------------------------------------------------------
     # PQC real: cifrar y firmar un mensaje de verdad
@@ -1525,51 +1585,55 @@ with tab_pqc:
                 }
             )
 
-            col_t, col_s = st.columns([3, 2], gap="large")
-            with col_t:
-                with st.container(border=True):
-                    st.subheader("Medidas de tiempo")
-                    st.dataframe(
-                        df_tabla.style.format(
-                            {
-                                "Media (ms)": "{:.3f}",
-                                "σ (ms)": "{:.3f}",
-                                "Mediana (ms)": "{:.3f}",
-                            }
-                        ),
-                        hide_index=True,
-                        height=430,
-                        use_container_width=True,
-                    )
-                    st.caption(
-                        "La desviación típica se deriva de todas las repeticiones; "
-                        "la mediana ayuda a detectar ruido del planificador."
-                    )
-            with col_s:
-                with st.container(border=True):
-                    st.subheader("Tamaño de los artefactos")
-                    st.dataframe(
-                        df_tamanos,
-                        hide_index=True,
-                        height=430,
-                        use_container_width=True,
-                    )
-                    st.caption(
-                        "Los tamaños son deterministas y no necesitan barras de "
-                        "error. Un cero indica que el artefacto no aplica."
-                    )
+            # Las dos tablas van una encima de otra y a todo lo ancho. Lado a
+            # lado, la de tiempos se comia siete columnas en tres quintos de
+            # pagina y la de tamanos se quedaba con un hueco fijo de 430 px
+            # para cinco filas: el resto eran renglones en blanco.
+            with st.container(border=True):
+                st.subheader("Medidas de tiempo")
+                st.dataframe(
+                    df_tabla.style.format(
+                        {
+                            "Media (ms)": "{:.3f}",
+                            "σ (ms)": "{:.3f}",
+                            "Mediana (ms)": "{:.3f}",
+                        }
+                    ),
+                    hide_index=True,
+                    height=430,
+                    use_container_width=True,
+                )
+                st.caption(
+                    "La desviación típica se deriva de todas las repeticiones; "
+                    "la mediana ayuda a detectar ruido del planificador."
+                )
+
+            with st.container(border=True):
+                st.subheader("Tamaño de los artefactos")
+                # Sin altura fija: la tabla crece lo que midan sus filas y se
+                # acaba ahi.
+                st.dataframe(
+                    df_tamanos,
+                    hide_index=True,
+                    use_container_width=True,
+                )
+                st.caption(
+                    "Los tamaños son deterministas y no necesitan barras de "
+                    "error. Un cero indica que el artefacto no aplica."
+                )
 
             datos_entorno = entorno_del_json()
             with st.expander("Consultar el entorno de medición"):
-                st.markdown(
-                    f"""
+                st.markdown(f"""
 - **Plataforma:** {datos_entorno['plataforma']}
 - **Procesador:** {datos_entorno['procesador']}
 - **Python:** {datos_entorno['python']}
 - **liboqs:** {datos_entorno['liboqs']}
 - **Fecha UTC:** {datos_entorno['medido_utc']}
-"""
-                )
+""")
+                # La lista y la nota se tocaban. Un renglon de aire entre
+                # medias separa el dato de su comentario.
+                st.write("")
                 st.caption(
                     "Otra máquina puede producir cifras distintas; por eso el "
                     "entorno forma parte inseparable de las medidas."
@@ -1924,7 +1988,7 @@ with tab_chaos:
         else:
             st.error(
                 "**El round-trip no ha sido exacto.** Esto no debería ocurrir "
-                "nunca: es el fallo silencioso del capítulo 4 y significa que "
+                "nunca: es el fallo silencioso y significa que "
                 "el determinismo está roto en este entorno."
             )
 
@@ -1979,8 +2043,7 @@ with tab_chaos:
                     f"antes de cifrar: {r_original:+.4f}",
                     delta_color="off",
                 )
-                st.markdown(
-                    f"""
+                st.markdown(f"""
                     En una imagen natural cada píxel se parece muchísimo a su
                     vecino y los puntos se agolpan sobre la diagonal. En la
                     cifrada llenan el cuadrado.
@@ -1990,8 +2053,7 @@ with tab_chaos:
                     N(0, 1/√n), así que con {_entero_es(PARES_CORRELACION)} pares
                     σ = {1 / np.sqrt(PARES_CORRELACION):.4f} y el umbral de 4σ es
                     **{4 / np.sqrt(PARES_CORRELACION):.4f}**.
-                    """
-                )
+                    """)
 
         # --- La tabla de las tres columnas --------------------------------
         st.markdown(
@@ -2029,8 +2091,7 @@ with tab_chaos:
         )
 
         with st.expander("Limitaciones conocidas de este módulo"):
-            st.markdown(
-                """
+            st.markdown("""
 - **Sin seguridad demostrable.** No hay reducción a un problema duro ni prueba
   en el modelo del oráculo aleatorio. Ninguna.
 - **Sin autenticación.** No hay MAC ni etiqueta: descifrar con la clave
@@ -2054,8 +2115,7 @@ with tab_chaos:
   degradación por precisión finita.
 - **Alcance.** Escala de grises de 8 bits. Sin color, vídeo ni audio; sin
   gestión de claves; sin compresión; sin GPU.
-"""
-            )
+""")
 
 # ===========================================================================
 # PESTANA 4 - Modulo 4: ruido de detectores y extraccion de entropia
@@ -2149,8 +2209,7 @@ with tab_detector:
     ]:
         """Toda la cadena del modulo, cacheada: un Welch sobre cientos
         de miles de muestras no es instantaneo, y sin cache cada
-        movimiento de un control la relanzaria entera (guia Fase 4,
-        cap. 6.9.2).
+        movimiento de un control la relanzaria entera.
 
         Devuelve una TUPLA de tipos simples, no AnalisisDetector: un
         dataclass definido en este mismo script se redefine en cada
@@ -2256,8 +2315,8 @@ with tab_detector:
             # El formateador logaritmico por defecto de matplotlib genera
             # etiquetas MathText ($10^{...}$), y la cache de mathtext no
             # es segura entre los hilos de sesiones concurrentes de
-            # Streamlit (guia Fase 4, cap. 6.9.2; mismo bug que la Fase 2
-            # documento con el benchmark en escala logaritmica). Se
+            # Streamlit (el mismo fallo que la Fase 2 documento con el
+            # benchmark en escala logaritmica). Se
             # sustituye por texto plano con FuncFormatter.
             formateador_log = FuncFormatter(
                 lambda valor, _pos: (f"{valor:g}" if valor != 0 else "0")
@@ -2289,6 +2348,15 @@ with tab_detector:
                 f"K = {analisis.k_tramos} tramos  ·  picos: {picos_texto}"
             )
 
+    # -----------------------------------------------------------------------
+    # Los estimadores y el embudo, uno al lado del otro y a la misma altura.
+    # Antes iban apilados dentro de la columna derecha, debajo del espectro:
+    # la pagina se hacia larguisima y quedaban dos quintos de ancho sin usar.
+    # -----------------------------------------------------------------------
+
+    col_estimadores, col_embudo = st.columns(2, gap="large")
+
+    with col_estimadores:
         with st.container(border=True):
             st.subheader("Estimadores de min-entropía")
             est = analisis.estimacion
@@ -2315,6 +2383,7 @@ with tab_detector:
                 f"demás no vieron. Mínimo usado: {est.h_min:.4f} bits/símbolo."
             )
 
+    with col_embudo:
         with st.container(border=True):
             st.subheader("Del ruido a los bits")
             bits_conservados = analisis.n * analisis.bits_bajos
@@ -2344,7 +2413,7 @@ with tab_detector:
             ax_embudo.minorticks_off()
             _preparar_ejes(ax_embudo)
             fig_embudo.tight_layout()
-            st.pyplot(fig_embudo)
+            st.pyplot(fig_embudo, use_container_width=True)
             plt.close(fig_embudo)
 
             col_a, col_b, col_c = st.columns(3)
@@ -2352,17 +2421,73 @@ with tab_detector:
             col_b.metric("Bits extraídos", _entero_es(bits_extraidos))
             col_c.metric("Peaje (leftover hash lemma)", f"−{peaje:.0f} bits")
 
-        with st.container(border=True):
-            st.subheader("Bits extraídos")
-            bits_bytes = np.packbits(analisis.resultado.bits).tobytes()
-            hex_o_aviso = _hex_previa(bits_bytes) or (
-                "(sin bits: la fuente no tenía min-entropía suficiente)"
+    # -----------------------------------------------------------------------
+    # Los bits, a lo ancho y enteros.
+    # -----------------------------------------------------------------------
+
+    with st.container(border=True):
+        st.subheader("Bits extraídos")
+        bits_bytes = np.packbits(analisis.resultado.bits).tobytes()
+
+        if not bits_bytes:
+            st.info(
+                "No hay bits que enseñar: con los parámetros actuales la fuente "
+                "no tiene min-entropía suficiente para extraer nada."
             )
-            st.code(hex_o_aviso, language=None)
+        else:
+            st.markdown(f"""
+Estos {_entero_es(len(analisis.resultado.bits))} bits salen del ruido de un
+detector de verdad. La señal es el número de candidatos de *Particle Flow* por
+evento de una toma **ZeroBias** del experimento **CMS**, publicada en abierto
+por el CERN: [registro 31316 de CERN Open
+Data](https://opendata.cern.ch/record/31316), con licencia CC0. La procedencia
+completa —la URI exacta del fichero, el script que extrajo la muestra y las
+cuatro colecciones que se probaron antes y no sirvieron— está en
+[`data/FUENTE.md`](https://github.com/cmartinezmeco/qpcs/blob/main/data/FUENTE.md).
+""")
             st.caption(
                 f"z (monobit) = {analisis.resultado.z_monobit:.4f}  ·  "
                 f"χ² = {analisis.resultado.chi2:.2f}  ·  "
-                f"{_entero_es(len(analisis.resultado.bits))} bits totales. "
-                "El CONTENIDO no es reproducible entre ejecuciones: la "
-                "semilla de Toeplitz sale de os.urandom, nunca sembrada."
+                f"{_entero_es(len(bits_bytes))} bytes. "
+                "El CONTENIDO no es reproducible entre ejecuciones: la semilla "
+                "de Toeplitz sale de os.urandom, nunca sembrada."
+            )
+
+            # En pantalla, UNA linea y nada mas. Son cuatrocientos y pico mil
+            # digitos: ensenarlos todos no informa de nada que no diga ya la
+            # cifra de al lado, y en cambio alarga la pagina sin fin y obliga
+            # al navegador a pintar miles de renglones en cada recalculo.
+            #
+            # Se manda al HTML un trozo holgado y el recorte lo hace la hoja
+            # de estilo (.qpcs-hex, con text-overflow), no Python: asi la
+            # linea llena el ancho que haya -pantalla grande o movil- y acaba
+            # siempre en puntos suspensivos justo donde toca.
+            hex_completo = bits_bytes.hex()
+            st.markdown(
+                f'<div class="qpcs-hex">{hex_completo[:VISTA_HEX]}</div>',
+                unsafe_allow_html=True,
+            )
+
+            # Y quien los quiera de verdad, que se los lleve. El fichero va en
+            # renglones de 64 digitos, como cualquier volcado hexadecimal: se
+            # abre en cualquier editor sin ahogarlo con una linea de medio
+            # mega, y los saltos no estorban a nadie que vaya a parsearlo
+            # (bytes.fromhex de Python, xxd -r -p y compania se saltan los
+            # blancos). El nombre lleva el numero de bits porque el contenido
+            # cambia en cada ejecucion: dos descargas no son el mismo fichero.
+            hex_en_lineas = "\n".join(
+                hex_completo[i : i + ANCHO_HEX]
+                for i in range(0, len(hex_completo), ANCHO_HEX)
+            )
+            n_bits = len(analisis.resultado.bits)
+            st.download_button(
+                label=f"Descargar los {_entero_es(len(hex_completo))} dígitos (.txt)",
+                data=hex_en_lineas,
+                file_name=f"qpcs-bits-extraidos-{n_bits}.txt",
+                mime="text/plain",
+                help=(
+                    "El volcado completo en hexadecimal, en renglones de 64 "
+                    "dígitos. Son "
+                    f"{_entero_es(len(bits_bytes))} bytes de entropía destilada."
+                ),
             )

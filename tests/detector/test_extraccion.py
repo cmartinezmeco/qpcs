@@ -20,7 +20,7 @@ from detector.types import BITS_BAJOS, EPSILON_PA, EstimacionEntropia
 PEAJE = 2 * math.log2(1.0 / EPSILON_PA)  # ~59.79 bits con eps = 1e-9
 
 # chi2 de 255 grados de libertad: media 255, sigma = sqrt(2*255) = 22.58.
-# Se lee a DOS COLAS, como en el modulo 3 (guia Fase 4, cap. 4.5): un valor
+# Se lee a DOS COLAS, como en el modulo 3: un valor
 # sospechosamente bajo tambien es alarma.
 CHI2_MEDIA = 255.0
 CHI2_SIGMA = math.sqrt(2 * 255.0)
@@ -59,7 +59,7 @@ def test_usa_el_extractor_del_modulo_1(monkeypatch):
 def test_la_semilla_sale_de_urandom_y_no_se_siembra():
     """Dos extracciones de la MISMA entrada tienen que dar bits distintos:
     la semilla de Toeplitz se genera con os.urandom en cada llamada y no
-    se siembra nunca (guia Fase 4, cap. 4.4.1). Si coincidieran, alguien
+    se siembra nunca. Si coincidieran, alguien
     habria puesto una semilla fija y el leftover hash lemma dejaria de
     aplicar."""
     simbolos = _simbolos_uniformes(4_000)

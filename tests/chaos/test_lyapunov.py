@@ -64,7 +64,7 @@ def test_lorenz_espectro_suma_la_divergencia():
 
 
 def test_lorenz_espectro_tiene_la_forma_correcta_en_pocos_pasos():
-    """El compañero rapido del test de arriba: con 400 renormalizaciones no
+    """El companero rapido del test de arriba: con 400 renormalizaciones no
     hay precision para exigir 0.906 +/- 0.05, pero SI para exigir la FORMA
     del espectro, que es lo que se rompe cuando alguien toca Benettin:
 
@@ -88,14 +88,14 @@ def test_lorenz_espectro_tiene_la_forma_correcta_en_pocos_pasos():
 
 
 def test_la_ventana_periodica_se_diagnostica_Y_se_rechaza():
-    """Caso borde de la tabla del cap. 8.9 (tarea 3.9): con r en una ventana
+    """Caso borde de la tarea 3.9: con r en una ventana
     periodica el modulo NO cifra, lanza ValueError.
 
     Este test existe aparte del parametrico de arriba porque comprueba otra
     cosa: alli se mide que lambda sale negativo, aqui que ese diagnostico
     LLEGA HASTA EL CIFRADO. Son dos fallos distintos -calcular mal lambda y
     calcularlo bien pero no mirarlo- y el segundo es el que dejaria cifrar
-    con una secuencia de periodo 3 sin que nadie se entere (cap. 3.2).
+    con una secuencia de periodo 3 sin que nadie se entere.
 
     r = 3.83 es la trampa del modulo: esta DENTRO del rango caotico nominal
     (3.57, 4], asi que un modulo que solo comprobara el rango lo aceptaria.

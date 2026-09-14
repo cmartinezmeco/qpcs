@@ -1,7 +1,7 @@
 # Limitaciones de QPCS
 
 Las limitaciones de los **cuatro módulos**, juntas y sin recortar. Hasta la Fase 4
-estaban repartidas entre las cuatro guías de fase, que no forman parte del
+estaban repartidas entre las notas de trabajo de las cuatro fases, que no forman parte del
 repositorio: quien clonaba esto no tenía forma de saber dónde está el borde de
 cada módulo sin preguntarle a alguno de los tres.
 

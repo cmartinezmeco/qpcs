@@ -21,11 +21,11 @@ def test_ruido_blanco_da_espectro_plano(rng):
     # La desviacion estandar relativa en el metodo de Welch escala
     # aproximadamente con 1/sqrt(K), donde K es el numero de segmentos
     # promediados.
-    # Aquí validamos que los valores no se desvíen de forma anómala.
+    # Aqui validamos que los valores no se desvien de forma anomala.
     assert np.all(psd > 0)
     assert (
         abs(np.std(psd) / media_psd - 1.0 / np.sqrt(len(psd))) < 0.5
-    )  # Comprobación de estabilidad estadística
+    )  # Comprobacion de estabilidad estadistica
 
 
 def test_el_pico_aparece_donde_se_puso():
@@ -63,7 +63,7 @@ def test_parseval(rng):
     nperseg = 256
     senal = rng.normal(
         2.0, 3.5, 10000
-    )  # Media 2.0, desviación 3.5 -> Varianza ~ 3.5^2 = 12.25
+    )  # Media 2.0, desviacion 3.5 -> Varianza ~ 3.5^2 = 12.25
 
     freqs, psd, _ = densidad_espectral(senal, fs, nperseg)
 

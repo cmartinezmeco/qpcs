@@ -57,15 +57,15 @@ def test_barrido_de_eve(p):
     """Q(p) = p/4, y el protocolo aborta exactamente cuando no puede
     destilar clave.
 
-    Nota honesta para el equipo (difiere de la version idealizada de la
-    guia): el umbral del 11% asume reconciliacion IDEAL (f = 1). Con el
+    Nota honesta para el equipo, porque difiere de la version idealizada
+    que se cuenta siempre: el umbral del 11% asume reconciliacion IDEAL
+    (f = 1). Con el
     f_EC real de Cascade (~1.15-1.2 medido en test_eficiencia_razonable),
     justo bajo el umbral la formula
     ell = n(1 - h(Q)) - leak_ec - 2 log2(1/eps) puede salir <= 0 y el
     protocolo aborta por longitud de clave, no por QBER. Es el
     comportamiento correcto: la formula absorbe la ineficiencia de la
-    reconciliacion sin mentir (misma logica que el plan B de la seccion
-    5.5.7 de la guia).
+    reconciliacion sin mentir.
 
     p = 0.42 (no 0.4) desde la optimizacion de sample_fraction (tarea
     2.x, Gonzalo): al sacrificar menos bits en la muestra del QBER (~800
@@ -112,7 +112,7 @@ def test_abortado_no_deja_rastros():
 
 
 def test_muestra_vacia_lanza_error():
-    """Caso borde de la tabla 5.1: s = 0 => ValueError explicito desde
+    """Caso borde: s = 0 => ValueError explicito desde
     estimate_qber, no una division por cero silenciosa."""
     with pytest.raises(ValueError):
         run_protocol(n_photons=1_000, rng=np.random.default_rng(0), sample_fraction=0.0)

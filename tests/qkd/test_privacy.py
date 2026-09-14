@@ -85,13 +85,13 @@ def test_entropia_binaria_extremos():
 
 
 def test_qber_50_por_ciento_sin_clave():
-    """Caso borde de la tabla 5.1: Q = 0.5 => h(Q) = 1 => ell = 0 aunque no
+    """Caso borde: Q = 0.5 => h(Q) = 1 => ell = 0 aunque no
     se haya filtrado ni un bit en la reconciliacion."""
     assert secure_key_length(n=50_000, qber=0.5, leak_ec=0) == 0
 
 
 def test_semilla_de_longitud_mala():
-    """Caso borde de la tabla 5.1: ValueError explicito, no resultado
+    """Caso borde: ValueError explicito, no resultado
     silencioso con una matriz mal formada."""
     rng = np.random.default_rng(4)
     key = rng.integers(0, 2, 100, dtype=np.uint8)

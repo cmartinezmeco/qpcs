@@ -1,18 +1,17 @@
 # Fundamentos teóricos del Módulo 2: criptografía post-cuántica real y el algoritmo de Shor
 
 > **Tarea 2.10** del proyecto QPCS — Fase 2. Entregable: este fichero (`docs/theory/pqc.md`).
-> Repartida entre **Gonzalo** (mitad Shor) y **Marco** (mitad PQC), según §11.1 y §11.4 del
-> documento explicativo integral de la fase.
+> Repartida entre **Gonzalo** (mitad Shor) y **Marco** (mitad PQC), que es el mismo reparto con el
+> que se hicieron las tareas de las que sale este texto.
 
 ## Cómo se lee este documento
 
-La **regla de oro** acordada para este documento es la misma que gobierna la tabla 7.1 del documento
-explicativo integral de la Fase 2: *toda afirmación cuantitativa enlazada a un test o a una figura*
-(§11.4). Por eso cada sección termina con un bloque **Verificación** que nombra el test o la figura
-concretos que la sostienen; el mapa completo está en el
+La **regla de oro** del proyecto, vigente desde la Fase 1: *toda afirmación cuantitativa va enlazada
+a un test o a una figura*. Por eso cada sección termina con un bloque **Verificación** que nombra el
+test o la figura concretos que la sostienen; el mapa completo está en el
 [Apéndice A](#apéndice-a--mapa-teoría--verificación).
 
-Convenciones heredadas del documento de la fase (§1.4), que se respetan aquí:
+Convenciones del proyecto que se respetan aquí:
 
 - Los identificadores de código, ficheros y rutas van en `tipo máquina`.
 - Notación matemática: `N` para el número a factorizar, `a` para la base de Shor, `r` para el orden,
@@ -25,24 +24,21 @@ Convenciones heredadas del documento de la fase (§1.4), que se respetan aquí:
 
 ## Reparto de la tarea 2.10
 
-El capítulo 3 del documento de la fase declara su propia partición: *la amenaza* (secciones 3.1 a
-3.6) y *la defensa* (secciones 3.7 a 3.10). El reparto de la tarea 2.10 sigue esa línea, de modo que
-quien enlaza una afirmación con un test es quien escribió ese test (§11.1: Gonzalo 2.2–2.3, Marco
-2.4–2.6):
+El módulo se parte en dos por su propio tema: *la amenaza* y *la defensa*. El reparto de la tarea
+2.10 sigue esa línea, de modo que quien enlaza una afirmación con un test es quien escribió ese test
+(Gonzalo llevó las tareas 2.2–2.3 y Marco las 2.4–2.6):
 
-| Parte | Responsable | Secciones de origen |
-|---|---|---|
-| [Parte I — La amenaza](#parte-i--la-amenaza-gonzalo--mitad-shor) | Gonzalo (`gonzaloz-hub`) | §3.1, §3.1.1, §3.1.2, §3.2, §3.3, §3.4, §3.5, §3.6 |
-| [Parte II — La defensa](#parte-ii--la-defensa-marco--mitad-pqc) | Marco (`Marcociber`) | §3.7, §3.8, §3.8.1, §3.9, §3.10 (+ §5.2 y §6.1.4, ver [Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir)) |
-| [Parte III — Sección compartida](#parte-iii--sección-compartida) | Sin asignar en las fuentes | §3.11 |
+| Parte | Responsable |
+|---|---|
+| [Parte I — La amenaza](#parte-i--la-amenaza-gonzalo--mitad-shor) | Gonzalo (`gonzaloz-hub`) |
+| [Parte II — La defensa](#parte-ii--la-defensa-marco--mitad-pqc) | Marco (`Marcociber`) |
+| [Parte III — Sección compartida](#parte-iii--sección-compartida) | Sin asignar |
 
 ---
 
 # Parte I — La amenaza (Gonzalo · mitad Shor)
 
 ## 1. La reducción: factorizar es (casi) lo mismo que buscar un orden
-
-*(§3.1)*
 
 Shor no ataca la factorización de frente. La reduce a otro problema —la **búsqueda de orden**— que un
 ordenador cuántico sí sabe resolver rápido. La reducción en sí es puramente clásica, elemental y
@@ -64,8 +60,6 @@ comprobaciones clásicas triviales). El algoritmo es:
    uno de los dos es un factor no trivial de `N`.
 
 ### 1.1 Por qué funciona el paso 6
-
-*(§3.1.1)*
 
 Si `r` es el orden de `a`, entonces por definición `a^r ≡ 1 (mod N)`, es decir `N | a^r − 1`. Cuando
 `r` es par podemos factorizar esa diferencia de cuadrados:
@@ -96,8 +90,6 @@ coprimas con 15, sin tocar el circuito) y `test_shor_factoriza_15` (el bucle com
 `{3, 5}` de forma reproducible con semilla 42).
 
 ## 2. Los dos ejemplos trabajados del módulo
-
-*(§3.1.2)*
 
 **Con `N = 15` y `a = 7`.** Las potencias sucesivas módulo 15 son `7^1 = 7`, `7^2 = 49 ≡ 4`,
 `7^3 ≡ 28 ≡ 13`, `7^4 ≡ 91 ≡ 1`. Luego `r = 4`, que es par. Además
@@ -130,8 +122,6 @@ reproduce el dashboard con la semilla por defecto (44) y `N = 15`: base `a = 11`
 solo intento, fase medida 0,500 y factores 5×3.
 
 ## 3. La herramienta cuántica: el operador y sus autovalores
-
-*(§3.2)*
 
 El ordenador cuántico halla `r` mediante **estimación de fase cuántica** (QPE) aplicada a un operador
 muy concreto. Sobre los estados de la base computacional `|y⟩` con `0 ≤ y < N`, se define la
@@ -176,8 +166,6 @@ puerta el circuito no ve ningún orden y la fase medida sale siempre 0).
 orden módulo 15 es 4) cae cerca de un múltiplo de 1/4, con ocho semillas distintas.
 
 ## 4. La transformada cuántica de Fourier
-
-*(§3.3)*
 
 La **transformada cuántica de Fourier** (QFT) sobre `t` qubits actúa sobre la base computacional
 como:
@@ -224,12 +212,10 @@ El segundo hecho es **conceptual**, y es de donde sale toda la ventaja del algor
 > amplitudes (una medida devuelve un solo valor). Lo que permite es **concentrar la probabilidad** en
 > los valores que codifican la periodicidad buscada, que es exactamente lo que hace falta aquí.
 
-**Verificación.** El documento de la fase no asigna a §3.3 ningún test ni figura en la tabla 7.1; su
-contenido se sostiene sobre las secciones que sí los tienen (§3.2 y §3.5).
+**Verificación.** Esta sección no tiene test ni figura propios; su contenido se sostiene sobre las
+secciones que sí los tienen.
 
 ## 5. El circuito de Shor, paso a paso
-
-*(§3.4)*
 
 El circuito usa dos registros: uno de **conteo** con `t` qubits (cuantos más, mayor resolución de
 fase) y uno de **trabajo** con `n = ⌈log₂ N⌉` qubits que alberga los estados `|y⟩`. En el módulo,
@@ -268,7 +254,7 @@ una `a` fija, esa permutación `|y⟩ ↦ |a·y mod 15⟩` se puede **compilar a
 puertas SWAP y X, que es exactamente lo que hace `c_amod15` y lo que hace el material didáctico
 clásico de Qiskit.
 
-La consecuencia, que va literalmente en las limitaciones conocidas (capítulo 10): **el oráculo no es
+La consecuencia, que va literalmente en las limitaciones conocidas: **el oráculo no es
 de propósito general**. Cambiar de `N` obliga a compilar otro distinto; es exactamente el motivo por
 el que `N = 21` no está implementado (necesitaría un `c_amod21` con cinco qubits de trabajo). No es
 un fallo, es el alcance elegido: demostrar el mecanismo, no construir la máquina.
@@ -278,8 +264,6 @@ estimación de fase generado con `qc.draw('mpl')` y el histograma de la fase med
 disparos, con los picos cayendo en los múltiplos de `1/r`.
 
 ## 6. De la fase medida al orden: fracciones continuas
-
-*(§3.5)*
 
 La medida devuelve un entero `y` tal que `y/2^t ≈ s/r`. El problema es que conocemos `y/2^t` —un
 racional con denominador potencia de dos— pero queremos `s/r`, con ambos desconocidos. La herramienta
@@ -328,15 +312,13 @@ explícitamente en lugar de arrastrar un 1 sin sentido.
 
 ## 7. Por qué esto rompe RSA, y a qué distancia está de hacerlo de verdad
 
-*(§3.6)*
-
 Recapitulando la cadena completa: elegir `a` → (cuántico) hallar el orden `r` de `a` módulo `N` →
 (clásico) calcular `gcd(a^(r/2) ± 1, N)` → factores `p` y `q`. Con `p` y `q` en la mano, un atacante
 reconstruye la clave privada RSA calculando `d ≡ e^(−1) (mod (p − 1)(q − 1))` y descifra todo el
 tráfico que esa clave protegía, pasado y futuro. El logaritmo discreto se rompe con una variante de
 la misma idea, de modo que Diffie–Hellman y ECC caen por el mismo mecanismo.
 
-Esto es lo que hace que la amenaza no sea futura sino **retroactiva** (§2.2.2): un adversario con
+Esto es lo que hace que la amenaza no sea futura sino **retroactiva**: un adversario con
 recursos puede grabar hoy el tráfico cifrado —incluidos los intercambios de clave— y almacenarlo
 hasta disponer del hardware que lo descifre (*harvest now, decrypt later*). Para cualquier información
 cuya vida útil secreta se mida en décadas, migrar no es una tarea que pueda posponerse hasta que
@@ -354,14 +336,14 @@ aparezca el primer ordenador cuántico relevante.
 > sensacionalista, y es la razón de que el propio dashboard incluya esa advertencia en su panel de
 > Shor.
 
-Conviene añadir el matiz de §2.1: la seguridad de RSA nunca fue un teorema. No existe ninguna
+Conviene añadir un matiz: la seguridad de RSA nunca fue un teorema. No existe ninguna
 demostración de que factorizar sea intrínsecamente costoso; lo único que hay es la constatación
 empírica de que nadie conoce un algoritmo clásico eficiente. El mejor conocido —la criba general del
 cuerpo de números— es sub-exponencial, y para RSA-2048 sitúa el ataque en el orden de `2^112`
 operaciones, fuera de alcance.
 
-**Verificación.** Esta sección se sostiene sobre las **limitaciones conocidas 1 a 5** del capítulo 10
-del documento de la fase, y no sobre un test propio:
+**Verificación.** Esta sección se sostiene sobre las **cinco limitaciones conocidas** del módulo, y
+no sobre un test propio:
 
 1. El oráculo no es de propósito general (compilado a mano para `N = 15` y las seis bases coprimas).
 2. `N = 21` no está implementado (necesitaría un `c_amod21` con cinco qubits de trabajo).
@@ -377,8 +359,8 @@ del documento de la fase, y no sobre un test propio:
 
 ## 8. El baseline clásico: RSA-3072 (OAEP/PSS), X25519 y Ed25519
 
-*(tarea 2.4; el contenido de esta sección vive en §5.2 del documento de la fase, no en su capítulo 3
-— ver el punto 2 del [Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir))*
+*(tarea 2.4; esta sección no estaba prevista como teoría y se añadió aquí — ver el punto 2 del
+[Apéndice B](#apéndice-b--puntos-que-quedaron-sin-decidir))*
 
 Antes de la defensa post-cuántica hace falta la referencia contra la que se compara. El módulo la
 construye con RSA-3072 (OAEP para cifrar, PSS para firmar), X25519 y Ed25519.
@@ -426,14 +408,11 @@ post-cuántica.
 (RFC 8032): la firma no consume aleatoriedad, de modo que aquí tampoco entra ningún generador. Su
 firma ocupa **64 bytes**, la referencia clásica frente a los 3309 de ML-DSA-65.
 
-**Verificación.** `test_rsa_oaep_es_probabilistico`, `test_rsa_pss_es_probabilistico` (ambos mapeados
-en la tabla 7.1 a la sección 3.7), `test_rsa_oaep_tiene_limite_de_tamano` (mapeado a la sección 3.9:
-comprueba que 318 bytes pasan y que 319 lanza `ValueError`) y
-`test_x25519_ambos_lados_derivan_el_mismo_secreto` (mapeado a la sección 3.8).
+**Verificación.** `test_rsa_oaep_es_probabilistico`, `test_rsa_pss_es_probabilistico`,
+`test_rsa_oaep_tiene_limite_de_tamano` (comprueba que 318 bytes pasan y que 319 lanza `ValueError`) y
+`test_x25519_ambos_lados_derivan_el_mismo_secreto`.
 
 ## 9. La defensa: por qué los retículos resisten
-
-*(§3.7)*
 
 Si Shor rompe la factorización y el logaritmo discreto, ¿sobre qué se construye criptografía de clave
 pública que un ordenador cuántico **no** rompa? Sobre problemas para los que no se conoce ningún
@@ -475,16 +454,14 @@ las claves y acelera las operaciones (permite usar transformadas numéricas ráp
 hipótesis de dureza ligeramente más fuerte —se cree igual de sólida, y es la que el NIST aceptó tras
 varios años de criptoanálisis público en su proceso de estandarización.
 
-**Verificación.** La tabla 7.1 no asigna a §3.7 ningún test sobre la dureza de los retículos: el
-módulo *usa* ML-KEM y ML-DSA y no analiza esa dureza (limitación conocida 6 del capítulo 10, «la
-confianza en su seguridad es la del proceso de estandarización del NIST, no un resultado de este
-trabajo»). Las dos filas que la tabla 7.1 sí asocia a la sección 3.7 son
-`test_rsa_oaep_es_probabilistico` y `test_rsa_pss_es_probabilistico` (ver
-[Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir), punto 2).
+**Verificación.** No hay ningún test sobre la dureza de los retículos, y no lo hay a propósito: el
+módulo *usa* ML-KEM y ML-DSA y no analiza esa dureza (limitación conocida 6, «la confianza en su
+seguridad es la del proceso de estandarización del NIST, no un resultado de este trabajo»). Los dos
+tests que acompañan a esta parte son `test_rsa_oaep_es_probabilistico` y
+`test_rsa_pss_es_probabilistico` (ver
+[Apéndice B](#apéndice-b--puntos-que-quedaron-sin-decidir), punto 2).
 
 ## 10. ML-KEM: qué es un KEM y qué no es
-
-*(§3.8)*
 
 **ML-KEM** (FIPS 203, estandarizado en 2024; durante el concurso del NIST se llamó *Kyber*) **no es un
 cifrador de mensajes**: es un KEM, un *Key Encapsulation Mechanism*. La distinción es la que más
@@ -529,8 +506,6 @@ El secreto compartido son siempre **32 bytes**, independientemente del nivel.
 
 ### 10.1 El rechazo implícito: una propiedad que sorprende
 
-*(§3.8.1)*
-
 Hay un comportamiento de ML-KEM que resulta contraintuitivo la primera vez y que el módulo documenta
 y verifica explícitamente: **si el texto cifrado llega manipulado, la desencapsulación no falla**.
 Devuelve, sin protestar, un secreto de 32 bytes *distinto* del original.
@@ -554,8 +529,6 @@ secreto de 32 bytes), `test_kem_tamanos_fips_203` y figura 2 (`docs/img/pqc_tama
 implícito).
 
 ## 11. El patrón híbrido: KEM → HKDF → AES-GCM
-
-*(§3.9)*
 
 Para **cifrar un mensaje de verdad** —que es lo que exige el criterio de cierre de la fase— el módulo
 encadena tres piezas:
@@ -607,8 +580,6 @@ demostrar que el híbrido no tiene el límite de tamaño de RSA-OAEP).
 
 ## 12. ML-DSA: firmas post-cuánticas
 
-*(§3.10)*
-
 **ML-DSA** (FIPS 204; durante el concurso, *Dilithium*) es el esquema de firma estandarizado. Su flujo
 es el habitual: se genera un par de claves, se **firma** un mensaje con la privada, y cualquiera
 **verifica** la firma con la pública. Si el mensaje se altera en un solo bit, la verificación falla.
@@ -646,8 +617,8 @@ apreciable**, algo que el benchmark del módulo captura en su columna de desviac
 
 ## 13. El coste, en una frase: gana en tiempo, pierde en bytes
 
-*(§6.1.4; se incluye solo el **resultado**, no la metodología de medida — ver el punto 3 del
-[Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir))*
+*(se incluye solo el **resultado**, no la metodología de medida — ver el punto 3 del
+[Apéndice B](#apéndice-b--puntos-que-quedaron-sin-decidir))*
 
 La tabla de tamaños de la ejecución publicada en `docs/benchmark_pqc.json`, en bytes:
 
@@ -669,7 +640,7 @@ de X25519 (**37 veces más**), y una firma ML-DSA-65 ocupa 3309 bytes frente a l
 **Esa es la frase que resume el módulo**: la criptografía post-cuántica **gana en tiempo y pierde en
 bytes**, y el coste real de la migración se paga en ancho de banda y almacenamiento, no en CPU.
 
-Dos matices obligatorios, de las limitaciones conocidas del capítulo 10: los tiempos **no dicen nada
+Dos matices obligatorios, de las limitaciones conocidas: los tiempos **no dicen nada
 sobre canales laterales** (limitación 11) y **las cifras son de una máquina concreta** (limitación 12:
 Linux 6.6.87.2 (WSL2) sobre x86_64, Python 3.11.15 y liboqs 0.16.0; las comparaciones *relativas*
 entre familias son robustas, los valores absolutos no; por eso el bloque de entorno viaja dentro del
@@ -684,8 +655,8 @@ datos proceden de `docs/benchmark_pqc.json`.
 
 ## 14. Del papel al código: qué es real y qué es simulación
 
-*(§3.11 — sección que las fuentes **no asignan** a ninguna de las dos mitades; ver el punto 1 del
-[Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir))*
+*(sección que **no quedó asignada** a ninguna de las dos mitades; ver el punto 1 del
+[Apéndice B](#apéndice-b--puntos-que-quedaron-sin-decidir))*
 
 Una advertencia de honestidad intelectual que la Fase 1 estableció como obligatoria en toda la
 documentación del proyecto, y que aquí tiene una forma peculiar porque el módulo es *mitad y mitad*:
@@ -704,7 +675,7 @@ documentación del proyecto, y que aquí tiene una forma peculiar porque el mód
 La distinción importa porque un repositorio que insinúe que «rompe RSA desde un portátil» pierde toda
 su credibilidad ante cualquiera que sepa del tema, mientras que uno que declare exactamente dónde está
 el límite demuestra que lo entiende. El módulo la declara en **tres sitios**: en los docstrings del
-código, en el panel de Shor del dashboard y en el capítulo 10 del documento explicativo de la fase.
+código, en el panel de Shor del dashboard y en `docs/limitaciones.md`.
 
 Esta advertencia es **obligatoria** en este documento por esa misma razón.
 
@@ -712,86 +683,84 @@ Esta advertencia es **obligatoria** en este documento por esa misma razón.
 
 # Apéndice A — Mapa teoría ↔ verificación
 
-Subconjunto de la **tabla 7.1** del documento de la fase, restringido a las filas que caen dentro del
-reparto de la tarea 2.10. Las filas de la tabla 7.1 que apuntan a §5.6 y §2.3 (sigma derivada, las dos
-capas, validación del JSON, el arco amenaza + defensa) corresponden al trabajo de Carlos y quedan
+El mapa completo de resultados y de lo que verifica cada uno, restringido a lo que cae dentro del
+reparto de la tarea 2.10. Lo que tiene que ver con el benchmark y con los tests de integración (sigma
+derivada, las dos capas, validación del JSON, el arco amenaza + defensa) es trabajo de Carlos y queda
 fuera de este documento, salvo el resultado de la sección 13 (ver
-[Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir), punto 3).
+[Apéndice B](#apéndice-b--puntos-que-quedaron-sin-decidir), punto 3).
 
-| Resultado teórico | Sección origen | Aquí | Test / figura que lo verifica |
-|---|---|---|---|
-| La fase medida es múltiplo de `1/r` | 3.2 | §3 | `test_fase_es_multiplo_de_1_sobre_4_para_a7`; fig. 3 |
-| Las fracciones continuas recuperan `r` | 3.5 | §6 | `test_fracciones_continuas_recuperan_denominador` |
-| La reducción factorización→orden | 3.1 | §1 | `test_el_orden_que_publica_shor_es_el_orden_de_verdad` |
-| Shor factoriza `15 = 3 × 5` | 3.1 | §1 | `test_shor_factoriza_15` |
-| OAEP es probabilístico | 3.7 | §8.1 | `test_rsa_oaep_es_probabilistico` |
-| PSS es probabilístico | 3.7 | §8.1 | `test_rsa_pss_es_probabilistico` |
-| RSA-OAEP tiene límite de 318 B | 3.9 | §8.3 | `test_rsa_oaep_tiene_limite_de_tamano` |
-| El DH de X25519 es simétrico | 3.8 | §8.4 | `test_x25519_ambos_lados_derivan_el_mismo_secreto` |
-| Corrección del KEM (mismo secreto) | 3.8 | §10 | `test_kem_secretos_coinciden` |
-| Tamaños de FIPS 203 | 3.8 | §10 | `test_kem_tamanos_fips_203`; fig. 2 |
-| Cada encapsulamiento da secreto fresco | 3.8 | §10 | `test_dos_encapsulamientos_dan_secretos_distintos` |
-| Rechazo implícito de ML-KEM | 3.8 | §10.1 | `test_ciphertext_manipulado_da_otro_secreto_sin_lanzar` |
-| El híbrido cifra un mensaje real | 3.9 | §11 | `test_cifrado_hibrido_roundtrip` |
-| AEAD detecta manipulación (3 vías) | 3.9 | §11 | `test_manipular_el_cifrado_lo_detecta` / `_el_kem_ciphertext` / `_el_nonce` |
-| El nonce nunca se repite | 3.9 | §11 | `test_nonce_y_cifrado_nunca_se_repiten` |
-| El híbrido no tiene límite de tamaño | 3.9 | §11 | `test_mensaje_largo_y_mensaje_vacio` |
-| Firma válida verifica | 3.10 | §12 | `test_firma_valida_verifica` |
-| Los tres rechazos de la firma | 3.10 | §12 | `test_mensaje_manipulado_se_rechaza` / `_firma_manipulada` / `_de_otra_clave` |
-| Tamaños de FIPS 204 | 3.10 | §12 | `test_tamanos_fips_204`; fig. 2 |
-| Firmar no oculta el mensaje | 3.10 | §12 | `test_firmar_no_oculta_el_mensaje` |
-| Nomenclatura NIST disponible | 1.4 | Preámbulo | `test_liboqs_trae_mecanismos_nist` |
+| Resultado teórico | Aquí | Test / figura que lo verifica |
+|---|---|---|
+| La fase medida es múltiplo de `1/r` | §3 | `test_fase_es_multiplo_de_1_sobre_4_para_a7`; fig. 3 |
+| Las fracciones continuas recuperan `r` | §6 | `test_fracciones_continuas_recuperan_denominador` |
+| La reducción factorización→orden | §1 | `test_el_orden_que_publica_shor_es_el_orden_de_verdad` |
+| Shor factoriza `15 = 3 × 5` | §1 | `test_shor_factoriza_15` |
+| OAEP es probabilístico | §8.1 | `test_rsa_oaep_es_probabilistico` |
+| PSS es probabilístico | §8.1 | `test_rsa_pss_es_probabilistico` |
+| RSA-OAEP tiene límite de 318 B | §8.3 | `test_rsa_oaep_tiene_limite_de_tamano` |
+| El DH de X25519 es simétrico | §8.4 | `test_x25519_ambos_lados_derivan_el_mismo_secreto` |
+| Corrección del KEM (mismo secreto) | §10 | `test_kem_secretos_coinciden` |
+| Tamaños de FIPS 203 | §10 | `test_kem_tamanos_fips_203`; fig. 2 |
+| Cada encapsulamiento da secreto fresco | §10 | `test_dos_encapsulamientos_dan_secretos_distintos` |
+| Rechazo implícito de ML-KEM | §10.1 | `test_ciphertext_manipulado_da_otro_secreto_sin_lanzar` |
+| El híbrido cifra un mensaje real | §11 | `test_cifrado_hibrido_roundtrip` |
+| AEAD detecta manipulación (3 vías) | §11 | `test_manipular_el_cifrado_lo_detecta` / `_el_kem_ciphertext` / `_el_nonce` |
+| El nonce nunca se repite | §11 | `test_nonce_y_cifrado_nunca_se_repiten` |
+| El híbrido no tiene límite de tamaño | §11 | `test_mensaje_largo_y_mensaje_vacio` |
+| Firma válida verifica | §12 | `test_firma_valida_verifica` |
+| Los tres rechazos de la firma | §12 | `test_mensaje_manipulado_se_rechaza` / `_firma_manipulada` / `_de_otra_clave` |
+| Tamaños de FIPS 204 | §12 | `test_tamanos_fips_204`; fig. 2 |
+| Firmar no oculta el mensaje | §12 | `test_firmar_no_oculta_el_mensaje` |
+| Nomenclatura NIST disponible | Preámbulo | `test_liboqs_trae_mecanismos_nist` |
 
 ---
 
-# Apéndice B — Puntos que las fuentes dejan sin decidir
+# Apéndice B — Puntos que quedaron sin decidir
 
-El documento explicativo de la Fase 2 no resuelve los cuatro puntos siguientes. Se recogen aquí
+El reparto de la Fase 2 no dejó resueltos los cuatro puntos siguientes. Se recogen aquí
 marcados como tales, en lugar de rellenarlos con suposiciones; **las decisiones tomadas
 provisionalmente en este borrador se señalan explícitamente y están pendientes de acuerdo del
 equipo**.
 
-1. **La sección 3.11 no pertenece a ninguna mitad.** «Del papel al código: qué es real y qué es
-   simulación» es, en palabras del propio documento, «mitad y mitad»: un bullet dice que la PQC no es
-   simulación, el otro que Shor sí lo es. En este documento la advertencia es **obligatoria** (§3.11:
-   el módulo la declara en tres sitios), pero su autoría **no está asignada**. Aquí figura como
+1. **La sección compartida no pertenece a ninguna mitad.** «Del papel al código: qué es real y qué es
+   simulación» es mitad y mitad: una parte dice que la PQC no es simulación, la otra que Shor sí lo
+   es. En este documento la advertencia es **obligatoria** —el módulo la declara en tres sitios—,
+   pero su autoría **no está asignada**. Aquí figura como
    [Parte III — sección compartida](#parte-iii--sección-compartida); queda pendiente decidir si la
    escriben los dos, un párrafo cada uno, o quien haga el merge final.
 2. **El baseline clásico se queda sin sección de teoría.** OAEP, PSS y el límite de 318 bytes de
-   RSA-OAEP viven en §5.2 (referencia de código), no en el capítulo 3, pero la tabla 7.1 los mapea a
-   las secciones 3.7 y 3.9, que tratan de retículos y del híbrido. Aquí se les ha dado **sección
-   propia** (§8, dentro de la mitad de Marco, que es quien hizo la tarea 2.4), porque el límite de
-   318 B es «la justificación empírica de por qué existen los KEM». **Esa colocación es una decisión
-   de este borrador, no algo que fijen las fuentes.**
-3. **Las filas de la tabla 7.1 que son de Carlos.** Cuatro entradas (sigma derivada, las dos capas,
-   validación del JSON, el arco amenaza + defensa) apuntan a §5.6 y §2.3 —benchmark y tests de
-   integración, trabajo de Carlos (§11.1)—, pero la tarea 2.10 solo se reparte entre Gonzalo y Marco.
-   En este borrador **la metodología de medida queda fuera** (es documentación de código, no teoría) y
-   solo se absorbe el **resultado**: el compromiso «gana en tiempo, pierde en bytes» de §6.1.4 (§13 de
-   este documento). **Pendiente de confirmar por el equipo.**
-4. **Extensión, formato y figuras.** El documento de la fase no especifica ni la extensión, ni la
-   estructura de secciones, ni el formato interno, ni un criterio de cierre distinto de la regla de
-   oro, ni si las figuras van incrustadas. (La caja de §6.2.4 sobre no incrustar figuras se refiere al
-   documento LaTeX de la fase, no a este fichero.) En este borrador las figuras se **enlazan** por
-   ruta relativa a `docs/img/`, sin incrustarlas; **es una decisión provisional**.
+   RSA-OAEP estaban previstos como referencia de código, no como teoría, y sus tests quedaban colgando
+   de secciones que hablan de retículos y del híbrido. Aquí se les ha dado **sección propia** (§8,
+   dentro de la mitad de Marco, que es quien hizo la tarea 2.4), porque el límite de 318 B es la
+   justificación empírica de por qué existen los KEM. **Esa colocación es una decisión de este
+   borrador y nada más.**
+3. **Los resultados que son de Carlos.** Cuatro de ellos (sigma derivada, las dos capas, validación
+   del JSON, el arco amenaza + defensa) salen del benchmark y de los tests de integración, que son
+   trabajo de Carlos, pero la tarea 2.10 solo se reparte entre Gonzalo y Marco. En este borrador **la
+   metodología de medida queda fuera** —es documentación de código, no teoría— y solo se absorbe el
+   **resultado**: el compromiso «gana en tiempo, pierde en bytes» (§13 de este documento).
+   **Pendiente de confirmar por el equipo.**
+4. **Extensión, formato y figuras.** No hay criterio fijado sobre la extensión, la estructura de
+   secciones, el formato interno ni si las figuras van incrustadas; el único criterio de cierre es la
+   regla de oro. En este borrador las figuras se **enlazan** por ruta relativa a `docs/img/`, sin
+   incrustarlas; **es una decisión provisional**.
 
-Un apunte de carga de trabajo, no de contenido, registrado en §11.4: Gonzalo arrastra además la tarea
-1.10 (`docs/theory/qkd.md`, pendiente desde el cierre de la Fase 1), de modo que su mitad —que es la
-mitad corta— es la que tiene más riesgo de quedarse atrás.
+Un apunte de carga de trabajo, no de contenido: Gonzalo arrastra además la tarea 1.10
+(`docs/theory/qkd.md`, pendiente desde el cierre de la Fase 1), de modo que su mitad —que es la mitad
+corta— es la que tiene más riesgo de quedarse atrás.
 
 ---
 
 # Apéndice C — Verificación pendiente contra el código
 
-La **regla de precedencia** del proyecto (§1.2) dice: *para todo lo técnico (firmas, nombres,
-comportamiento) manda el código real; para el contexto, las decisiones y los porqués, mandan la guía y
-los ficheros de contexto*. Este documento se ha redactado a partir del documento explicativo integral
-de la Fase 2, cuyo estado de referencia es `main` tras la fusión del PR #15 (27-07-2026).
+La **regla de precedencia** del proyecto dice: *para todo lo técnico —firmas, nombres,
+comportamiento— manda el código real; para el contexto, las decisiones y los porqués, mandan los
+documentos*. Este texto se escribió tomando como estado de referencia `main` tras la fusión del
+PR #15 (27-07-2026).
 
 Por tanto, **antes de dar por cerrada la tarea 2.10, cada firma, nombre de test, constante y
 comportamiento citados aquí deben contrastarse contra el código real de `src/pqc/` y `tests/pqc/`**, y
-donde el código haya avanzado respecto del documento de la fase, gana el código. Este documento no
-resuelve esa comprobación: las fuentes utilizadas para redactarlo no la incluyen.
+donde el código haya avanzado respecto de lo que aquí se cuenta, gana el código.
 
 ## Limitaciones
 

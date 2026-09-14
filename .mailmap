@@ -1,0 +1,19 @@
+# Tres personas, seis identidades de git.
+#
+# Cada uno ha commiteado desde varios sitios a lo largo del proyecto (el
+# portatil, la web de GitHub, una maquina prestada) y git se lo apunta como
+# autores distintos. Sin este fichero, `git shortlog -sn` cuenta seis
+# nombres para un equipo de tres, y quien llega de fuera no sabe cual es
+# cual.
+#
+# El nombre canonico es el alias de GitHub, que es con el que aparecemos en
+# el repositorio, en los pull requests y en el reparto del README. Asi lo
+# que dice `git log` y lo que dice la web coinciden.
+#
+# Esto cambia lo que MUESTRAN git log, git shortlog y git blame. No reescribe
+# los objetos de commit ni toca el historial.
+
+cmartinezmeco <cmartinezmeco@gmail.com> <cmartinezmeco@gmail.com>
+cmartinezmeco <cmartinezmeco@gmail.com> <145761833+cmartinezmeco@users.noreply.github.com>
+Marcociber <marcogithub24@gmail.com> <marcogithub24@gmail.com>
+gonzaloz-hub <gonzalozaballosgalan@gmail.com> <gonzalozaballosgalan@gmail.com>

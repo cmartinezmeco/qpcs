@@ -16,7 +16,7 @@ def estimate_qber(
     Los bits de la muestra se DESCARTAN: se han publicado, Eve los conoce.
     """
     # Numero de bits cribados (donde Alice y Bob usaron la misma base):
-    # tamaño del array de bits de Alice en la clave cribada.
+    # tamano del array de bits de Alice en la clave cribada.
     n = keys.alice.size
     m = int(round(sample_fraction * n))  # Numero de bits en la muestra
     if m == 0:

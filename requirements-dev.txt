@@ -1,9 +1,15 @@
-black==24.4.2
+black==26.3.1
 ruff==0.4.4
 mypy==1.10.0
-pytest==8.4.0
+pytest==9.0.3
 # pytest-cov (Fase 2, tarea 2.8): el criterio de cierre pide coverage de
 # src/pqc > 85%, y se mide dentro del contenedor como todo lo demas. Va aqui y
 # no en requirements.txt porque es herramienta de desarrollo, igual que
 # ruff/mypy: el dashboard no la necesita para funcionar.
 pytest-cov==5.0.0
+# pip-audit (hallazgo B6 de la auditoria previa a la publicacion): cruza las
+# versiones instaladas contra la base de avisos de seguridad de Python. Va
+# aqui y no en requirements.txt porque el dashboard no la necesita para
+# funcionar, igual que ruff, black y mypy. La CI la ejecuta dentro del
+# contenedor, que es donde estan las versiones que se publican de verdad.
+pip-audit==2.10.1

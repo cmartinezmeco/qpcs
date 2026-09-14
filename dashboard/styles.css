@@ -201,7 +201,6 @@ code {
 /* --- Cabeceras de sección y microcomponentes ----------------------------- */
 
 .qpcs-section {
-  max-width: 90ch;
   margin: 0 0 var(--s5);
   padding-bottom: var(--s4);
   border-bottom: 1px solid var(--qpcs-border);
@@ -216,7 +215,6 @@ code {
 }
 
 .qpcs-section p {
-  max-width: 88ch;
   margin: var(--s2) 0 0;
   color: var(--qpcs-muted);
   font-size: 0.92rem;
@@ -261,48 +259,39 @@ code {
   margin-bottom: 0;
 }
 
-/* Embudo de bits: cuatro celdas de una misma retícula. */
+/* Embudo de bits: un solo rectángulo con las cuatro etapas y sus flechas
+   dentro, el mismo dibujo que la cadena .qpcs-process de los módulos 2 y 3.
+   Antes eran cuatro tarjetas sueltas con la flecha flotando en el hueco de
+   la retícula, que a media resolución se leía como cuatro bloques sin
+   relación entre sí. */
 .qpcs-flow {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--s3);
+  display: flex;
+  align-items: stretch;
   margin: 0 0 var(--s6);
-}
-
-.qpcs-flow__step {
-  position: relative;
-  min-width: 0;
-  padding: var(--s4);
+  padding: var(--s5) var(--s4);
   border: 1px solid var(--qpcs-border);
-  border-top: 2px solid var(--qpcs-navy);
   border-radius: var(--qpcs-radio);
   background: var(--qpcs-block);
 }
 
-/* Flecha entre celdas: glifo en el hueco de la retícula, sin cápsula. */
-.qpcs-flow__step:not(:last-child)::after {
-  position: absolute;
-  top: 50%;
-  right: calc(var(--s3) * -1);
-  width: var(--s3);
-  content: "→";
-  color: var(--qpcs-faint);
-  font-size: 0.8rem;
-  line-height: 0;
+.qpcs-flow__step {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 var(--s3);
   text-align: center;
 }
 
 .qpcs-flow__label {
   display: block;
-  overflow: hidden;
   margin-bottom: var(--s1);
   color: var(--qpcs-muted);
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.07em;
-  text-overflow: ellipsis;
   text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .qpcs-flow__value {
@@ -333,7 +322,10 @@ code {
 }
 
 .qpcs-process__item {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
   padding: 0 var(--s2);
   text-align: center;
@@ -357,12 +349,17 @@ code {
   line-height: 1.4;
 }
 
-.qpcs-process__arrow {
+.qpcs-process__arrow,
+.qpcs-flow__arrow {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
-  padding: 0 var(--s2);
-  color: var(--qpcs-faint);
-  font-size: 0.85rem;
+  justify-content: center;
+  padding: 0 var(--s3);
+  color: var(--qpcs-muted);
+  font-size: 1.45rem;
+  font-weight: 400;
+  line-height: 1;
 }
 
 /* --- Barra lateral ------------------------------------------------------- */
@@ -427,12 +424,22 @@ code {
 
 /* --- Pestañas ------------------------------------------------------------ */
 
+/* El rótulo de la primera pestaña tiene que caer justo encima del rótulo
+   "Módulo 01 · QKD / BB84" que abre el panel. El panel sangra var(--s8) y el
+   botón de la pestaña ya sangra var(--s4) por su cuenta, así que a la tira
+   de pestañas le falta exactamente la diferencia. */
 [data-baseweb="tab-list"] {
   gap: 0;
   margin-bottom: 0;
-  padding: 0;
+  padding: 0 0 0 calc(var(--s8) - var(--s4));
   border-bottom: 1px solid var(--qpcs-border);
   background: transparent;
+}
+
+/* Las subpestañas del módulo 2 viven ya dentro del panel, que aporta su
+   propia sangría: sumarle otra las sacaría de la columna. */
+[role="tabpanel"] [data-baseweb="tab-list"] {
+  padding-left: 0;
 }
 
 button[data-baseweb="tab"] {
@@ -509,8 +516,21 @@ button[data-baseweb="tab"] [data-testid="stMarkdownContainer"] p {
 
 /* --- Métricas ------------------------------------------------------------ */
 
+/* La altura mínima iguala las tarjetas de una misma fila aunque una lleve
+   delta y otra no. Con el contenido apoyado arriba (o abajo, según lo que
+   Streamlit meta dentro) la fila salía descuadrada, así que se centra en
+   vertical: lo que sobra se reparte por igual. */
+/* La altura mínima es la de la tarjeta más alta que existe en el panel: una
+   con etiqueta, valor y línea de incertidumbre (120 px, medido). Así todas las
+   tarjetas del panel miden lo mismo y las filas no acaban en escalera cuando
+   una lleva delta y sus vecinas no. Lo que sobra se reparte arriba y abajo por
+   igual gracias al centrado en vertical, que es lo que antes no había: el
+   contenido se apoyaba en un borde. */
 [data-testid="stMetric"] {
-  min-height: 6.6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 7.5rem;
   padding: var(--s4);
   border: 1px solid var(--qpcs-border);
   border-radius: var(--qpcs-radio);
@@ -570,13 +590,43 @@ button[data-baseweb="tab"] [data-testid="stMarkdownContainer"] p {
   margin-bottom: var(--s1);
 }
 
+
 /* --- Avisos (info / success / warning / error) --------------------------- */
 
 [data-testid="stAlert"] {
+  display: flex;
+  align-items: center;
   margin: var(--s3) 0;
   padding: var(--s4);
   border: 1px solid var(--qpcs-border);
   border-radius: var(--qpcs-radio);
+}
+
+/* El bloque interior que pinta Streamlit trae su propio relleno y no centra
+   nada, así que un aviso de una sola línea dentro de un rectángulo alto
+   quedaba apoyado en el borde de abajo. Estas tres reglas hacen que el texto
+   ocupe el ancho completo y se centre en vertical. */
+[data-testid="stAlert"] > div {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+}
+
+[data-testid="stAlert"] > div > div {
+  align-items: center;
+  width: 100%;
+}
+
+/* Streamlit le pone a este bloque un margen inferior NEGATIVO de 16 px para
+   compensar el margen del último párrafo. Aquí ese margen ya se anula unas
+   líneas más abajo, así que la compensación sobra y lo que hacía era comerse
+   16 px de la caja: el texto quedaba 16 px más abajo de lo que le tocaba y el
+   aviso salía descentrado. */
+[data-testid="stAlert"] [data-testid="stMarkdownContainer"] {
+  width: 100%;
+  margin-bottom: 0;
 }
 
 [data-testid="stAlert"] [data-testid="stMarkdownContainer"] {
@@ -633,9 +683,22 @@ button[data-baseweb="tab"] [data-testid="stMarkdownContainer"] p {
    margen interior propio, así que el texto (y sobre todo las listas de
    "Limitaciones conocidas" y del entorno de medición) arrancaba pegado al
    filete izquierdo. El padding se declara aquí, no se hereda. */
+/* Relleno idéntico por los cuatro lados. Antes el inferior era un paso mayor
+   que el superior y el texto de "Limitaciones conocidas" quedaba descentrado
+   dentro de su rectángulo: más aire por un lado que por el otro. */
 [data-testid="stExpanderDetails"] {
-  padding: var(--s4) var(--s4) var(--s5) !important;
+  padding: var(--s4) !important;
   border-top: 1px solid var(--qpcs-border);
+}
+
+/* El mismo margen inferior negativo de 16 px que Streamlit le pone al bloque
+   de markdown dentro de los avisos aparece tambien aqui, y aqui hacia lo
+   mismo: se comia el relleno de abajo del desplegable, asi que el texto tenia
+   17 px de aire por arriba y 0 por abajo. Anulado, el bloque queda centrado
+   dentro de su rectangulo. El margen del ultimo parrafo o de la ultima lista
+   se sigue anulando justo debajo, asi que no se suma espacio de mas. */
+[data-testid="stExpanderDetails"] [data-testid="stMarkdownContainer"] {
+  margin-bottom: 0;
 }
 
 [data-testid="stExpanderDetails"] [data-testid="stMarkdownContainer"] :first-child {
@@ -687,11 +750,66 @@ button[data-baseweb="tab"] [data-testid="stMarkdownContainer"] p {
   background: transparent;
 }
 
+/* Tope de altura con desplazamiento propio, por si alguna vez cae aquí un
+   bloque largo: sin él, un volcado de unos miles de renglones mide decenas de
+   miles de píxeles de alto y se come la página entera. Los bloques cortos que
+   hay hoy no se enteran de esta regla. */
+[data-testid="stCodeBlock"] pre {
+  max-height: 26rem;
+  overflow: auto;
+}
+
+/* --- Línea de muestra del volcado hexadecimal --------------------------- */
+
+/* Una sola línea de dígitos que llena el ancho disponible y se corta con
+   puntos suspensivos. El recorte lo hace el navegador y no Python, así que
+   la línea queda igual de bien en una pantalla ancha que en un móvil: se ve
+   todo lo que cabe y ni un carácter de más. Lo que no cabe no se pierde,
+   está en el .txt que se descarga justo debajo. */
+.qpcs-hex {
+  overflow: hidden;
+  margin: var(--s2) 0 var(--s3);
+  padding: var(--s3) var(--s4);
+  color: #2c3e50;
+  font-family: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  line-height: 1.7;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid var(--qpcs-border);
+  border-left: 3px solid var(--qpcs-teal);
+  border-radius: 0 var(--qpcs-radio-sm) var(--qpcs-radio-sm) 0;
+  background: var(--qpcs-sunken);
+}
+
 /* --- Figuras ------------------------------------------------------------- */
 
 [data-testid="stImage"],
 [data-testid="stImage"] img {
   border-radius: var(--qpcs-radio-sm);
+}
+
+/* Toda figura va centrada en el hueco que le toca. Importa sobre todo al
+   ampliar: el visor a pantalla completa le da a la imagen su tamaño natural
+   dentro de un contenedor del ancho de la ventana, y sin esto la figura se
+   quedaba pegada al borde izquierdo con todo el hueco a la derecha. */
+[data-testid="stImage"] {
+  width: 100%;
+  text-align: center;
+}
+
+[data-testid="stImage"] img {
+  display: block;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+[data-testid="stFullScreenFrame"] > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 /* Separación entre una figura y el pie que la explica. */
@@ -704,15 +822,49 @@ hr {
   border-color: var(--qpcs-border);
 }
 
+/* --- Lo que sobra de la interfaz por defecto ---------------------------- */
+
+/* Streamlit cuelga un icono de enlace de cada título (st.subheader y
+   compañía) para copiar un ancla a esa sección. En un panel de una sola
+   página no lleva a ninguna parte útil: aparece en todos los rectángulos,
+   confunde con un enlace de verdad y nadie lo usa. Se quita el icono, no el
+   ancla: el id sigue en el HTML por si alguien lo necesita.
+   El botón de ampliar de las figuras NO es esto y se queda. */
+[data-testid="StyledLinkIconContainer"] > a {
+  display: none !important;
+}
+
+/* La barra lateral tenía los parámetros de BB84 y una cabecera avisando de
+   que solo afectaban al Módulo 1. Esos controles viven ahora dentro de la
+   pestaña del módulo, al lado de las figuras que gobiernan, como los de los
+   módulos 3 y 4. Sin nada que enseñar, la barra y su pestillo estorban. */
+[data-testid="stSidebar"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] {
+  display: none !important;
+}
+
+/* Un único tema, claro, y sin interruptor. El panel está calibrado sobre
+   fondo blanco: las figuras de Matplotlib se generan con fondo blanco fijo
+   (fig.patch.set_facecolor("#ffffff") en qkd_app.py) y en tema oscuro salían
+   como recortes blancos flotando sobre negro, con los ejes ilegibles. Forzar
+   el esquema claro aquí evita además que el navegador repinte los controles
+   nativos en oscuro por su cuenta. */
+:root,
+.stApp {
+  color-scheme: light;
+}
+
 /* --- Adaptación a pantallas estrechas ----------------------------------- */
 
 @media (max-width: 1100px) {
   .qpcs-flow {
-    grid-template-columns: repeat(2, 1fr);
+    flex-wrap: wrap;
   }
 
-  .qpcs-flow__step:not(:last-child)::after {
-    display: none;
+  .qpcs-flow__step {
+    flex: 1 1 40%;
+    padding: var(--s2) var(--s3);
   }
 }
 
@@ -733,6 +885,10 @@ hr {
   [role="tabpanel"] [role="tabpanel"] {
     padding-right: 0 !important;
     padding-left: 0 !important;
+  }
+
+  [data-baseweb="tab-list"] {
+    padding-left: 0;
   }
 }
 
@@ -763,22 +919,29 @@ hr {
     padding: var(--s5) var(--s4) var(--s6);
   }
 
-  .qpcs-flow {
-    grid-template-columns: 1fr;
-  }
-
+  .qpcs-flow,
   .qpcs-process {
     align-items: stretch;
     flex-direction: column;
     gap: var(--s2);
   }
 
-  .qpcs-process__arrow {
+  .qpcs-flow__step {
+    flex: 1 1 auto;
+  }
+
+  .qpcs-process__arrow,
+  .qpcs-flow__arrow {
     justify-content: center;
+    padding: 0;
     transform: rotate(90deg);
   }
 
   button[data-baseweb="tab"] {
     padding: var(--s2) var(--s3);
+  }
+
+  [data-baseweb="tab-list"] {
+    padding-left: calc(var(--s4) - var(--s3));
   }
 }

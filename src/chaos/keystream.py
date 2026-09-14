@@ -1,12 +1,12 @@
 """src/chaos/keystream.py - de la orbita a los bytes.
 
-Cuantizacion con bits BAJOS, no altos (guia Fase 3, cap. 4.4): la densidad
+Cuantizacion con bits BAJOS, no altos: la densidad
 invariante del mapa logistico con r=4 es rho(x) = 1/(pi*sqrt(x(1-x))), no
 uniforme. Los bits de orden alto de x heredan ese sesgo; los de orden bajo
 (en torno a la posicion 32) son, a efectos practicos, uniformes.
 
-EL AVISO DE CICLO CORTO (tarea 3.9, guia cap. 4.5)
---------------------------------------------------
+EL AVISO DE CICLO CORTO (tarea 3.9)
+-----------------------------------
 Un float64 tiene un numero finito de estados, asi que CUALQUIER orbita en
 coma flotante es periodica: la unica pregunta es cual es su periodo. Si la
 orbita cicla antes de agotar la imagen, el keystream se repite y el cifrado
@@ -81,8 +81,7 @@ def _avisar_si_el_ciclo_es_corto(estados: Orbita, n_bytes: int) -> None:
         logger.warning(
             "la orbita CICLA dentro de los %d bytes de keystream pedidos: el "
             "flujo se repite y el cifrado es trivialmente roto por "
-            "reutilizacion de keystream contra si mismo (guia Fase 3, cap. "
-            "4.5). Cambia la clave.",
+            "reutilizacion de keystream contra si mismo. Cambia la clave.",
             n_bytes,
         )
 
@@ -90,7 +89,7 @@ def _avisar_si_el_ciclo_es_corto(estados: Orbita, n_bytes: int) -> None:
 def keystream_logistico(clave: ClaveCaotica, n_bytes: int) -> Keystream:
     """Genera n_bytes deterministas a partir de la clave logistica.
 
-    Receta (ver guia Fase 3, cap. 4.4):
+    La receta, paso a paso:
 
       1. Iterar TRANSITORIO pasos y descartarlos. Es lo que produce la
          sensibilidad a la clave: una diferencia de 1e-15 en x0 se
@@ -129,8 +128,9 @@ def keystream_lorenz(clave: ClaveCaotica, n_bytes: int) -> Keystream:
     """Genera n_bytes deterministas a partir de la clave de Lorenz.
 
     Integra con RK4, descarta el transitorio, normaliza cada coordenada
-    con los rangos DECLARADOS en LORENZ_RANGOS (nunca medidos: ver guia
-    Fase 3, cap. 4.4), y cuantiza igual que en el caso logistico.
+    con los rangos DECLARADOS en LORENZ_RANGOS -nunca medidos sobre la
+    propia orbita, que haria el resultado dependiente de los datos-, y
+    cuantiza igual que en el caso logistico.
 
     Args:
         clave: debe ser de sistema "lorenz".
@@ -153,7 +153,7 @@ def keystream_lorenz(clave: ClaveCaotica, n_bytes: int) -> Keystream:
     for i, eje in enumerate(["x", "y", "z"]):
         lo, hi = LORENZ_RANGOS[eje]
         coords = muestras[:, i]
-        # Normalización a (0, 1) usando rangos declarados en el contrato (cap. 4.4.4)
+        # Normalizacion a (0, 1) usando rangos declarados en el contrato
         normalizado = (coords - lo) / (hi - lo)
         escalado = normalizado * ESCALA_BITS
         b = (escalado.astype(np.uint64) & 0xFF).astype(np.uint8)
@@ -179,7 +179,7 @@ def histograma_chi2(datos: Keystream) -> float:
     """Estadistico chi-cuadrado del histograma de 256 valores.
 
     Bajo la hipotesis de uniformidad, sigue una chi2 con 255 grados de
-    libertad (media 255, critico al 5% = 293.25). Ver guia Fase 3, cap. 6.4.
+    libertad: media 255 y valor critico al 5% de 293.25.
     """
 
     m = datos.size

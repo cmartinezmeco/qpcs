@@ -11,12 +11,12 @@ def test_alfa_de_ruido_generado_con_alfa_conocido(rng):
     """
     fs = 1000.0
     n = 16384
-    # Generación sintética aproximada de ruido rosa (1/f) filtrando ruido blanco
+    # Generacion sintetica aproximada de ruido rosa (1/f) filtrando ruido blanco
     white = rng.normal(0, 1, n)
     b, a = signal.butter(1, 0.1)
-    pink_like = signal.lfilter(b, a, white)  # aproximación simple o espectral
+    pink_like = signal.lfilter(b, a, white)  # aproximacion simple o espectral
 
-    # Estimación de alfa mediante ajuste lineal en log-log de la PSD
+    # Estimacion de alfa mediante ajuste lineal en log-log de la PSD
     freqs, psd = signal.welch(pink_like, fs=fs, nperseg=512)
     idx = (freqs > 1.0) & (freqs < fs / 2)  # Evitar DC
     log_f = np.log(freqs[idx])
@@ -46,7 +46,7 @@ def test_alfa_de_ruido_blanco_es_cero():
     slope, _, _, _, stderr = stats.linregress(np.log(freqs[idx]), np.log(psd[idx]))
     alfa_estimado = -slope
 
-    # Comprobamos que alfa está muy cerca de 0 y estrictamente lejos de 0.5
+    # Comprobamos que alfa esta muy cerca de 0 y estrictamente lejos de 0.5
     assert abs(alfa_estimado) < 0.1
     assert abs(alfa_estimado - 0.5) > 0.3
 
@@ -63,10 +63,10 @@ def test_fano_de_poisson_es_uno(rng):
     varianza = np.var(datos, ddof=1)
     fano = varianza / media
 
-    # Error estándar teórico para la varianza de una distribución de Poisson
+    # Error estandar teorico para la varianza de una distribucion de Poisson
     error_estandar = np.sqrt(2.0 / (n - 1))
 
-    # El Fano factor para Poisson debe ser 1 dentro de los márgenes estadísticos
+    # El Fano factor para Poisson debe ser 1 dentro de los margenes estadisticos
     np.testing.assert_allclose(fano, 1.0, atol=3 * error_estandar)
 
 
@@ -101,7 +101,7 @@ def test_encuentra_los_50_hz(senal_sintetica):
 
     freqs, psd = signal.welch(datos, fs=fs, nperseg=nperseg)
 
-    # Excluimos zona de baja frecuencia y buscamos el máximo absoluto de la PSD
+    # Excluimos zona de baja frecuencia y buscamos el maximo absoluto de la PSD
     idx_valido = freqs > 5.0
     pico_freq = freqs[idx_valido][np.argmax(psd[idx_valido])]
 

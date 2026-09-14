@@ -77,7 +77,7 @@ def test_aes_conserva_la_forma_y_el_tipo():
 
 def test_aes_usa_un_nonce_fresco_en_cada_llamada():
     """Es LA diferencia de comportamiento con el esquema caotico, que es
-    determinista y sin nonce (cap. 6.6)."""
+    determinista y sin nonce."""
 
     img = imagen_de_prueba(32, 32)
     primero, nonce1, _ = cifrar_aes_gcm(img, CLAVE_AES)
@@ -145,7 +145,7 @@ def test_el_flujo_trivial_se_rompe_con_dos_imagenes_y_la_misma_clave():
     EXACTAMENTE el XOR de los dos planos. Un atacante ve la estructura de
     las dos imagenes a simple vista, sin tocar la clave.
 
-    Ninguna de las metricas del cap. 6 detecta esto. Esa es la leccion."""
+    Ninguna de las metricas del campo detecta esto. Esa es la leccion."""
 
     a = imagen_de_prueba(64, 64)
     b = np.zeros_like(a)
@@ -158,7 +158,7 @@ def test_el_flujo_trivial_se_rompe_con_dos_imagenes_y_la_misma_clave():
 
 
 def _tres_columnas(img):
-    """Las tres filas de la tabla del cap. 6.6, medidas sobre la MISMA
+    """Las tres filas de la tabla comparativa, medidas sobre la MISMA
     imagen y con las MISMAS funciones."""
     caotico = cifrar_imagen(img, CLAVE_CAOTICA).datos
     aes, _, _ = cifrar_aes_gcm(img, CLAVE_AES)
@@ -171,9 +171,9 @@ def _tres_columnas(img):
 
 
 def test_las_tres_columnas_salen_indistinguibles():
-    """El resultado que hay que anticipar porque es el corazon del modulo
-    (cap. 6.6): las tres pasan entropia, correlacion y chi2 con los
-    mismos margenes derivados.
+    """El resultado que hay que anticipar porque es el corazon del modulo:
+    las tres pasan entropia, correlacion y chi2 con los mismos margenes
+    derivados.
 
     Que AES las pase se puede leer como "AES es bueno". Que las pase
     tambien SHA256(clave || contador) cierra esa escapatoria.
@@ -185,7 +185,7 @@ def test_las_tres_columnas_salen_indistinguibles():
     esquemas correctos fallaria una de cada siete ejecuciones. Medido
     aqui: el flujo trivial da chi2 = 306, que son 2.26 sigma, es decir
     una fluctuacion normal y no un defecto. Y la banda es de DOS COLAS
-    porque un chi2 demasiado bajo tambien es sospechoso (cap. 6.4).
+    porque un chi2 demasiado bajo tambien es sospechoso.
     """
     img = imagen_de_prueba()
     n = img.size
@@ -205,8 +205,7 @@ def test_npcr_y_uaci_tambien_salen_iguales_en_las_tres():
     """La segunda mitad de la tabla. Se miden entre dos cifrados
     INDEPENDIENTES (dos claves distintas, o dos nonces distintos), que es
     la unica lectura en la que los tres esquemas son comparables: el
-    contador trivial con la misma clave daria NPCR = 1/M por definicion,
-    como dice la propia guia en el cap. 5.3.2."""
+    contador trivial con la misma clave daria NPCR = 1/M por definicion."""
 
     img = imagen_de_prueba()
     n = img.size

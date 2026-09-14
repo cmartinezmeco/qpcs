@@ -2,14 +2,14 @@
 
 Ata la cadena completa: keystream -> permutacion -> difusion (ida y
 vuelta). El descifrado invierte las etapas EN ORDEN INVERSO: la
-composicion de funciones se deshace al reves (guia Fase 3, cap. 5.4).
+composicion de funciones se deshace al reves.
 
 Este modulo NO usa np.random en ningun sitio: el cifrado es enteramente
 determinista a partir de la clave. Si aparece un np.random aqui, es un bug.
 
 REPARTO DEL MATERIAL DERIVADO DE LA CLAVE
 
-La guia (cap. 5.4) pide "M bytes para la difusion mas M valores para la
+El reparto obvio seria "M bytes para la difusion y M valores para la
 permutacion". Aqui se piden 2M + 2 bytes de keystream, y el motivo se
 deriva, no se decide por gusto:
 
@@ -21,15 +21,16 @@ deriva, no se decide por gusto:
 
     y el byte de salida deja de depender de k_i. Con dos segmentos
     disjuntos (k_ad y k_atr) esa cancelacion no existe.
-  - Los 2 bytes sueltos del final son los dos IV, uno por pasada. La guia
-    los define como "un byte inicial derivado tambien de la clave"
-    (cap. 5.3.1); sacarlos del keystream es exactamente eso.
+  - Los 2 bytes sueltos del final son los dos IV, uno por pasada. Un IV
+    aqui es "un byte inicial derivado tambien de la clave", asi que
+    sacarlo del propio keystream es exactamente eso y no hay que
+    inventar otra fuente.
 
 Los M valores de la permutacion NO son bytes: son valores de la orbita en
 float64, porque permutacion_desde_orbita ordena por magnitud y 256 valores
 posibles darian empates masivos. Salen de la misma orbita que el
-keystream, con la misma receta de transitorio y submuestreo: es el "mismo
-flujo, dos usos" de la figura 2.1 de la guia.
+keystream, con la misma receta de transitorio y submuestreo: un solo
+flujo con dos usos.
 """
 
 from __future__ import annotations
@@ -60,7 +61,7 @@ from .types import (
 def _validar_clave(clave: ClaveCaotica) -> None:
     """Rechaza claves que no producen caos, con un motivo legible.
 
-    Es la razon de ser de la tarea 3.3 (guia Fase 3, cap. 3.2): r = 3.83
+    Es la razon de ser de esta funcion: r = 3.83
     esta DENTRO del rango caotico nominal (3.57, 4] y sin embargo tiene
     periodo 3. Un modulo que solo comprobara el rango cifraria con un
     keystream de tres bytes repetidos y las metricas se hundirian. Aqui
@@ -103,8 +104,8 @@ def _validar_clave(clave: ClaveCaotica) -> None:
             # contrato, y NO lee clave.rho. Aceptar aqui un rho distinto
             # significaria que dos claves distintas producen exactamente el
             # mismo cifrado: un campo de la clave que no hace nada y un
-            # espacio de claves mas pequeno de lo que la clave aparenta
-            # (cap. 6.5.1). Mejor un error que esa mentira silenciosa.
+            # espacio de claves mas pequeno de lo que la clave aparenta.
+            # Mejor un error que esa mentira silenciosa.
             raise ValueError(
                 f"rho = {clave.rho} no se puede usar: la dinamica de Lorenz "
                 f"de este modulo esta fijada en LORENZ_RHO = {LORENZ_RHO} "
@@ -156,8 +157,8 @@ def _material(clave: ClaveCaotica, m: int) -> tuple[Keystream, Keystream, int, i
     Un unico keystream de 2m + 2 bytes, troceado siempre igual. La
     longitud se deriva de m -y m de las dimensiones, que viajan en
     ImagenCifrada-, nunca de otra cosa: regenerar el keystream con otra
-    longitud desalinea el flujo desde el primer byte (guia Fase 3,
-    cap. 5.4, tercer error tipico de la tarea).
+    longitud desalinea el flujo desde el primer byte, y es de los
+    errores mas faciles de cometer en este modulo.
     """
     ks = keystream(clave, 2 * m + 2)
     return ks[:m], ks[m : 2 * m], int(ks[2 * m]), int(ks[2 * m + 1])
@@ -170,7 +171,7 @@ def _difundir_atras(p: Keystream, k: Keystream, iv: int) -> Keystream:
     asi que se reutiliza en vez de duplicar el bucle. Existe porque la
     avalancha de la pasada de ida es UNIDIRECCIONAL: cambiar el ultimo
     pixel del plano solo afectaria al ultimo del cifrado y NPCR saldria
-    casi cero en ese caso (guia Fase 3, cap. 5.3).
+    casi cero en ese caso.
     """
     return np.ascontiguousarray(difundir_adelante(p[::-1], k[::-1], iv)[::-1])
 
@@ -185,7 +186,7 @@ def cifrar_imagen(img: Imagen, clave: ClaveCaotica) -> ImagenCifrada:
 
     Cadena: generar keystream -> permutar -> difundir hacia adelante ->
     difundir hacia atras (para que la avalancha cubra tambien el ultimo
-    pixel, ver guia Fase 3 cap. 5.3).
+    pixel).
 
     La imagen de entrada NO se modifica: la permutacion por indexado
     avanzado (plano[sigma]) ya devuelve un array nuevo. Mutar la entrada
@@ -195,7 +196,7 @@ def cifrar_imagen(img: Imagen, clave: ClaveCaotica) -> ImagenCifrada:
 
     El esquema es DETERMINISTA y no lleva nonce: cifrar dos veces la
     misma imagen con la misma clave da exactamente el mismo resultado.
-    Es una limitacion real y documentada (cap. 6.6), no un descuido: es
+    Es una limitacion real y documentada, no un descuido: es
     lo que hace que reutilizar la clave con dos imagenes sea catastrofico,
     igual que reutilizar un one-time pad. El baseline AES-256-GCM de la
     tarea 3.8 si lleva nonce fresco, y esa diferencia es parte de la tabla.
@@ -245,7 +246,7 @@ def cifrar_imagen(img: Imagen, clave: ClaveCaotica) -> ImagenCifrada:
         # informacion (permite confirmar una conjetura sobre la imagen sin
         # descifrarla). Se conserva porque el modulo es didactico y la
         # verificacion tiene valor pedagogico, y va documentado en
-        # "Limitaciones conocidas" (guia Fase 3, cap. 5.5).
+        # docs/limitaciones.md.
         hash_plano=hashlib.sha256(plano.tobytes()).hexdigest(),
     )
 
@@ -287,7 +288,7 @@ def descifrar_imagen(cifrada: ImagenCifrada, clave: ClaveCaotica) -> Imagen:
     k_ad, k_atr, _iv_ad_derivado, iv_atr = _material(clave, m)
 
     datos: Keystream = np.ascontiguousarray(cifrada.datos).ravel()
-    # El IV de ida es el que VIAJA en el contenedor (cap. 5.5), no el
+    # El IV de ida es el que VIAJA en el contenedor, no el
     # recalculado: es lo que declara el formato. El de vuelta no viaja en
     # ningun campo, asi que se deriva de la clave igual que al cifrar.
     ida = _deshacer_atras(datos, k_atr, iv_atr)

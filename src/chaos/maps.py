@@ -1,6 +1,6 @@
 """src/chaos/maps.py - dinamicas caoticas: mapa logistico y sistema de Lorenz.
 
-DETERMINISMO (guia Fase 3, cap. 4): las formulas de este fichero se
+DETERMINISMO: las formulas de este fichero se
 escriben EXACTAMENTE como aparecen aqui y no se "simplifican" de forma
 algebraicamente equivalente. Solo se usan sumas, restas y multiplicaciones,
 que IEEE-754 garantiza correctamente redondeadas en cualquier maquina.
@@ -17,7 +17,7 @@ from .types import LORENZ_BETA, LORENZ_RHO, LORENZ_SIGMA, Orbita
 def orbita_logistica(x0: float, r: float, n: int) -> Orbita:
     """Itera x_{n+1} = r * x_n * (1 - x_n) y devuelve la orbita completa.
 
-    DETERMINISMO (cap. 4): la expresion se escribe EXACTAMENTE asi y no
+    DETERMINISMO: la expresion se escribe EXACTAMENTE asi y no
     se "simplifica" a r*(x - x*x), que es identica en algebra y distinta
     en coma flotante. Solo hay multiplicaciones y una resta: todas
     correctamente redondeadas por IEEE-754, luego el resultado es igual
@@ -36,8 +36,8 @@ def orbita_logistica(x0: float, r: float, n: int) -> Orbita:
             extremos son puntos fijos: con x0 = 0 la orbita es 0 para
             siempre, y con x0 = 1 el primer paso la lleva a 0 y se queda
             ahi. En los dos casos el "keystream" seria un byte repetido.
-            Es uno de los ocho casos borde de la tarea 3.9 (guia Fase 3,
-            cap. 8.9), y aqui es un ValueError y no un assert porque con
+            Es uno de los ocho casos borde de la tarea 3.9, y aqui es un
+            ValueError y no un assert porque con
             python -O los assert desaparecen y la validacion con ellos.
     """
     # Sin esta guarda, x0 = 0 se cuela hasta lyapunov_logistico y sale
@@ -76,7 +76,7 @@ def orbita_lorenz(u0: Orbita, n: int, h: float) -> Orbita:
 
     Devuelve un array de forma (n, 3): la trayectoria completa.
 
-    Paso fijo y no adaptativo a proposito (cap. 3.3): un integrador
+    Paso fijo y no adaptativo a proposito: un integrador
     adaptativo elige el paso segun una estimacion del error, y esa
     eleccion puede variar entre versiones de SciPy. Aqui el descifrado
     exige la MISMA secuencia de operaciones siempre.
@@ -84,7 +84,7 @@ def orbita_lorenz(u0: Orbita, n: int, h: float) -> Orbita:
     Args:
         u0: condicion inicial (x0, y0, z0).
         n: numero de pasos de integracion.
-        h: paso de integracion. Fijo, nunca adaptativo (ver cap. 3.3).
+        h: paso de integracion. Fijo, nunca adaptativo.
 
     Returns:
         Array de forma (n, 3) con float64: la trayectoria completa.

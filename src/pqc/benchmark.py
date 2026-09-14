@@ -134,7 +134,7 @@ REPETICIONES_CLASICO = 50
 
 # Repeticiones descartadas antes de empezar a cronometrar. La primera llamada
 # a una primitiva paga cosas que no son la operacion (cargar la libreria C,
-# rellenar cachés de OpenSSL, resolver el mecanismo en liboqs) y contaminaria
+# rellenar caches de OpenSSL, resolver el mecanismo en liboqs) y contaminaria
 # la media. Tres bastan y no encarecen notablemente ni el keygen de RSA.
 CALENTAMIENTO = 3
 

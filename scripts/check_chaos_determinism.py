@@ -12,7 +12,7 @@ tests/chaos/test_keystream.py ya compara el keystream contra
 vectors/keystream_v1.json, y eso es lo que la CI corre dentro del contenedor.
 Pero un test solo sabe decir "pasa" o "falla" en el entorno donde se ejecuta, y
 el fallo que hay que cazar aqui es de OTRA naturaleza: dos entornos que dan
-resultados distintos, cada uno consistente consigo mismo (guia Fase 3, cap. 4.1).
+resultados distintos, cada uno consistente consigo mismo.
 
 Este script emite HUELLAS, no veredictos. Con --json produce un objeto
 comparable byte a byte entre maquinas:
@@ -52,8 +52,8 @@ from chaos import (
 from chaos.types import ESCALA_BITS, SUBMUESTREO, TRANSITORIO
 
 # El vector de prueba versionado. NO se regenera desde aqui, ni desde ningun
-# otro sitio: si un test falla contra el, el bug esta en el codigo (guia Fase 3,
-# cap. 7.1). Este script solo lo LEE.
+# otro sitio: si un test falla contra el, el bug esta en el codigo, no en el
+# vector. Este script solo lo LEE.
 RUTA_VECTOR = Path(__file__).resolve().parents[1] / "vectors" / "keystream_v1.json"
 
 # Bytes de keystream que se regeneran para contrastar con el vector. Es el
