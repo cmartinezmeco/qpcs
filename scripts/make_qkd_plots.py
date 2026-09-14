@@ -4,13 +4,13 @@ Regenera TODAS las figuras del README con un solo comando:
 
     python scripts/make_qkd_plots.py
 
-Reglas de la tarea (seccion 5.8 de la guia):
+Reglas de la tarea:
   - Tres figuras, ni una mas. Salida versionada en docs/img/ (PNG, dpi=150,
     fondo blanco).
   - Semilla fija: las figuras son reproducibles bit a bit.
   - Sin titulo dentro de la figura: el titulo va en el pie del README. El
-    estadistico monobit z de la figura 2 (que la guia pide "en el titulo")
-    va como anotacion dentro de los ejes para no violar esta regla.
+    estadistico monobit z de la figura 2 va como anotacion dentro de los
+    ejes, no en un titulo, para no violar esa regla.
   - Ejes etiquetados. Matplotlib por defecto, sin estilos exoticos.
   - Este script NO reimplementa logica de protocolo: consume QRNG,
     run_until_qber y run_protocol tal y como los exporta el paquete qkd.
@@ -40,10 +40,10 @@ SEMILLA = 42
 # sigma binomial del QBER es ~0.005: las barras de error se ven pero no
 # dominan (mismo n que usan los tests de la tarea 1.4).
 N_BARRIDO = 40_000
-# Bits del QRNG para la figura 2 (el tamano que fija la guia, seccion 5.8.1).
+# Bits del QRNG para la figura 2.
 N_QRNG = 100_000
-# Ejecucion del embudo (figura 3): los parametros de la tabla del capitulo 3
-# de la guia (N = 100 000, ruido 2%, sin Eve).
+# Ejecucion del embudo (figura 3): los parametros de la tabla
+# publicada en el README (N = 100 000, ruido 2%, sin Eve).
 N_EMBUDO = 100_000
 RUIDO_EMBUDO = 0.02
 
@@ -69,7 +69,7 @@ def figura_1_qber_vs_eve() -> None:
     sigmas: list[float] = []
     for p in ps:
         # Misma semilla en cada punto: cada ejecucion es independiente y la
-        # figura entera es reproducible (igual que el extracto de la guia).
+        # figura entera es reproducible.
         est = run_until_qber(
             n_photons=N_BARRIDO,
             eve_rate=float(p),
@@ -124,9 +124,8 @@ def figura_2_histograma_qrng() -> None:
 
     Usa el backend qiskit del QRNG (el cuantico simulado, no el atajo
     numpy): es la pieza que la figura ensena y genera 10^5 bits en ~2 s,
-    medido antes de decidirlo. El panel de rachas es el "segundo panel
-    opcional" de la guia: mas informativo y mas dificil de falsificar que
-    el monobit.
+    medido antes de decidirlo. El panel de rachas se anade porque es mas
+    informativo y mas dificil de falsificar que el monobit a secas.
     """
     bits = QRNG(seed=SEMILLA, backend="qiskit").random_bits(N_QRNG)
     n = bits.size
@@ -156,7 +155,7 @@ def figura_2_histograma_qrng() -> None:
     for x, v in ((0, ceros), (1, unos)):
         ax1.text(x, v, _miles(v), ha="center", va="bottom", fontsize=9)
     # El estadistico va como anotacion (la regla "sin titulo dentro de la
-    # figura" manda sobre el "z en el titulo" de la seccion 5.8.1). La
+    # figura" manda sobre el "z en el titulo"). La
     # leyenda de la linea discontinua va en el mismo cuadro para no chocar
     # con las cifras de las barras.
     ax1.text(
@@ -200,7 +199,7 @@ def figura_2_histograma_qrng() -> None:
 def figura_3_embudo_de_bits() -> None:
     """El embudo de bits: de 10^5 fotones a la clave final destilada.
 
-    Es la tabla de balance del capitulo 3 de la guia hecha figura, y lo que
+    Es la tabla de balance del README hecha figura, y lo que
     demuestra que la cadena llega hasta el final (reconciliacion y
     amplificacion de privacidad) y no se queda en el sifting.
     """

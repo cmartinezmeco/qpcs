@@ -1,6 +1,6 @@
 """src/detector/filtrado.py - quitar interferencias y deriva.
 
-OJO (guia Fase 4, cap. 6.5): un filtro tiene memoria y por tanto PUEDE
+OJO: un filtro tiene memoria y por tanto PUEDE
 INTRODUCIR correlacion, aunque la entrada no la tuviera. Es una trampa
 perfecta aqui: se filtra para quitar la correlacion del 1/f y el filtro
 mete correlacion propia. Por eso el orden se mantiene bajo a proposito y
@@ -26,7 +26,7 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
     frecuencia deformaria la senal de una manera que el espectro no ve
     pero el factor de Fano si.
 
-    OJO (guia Fase 4, cap. 6.5): un filtro tiene memoria y por tanto
+    OJO: un filtro tiene memoria y por tanto
     INTRODUCE correlacion. El orden se mantiene bajo a proposito, y hay
     un test que comprueba que filtrar ruido blanco lo deja blanco.
 

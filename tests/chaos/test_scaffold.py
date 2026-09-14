@@ -19,7 +19,7 @@ def test_api_publica_existe():
 
 def test_las_constantes_del_contrato_no_se_han_movido():
     """types.py no se exporta por __init__, pero sus constantes son el
-    contrato mas importante del modulo (guia Fase 3, cap. 7.2). Este
+    contrato mas importante del modulo. Este
     test fija sus valores para que un cambio accidental salte aqui.
     """
     from chaos.types import (

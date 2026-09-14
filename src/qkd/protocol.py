@@ -23,7 +23,7 @@ QBER_THRESHOLD = 0.11
 # Bits objetivo de muestra publica para estimar el QBER cuando no se pide
 # una sample_fraction concreta. 800 basta para estabilizar la sigma
 # binomial sin sacrificar demasiada clave final con N grandes (Gonzalo,
-# tarea 2.x). Acotado entre 2% (N masivo) y 40% (N pequeño).
+# tarea 2.x). Acotado entre 2% (N masivo) y 40% (N pequeno).
 _MUESTRA_QBER_OBJETIVO = 800
 _MUESTRA_FRACCION_MIN = 0.02
 _MUESTRA_FRACCION_MAX = 0.40

@@ -10,7 +10,7 @@ import numpy.typing as npt
 
 # Imagen en escala de grises, 8 bits. SIEMPRE uint8, nunca float.
 Imagen: TypeAlias = npt.NDArray[np.uint8]
-# Orbita y keystream: float64 obligatorio (determinismo, ver guia Fase 3 cap. 4).
+# Orbita y keystream: float64 obligatorio, por determinismo.
 Orbita: TypeAlias = npt.NDArray[np.float64]
 Keystream: TypeAlias = npt.NDArray[np.uint8]
 # Permutacion: indices int64.
@@ -38,7 +38,7 @@ LORENZ_RANGOS: dict[str, tuple[float, float]] = {
 
 # Parametros clasicos de Lorenz. sigma + 1 + beta = 13.666...
 # (la suma de los tres exponentes de Lyapunov debe dar -13.666...,
-# es una verificacion numerica gratis, ver guia Fase 3 cap. 3.3)
+# es una verificacion numerica gratis del integrador)
 LORENZ_SIGMA: float = 10.0
 LORENZ_RHO: float = 28.0
 LORENZ_BETA: float = 8.0 / 3.0
@@ -84,7 +84,7 @@ class DiagnosticoCaos:
 
 @dataclass(frozen=True)
 class ImagenCifrada:
-    """Lo que viaja. hash_plano filtra informacion: ver guia Fase 3 cap. 5.6."""
+    """Lo que viaja. hash_plano filtra informacion: ver docs/limitaciones.md."""
 
     datos: Imagen
     alto: int
@@ -100,7 +100,7 @@ class ImagenCifrada:
 
 @dataclass(frozen=True)
 class MetricasImagen:
-    """Salida de la tarea 3.7. Una fila de la tabla comparativa (cap. 6.6)."""
+    """Salida de la tarea 3.7. Una fila de la tabla comparativa."""
 
     etiqueta: str  # "caotico", "AES-256-GCM", "contador"
     entropia: float

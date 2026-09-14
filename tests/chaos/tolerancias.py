@@ -1,8 +1,8 @@
 """tests/chaos/tolerancias.py - las tolerancias de los tests, DERIVADAS.
 
-Regla heredada de la Fase 1 y repetida en la guia de la Fase 3 (cap. 1.1,
-punto 4): "todo umbral estadistico se escribe con su sigma calculada. Un
-assert abs(x - 0.996) < 0.01 sin justificacion se devuelve en revision".
+Regla heredada de la Fase 1 y repetida en cada fase desde entonces: todo
+umbral estadistico se escribe con su sigma calculada. Un
+assert abs(x - 0.996) < 0.01 sin justificacion se devuelve en revision.
 
 Este fichero existe para que esas sigmas se escriban UNA vez y no una por
 cada fichero de test: cinco copias de la misma formula son cinco formulas
@@ -20,7 +20,7 @@ import numpy as np
 
 # Valor critico al 5% de una chi-cuadrado con 255 grados de libertad, y su
 # media. El test es de DOS COLAS: un chi2 muy por debajo de la media es
-# tan sospechoso como uno por encima del critico (guia Fase 3, cap. 6.4).
+# tan sospechoso como uno por encima del critico.
 CHI2_CRITICO_5PCT = 293.25
 CHI2_MEDIA = 255.0
 
@@ -54,8 +54,8 @@ def sigma_npcr(n_pixeles: int) -> float:
 
         sqrt(0.99609 * 0.00391 / 65536) * 100 = 0.0244 puntos
 
-    y un criterio de 4 sigma da el intervalo [99.512%, 99.707%] que
-    aparece en la guia (cap. 6.3.1), aqui derivado y no copiado.
+    y un criterio de 4 sigma da el intervalo [99.512%, 99.707%], aqui
+    derivado y no copiado de ningun sitio.
     """
     p = 255.0 / 256.0
     return float(np.sqrt(p * (1.0 - p) / n_pixeles) * 100.0)
@@ -85,7 +85,7 @@ def sigma_correlacion(n_muestras: int) -> float:
     correlacionadas: se distribuye aproximadamente como N(0, 1/sqrt(n)).
 
     Con n = 5000 pares, sigma = 0.0141 y un umbral de 4 sigma da
-    |r| < 0.057 (guia Fase 3, cap. 6.2). No un 0.05 redondo.
+    |r| < 0.057. No un 0.05 redondo.
     """
     return float(1.0 / np.sqrt(n_muestras))
 

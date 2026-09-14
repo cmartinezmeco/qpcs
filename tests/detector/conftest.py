@@ -1,7 +1,7 @@
 """tests/detector/conftest.py - fixtures compartidas del modulo detector.
 
-La senal sintetica es la pieza mas importante de esta tarea (guia Fase 4,
-cap. 6.1): sin ella, las tareas 4.3 a 4.7 no pueden escribir un solo test
+La senal sintetica es la pieza mas importante de esta tarea: sin ella, las
+tareas 4.3 a 4.7 no pueden escribir un solo test
 hasta que la 4.2 traiga datos reales. Con ella, Gonzalo y Marco pueden
 desarrollarse en paralelo desde el primer dia.
 
@@ -38,10 +38,13 @@ def senal_sintetica() -> tuple[np.ndarray, dict[str, float]]:
     n, fs = 2**20, 40_000.0  # ~1e6 muestras a 40 kHz
 
     verdad = {"alfa": 1.0, "pico_hz": 50.0, "sigma_blanco": 10.0}
-    # NOTA para quien implemente 4.3/4.4: aqui falta la generacion de
-    # ruido 1/f en si (requiere filtrado espectral de ruido blanco).
-    # Placeholder minimo para que la fixture sea importable desde ya;
-    # se completa junto con la tarea 4.4.
+    # Esta senal NO lleva componente 1/f, y se queda asi. Generar 1/f
+    # exige filtrar ruido blanco en el dominio de la frecuencia, y esa
+    # pieza acabo viviendo en detector.carga.senal_de_prueba, que es la
+    # que usan los tests que necesitan el espectro completo. Lo que hace
+    # falta aqui es una senal de composicion conocida y barata, con un
+    # pico de interferencia identificable: para eso sobra con blanco mas
+    # seno mas Poisson.
     t = np.arange(n) / fs
     blanco = rng.normal(0.0, verdad["sigma_blanco"], n)
     interferencia = 5.0 * np.sin(2 * np.pi * verdad["pico_hz"] * t)

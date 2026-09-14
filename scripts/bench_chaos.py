@@ -3,11 +3,11 @@
     python scripts/bench_chaos.py             # etapas + cadena completa
     python scripts/bench_chaos.py --ciclos    # ademas, la longitud del ciclo (lento)
 
-Responde a las tres preguntas que la guia deja abiertas para este modulo:
+Responde a las tres preguntas que quedaban abiertas en este modulo:
 
   1. Cuanto cuesta cifrar y descifrar, y donde se va el tiempo (por etapas).
-  2. Si la asimetria cifrar/descifrar del cap. 5.3 se ve o no se ve, y por que.
-  3. Si el cuello de botella justifica compilar con Numba (cap. 1.2). La regla
+  2. Si la asimetria entre cifrar y descifrar se ve o no se ve, y por que.
+  3. Si el cuello de botella justifica compilar con Numba. La regla
      del proyecto es "NumPy primero, Numba solo TRAS MEDIR": esto es el medir.
 
 Convencion de medida, heredada del banco del modulo 2 (src/pqc/benchmark.py):
@@ -68,7 +68,7 @@ CLAVE_LORENZ = ClaveCaotica(sistema="lorenz", x0=1.0, y0=1.0, z0=1.0)
 
 # --- Parametros del modo --ciclos --------------------------------------
 # Muestra de claves para medir la longitud del ciclo de la orbita en precision
-# finita (guia Fase 3, cap. 4.5). Son x0 repartidos por (0, 1) con el mismo r
+# finita. Son x0 repartidos por (0, 1) con el mismo r
 # caotico: lo que se mide es la orbita, no el parametro.
 CLAVES_CICLO = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
 R_CICLO = 3.99
@@ -158,7 +158,7 @@ def medir_etapas(lado: int) -> dict[str, float]:
     """Desglose por etapas de un cifrado, para saber DONDE se va el tiempo.
 
     Es lo que decide la cuestion de Numba: no sirve compilar la etapa que
-    la guia supone cara, sino la que el reloj dice que lo es.
+    uno supone cara, sino la que el reloj dice que lo es.
     """
     img = imagen_de_prueba(lado, lado)
     m = img.size
@@ -204,11 +204,11 @@ def medir_etapas(lado: int) -> dict[str, float]:
 
 
 def medir_ciclos() -> None:
-    """Longitud del ciclo de la orbita en precision finita (cap. 4.5).
+    """Longitud del ciclo de la orbita en precision finita.
 
     Cualquier orbita en float64 es periodica: el espacio de estados es
-    finito. La unica pregunta es cual es el periodo, y la guia pide
-    MEDIRLO y publicarlo en vez de ignorarlo.
+    finito. La unica pregunta es cual es el periodo, y el criterio del
+    modulo es MEDIRLO y publicarlo en vez de ignorarlo.
 
     El metodo es exacto y no es Floyd: dos estados float64 IDENTICOS
     tienen el mismo futuro, asi que la orbita cicla dentro del tramo
@@ -258,9 +258,9 @@ def medir_ciclos() -> None:
 def _veredicto_numba(etapas: dict[str, float], lado: int) -> None:
     """La decision sobre Numba, escrita con los numeros que la sostienen.
 
-    La guia (cap. 1.2) da por hecho que el cuello de botella es el bucle
-    secuencial de la difusion, y por eso lo senala como el sitio donde
-    Numba tendria sentido. El reloj dice otra cosa, y por eso se mide.
+    La sospecha razonable es que el cuello de botella sea el bucle
+    secuencial de la difusion, que es el sitio donde Numba tendria
+    sentido a primera vista. El reloj dice otra cosa, y por eso se mide.
     """
     total = etapas["_total_cifrado"]
     orbitas = etapas["keystream (2M+2 bytes)"] + etapas["orbita de la permutacion"]
@@ -278,7 +278,7 @@ def _veredicto_numba(etapas: dict[str, float], lado: int) -> None:
     print(
         "\n  El cuello de botella NO es la difusion: es la generacion de las\n"
         "  orbitas, que es justo el camino del keystream. Compilar ahi es\n"
-        "  exactamente lo que la guia (cap. 1.2) marca como mas peligroso:\n"
+        "  exactamente el sitio mas peligroso donde se podria tocar:\n"
         "  Numba puede reasociar y emitir FMA, y un cambio en el ultimo bit\n"
         "  de la mantisa destruye la orbita en ~50 iteraciones. Con la\n"
         "  difusion sola el techo de mejora es el porcentaje de arriba.\n"
@@ -293,7 +293,7 @@ def main() -> None:
         action="store_true",
         help=(
             "mide ademas la longitud del ciclo de la orbita para una muestra "
-            "de claves (~15 s). Es la limitacion del cap. 4.5, que se mide y "
+            "de claves (~15 s). Es la limitacion del ciclo, que se mide y "
             "se publica en vez de ignorarse."
         ),
     )
@@ -306,7 +306,7 @@ def main() -> None:
 
     print("\nASIMETRIA CIFRAR / DESCIFRAR")
     print(
-        "  La guia (cap. 5.3) anticipa que descifrar salga uno o dos ordenes de\n"
+        "  El analisis del esquema anticipa que descifrar salga uno o dos ordenes de\n"
         "  magnitud mas rapido que cifrar, porque deshacer la difusion es una\n"
         "  linea vectorizada y hacerla es un bucle. En la ETAPA se ve; en la\n"
         "  CADENA no, y la explicacion esta en el desglose de arriba: las dos\n"

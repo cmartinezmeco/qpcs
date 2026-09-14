@@ -7,14 +7,14 @@ Lo que falta, y es lo que hay aqui, es el modulo recorrido de una vez:
     la CLAVE define una ORBITA, la orbita define un KEYSTREAM,
     y el keystream define completamente el CIFRADO
 
-Esa cadena causal es la idea que la guia pide interiorizar (cap. 2.4) y no hay
-ninguna otra fuente de aleatoriedad en ella: cero np.random en el camino. Si
+Esa cadena causal es la idea central del modulo, y no hay ninguna otra fuente
+de aleatoriedad en ella: cero np.random en el camino. Si
 alguna pieza se rompe al integrarse con otra -un contrato que cambia, una
 longitud que se deriva de otra cosa, una permutacion que se aplica en el orden
 equivocado-, es aqui donde se ve, y no en la demo.
 
 Este fichero se ocupa ademas de dos criterios de cierre que NO son de ninguna
-tarea en concreto porque son del modulo entero (cap. 11): que ninguna funcion
+tarea en concreto porque son del modulo entero: que ninguna funcion
 del camino del keystream use funciones trascendentes, y que no haya np.random
 dentro de cipher.py. Los dos estaban escritos como "criterio de revision de
 PR", es decir, confiados a que un humano se acuerde de mirarlos en cada PR.
@@ -59,7 +59,7 @@ CLAVE_AES = bytes(range(32))
 # imagen cifrada. lyapunov.py NO esta en la lista y es deliberado: usa np.log
 # a conciencia, pero lambda es un DIAGNOSTICO que decide si la clave sirve y
 # no entra en el keystream, asi que puede diferir en el ultimo bit entre dos
-# libm sin que nadie se entere (guia Fase 3, cap. 4.2). metrics.py tampoco:
+# libm sin que nadie se entere. metrics.py tampoco:
 # mide el resultado, no lo produce.
 CAMINO_DEL_KEYSTREAM = (
     "maps.py",
@@ -72,8 +72,24 @@ CAMINO_DEL_KEYSTREAM = (
 # exp, log, sin, cos y pow NO estan obligadas a ser correctamente redondeadas
 # por IEEE-754: cada libm elige su compromiso entre precision y velocidad, y
 # la misma llamada puede diferir en el ultimo bit entre dos versiones de glibc
-# o entre x86 y ARM (cap. 4.2). En una orbita caotica ese ultimo bit se come
-# la imagen entera en ~50 iteraciones.
+# o entre x86 y ARM. En una orbita caotica ese ultimo bit se come la imagen
+# entera en ~50 iteraciones.
+#
+# La lista incluye ademas sqrt y cbrt, y conviene explicar por que, porque
+# no es por el mismo motivo:
+#
+#   - cbrt no esta garantizada por IEEE-754. Entra por la misma puerta que
+#     exp y log.
+#   - sqrt SI esta garantizada, asi que prohibirla es ser mas estricto de
+#     lo que el determinismo exige. Se prohibe igual porque las dos
+#     dinamicas del modulo son sumas, restas y multiplicaciones y nada mas:
+#     una raiz cuadrada aparecida en el camino del keystream significa que
+#     alguien ha cambiado la dinamica, y eso hay que mirarlo aunque el
+#     resultado sea bit a bit reproducible.
+#
+# Es decir: la lista mezcla "esto rompe el determinismo" con "esto no
+# deberia estar aqui de todas formas". Las dos razones valen para dejar la
+# CI en rojo, y la segunda no es menos util que la primera.
 TRASCENDENTES = frozenset(
     {
         "sin",
@@ -123,7 +139,7 @@ def _llamadas_con_prefijo(fuente: str, prefijos: frozenset[str]) -> list[str]:
 
 
 def test_el_arco_completo_del_modulo():
-    """La cadena entera de la figura 2.1, paso a paso y en un solo test.
+    """La cadena entera del modulo, paso a paso y en un solo test.
 
     Clave -> validacion del caos -> keystream -> permutacion -> difusion ->
     imagen cifrada -> metricas -> descifrado exacto. Cada eslabon se
@@ -140,14 +156,14 @@ def test_el_arco_completo_del_modulo():
     m = img.size
 
     # 2. La orbita define un keystream, y el keystream es plano: si el
-    #    histograma estuviera sesgado (la cuantizacion ingenua del cap. 4.4),
+    #    histograma estuviera sesgado (la cuantizacion ingenua con bits altos),
     #    el cifrado heredaria el sesgo y todo lo de abajo se hundiria.
     flujo = keystream(CLAVE, 2 * m + 2)
     assert flujo.size == 2 * m + 2
     assert abs(chi2_histograma(flujo) - CHI2_MEDIA) < 4 * sigma_chi2()
 
     # 3. La permutacion mueve pixeles sin tocar valores: rompe la correlacion
-    #    espacial y deja el histograma INTACTO. Las dos mitades del cap. 5.1.
+    #    espacial y deja el histograma INTACTO. Las dos mitades de la tesis.
     sigma = permutacion_desde_orbita(_valores_de_permutacion(CLAVE, m), m)
     permutada = img.ravel()[sigma]
     np.testing.assert_array_equal(
@@ -202,7 +218,7 @@ def test_los_dos_sistemas_recorren_la_misma_cadena(sistema):
 
 
 def test_ninguna_de_las_dos_etapas_basta_sola():
-    """El argumento del cap. 5.1, medido de punta a punta en vez de citado.
+    """El argumento del modulo, medido de punta a punta en vez de citado.
 
     - Solo permutacion: el histograma de la "cifrada" es IDENTICO al del
       original, asi que el chi2 la delata inmediatamente. Un atacante que
@@ -267,19 +283,25 @@ def test_las_tres_columnas_se_miden_con_las_mismas_funciones():
 
 @pytest.mark.parametrize("fichero", CAMINO_DEL_KEYSTREAM)
 def test_el_camino_del_keystream_no_usa_funciones_trascendentes(fichero):
-    """Criterio de cierre del cap. 11, automatizado.
+    """Criterio de cierre del modulo, automatizado.
 
-    La guia lo deja como "criterio de revision de PR", es decir, confiado a
-    que alguien se acuerde de mirarlo. Un test no se olvida.
+    Nacio como "criterio de revision de PR", es decir, confiado a que
+    alguien se acuerde de mirarlo. Un test no se olvida.
 
-    El motivo esta en el cap. 4.2: IEEE-754 garantiza que suma, resta,
-    multiplicacion, division y raiz cuadrada estan correctamente
-    redondeadas, y NO garantiza nada de exp, log, sin, cos o pow. Las dos
-    dinamicas del modulo caen enteras dentro de lo garantizado -son solo
-    sumas, restas y multiplicaciones- y por eso el determinismo entre
-    plataformas es alcanzable. Un np.sin colado aqui para "mejorar la
-    mezcla" lo perderia sin dar ningun sintoma hasta que una imagen
-    cifrada en una maquina no se descifra en otra.
+    El motivo: IEEE-754 garantiza que suma, resta, multiplicacion,
+    division y raiz cuadrada estan correctamente redondeadas, y NO
+    garantiza nada de exp, log, sin, cos o pow. Las dos dinamicas del
+    modulo caen enteras dentro de lo garantizado -son solo sumas, restas y
+    multiplicaciones- y por eso el determinismo entre plataformas es
+    alcanzable. Un np.sin colado aqui para "mejorar la mezcla" lo perderia
+    sin dar ningun sintoma hasta que una imagen cifrada en una maquina no
+    se descifra en otra.
+
+    La lista prohibe ademas sqrt, que si esta garantizada por la norma. No
+    es un descuido: el comentario de TRASCENDENTES explica que ahi la lista
+    va a proposito mas alla del determinismo, porque una raiz cuadrada en
+    el camino del keystream delata un cambio de dinamica que hay que
+    revisar aunque sea reproducible.
     """
     fuente = (DIR_FUENTE / fichero).read_text(encoding="utf-8")
     llamadas = _llamadas_con_prefijo(fuente, frozenset({"np", "numpy", "math"}))
@@ -293,10 +315,10 @@ def test_el_camino_del_keystream_no_usa_funciones_trascendentes(fichero):
 
 
 def test_no_hay_azar_en_el_camino_de_cifrado():
-    """El otro criterio de cierre del cap. 11: ni un np.random en cipher.py.
+    """El otro criterio de cierre del modulo: ni un np.random en cipher.py.
 
     El modulo entero se apoya en que la clave sea la UNICA fuente de
-    aleatoriedad (cap. 2.4). Un np.random en el camino de cifrado no
+    aleatoriedad. Un np.random en el camino de cifrado no
     rompe ningun test de round-trip -si el mismo proceso cifra y descifra,
     el estado global del generador podria hasta cuadrar- pero hace que la
     imagen no se descifre en otra ejecucion. Silencioso otra vez.

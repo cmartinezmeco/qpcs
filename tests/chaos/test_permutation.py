@@ -38,7 +38,7 @@ def test_es_una_biyeccion():
 def test_es_biyeccion_para_tamanos_raros(m):
     """Incluidos primos (4093) y no cuadrados: la permutacion por
     ordenamiento no depende de la geometria de la imagen, que es una de
-    las dos razones de no usar el mapa del gato de Arnold (cap. 5.2)."""
+    las dos razones de no usar el mapa del gato de Arnold."""
 
     sigma = _sigma(m)
     np.testing.assert_array_equal(np.sort(sigma), np.arange(m))
@@ -73,7 +73,7 @@ def test_rompe_la_correlacion_espacial():
     """Y la contraparte: aunque el histograma no cambie, la correlacion
     entre pixeles adyacentes debe caer de ~0.95 a ~0.
 
-    Las dos mitades de este test juntas son el argumento del cap. 5.1:
+    Las dos mitades de este test juntas son el argumento del modulo:
     la permutacion sola no basta (histograma intacto) pero hace falta
     (correlacion rota).
     """
@@ -89,7 +89,7 @@ def test_rompe_la_correlacion_espacial():
 
 def test_permutacion_no_cuadrada():
     """Caso borde: 100x37. El mapa del gato de Arnold no podria; esta
-    implementacion si, y es una de las razones de elegirla (cap. 5.2)."""
+    implementacion si, y es una de las razones de elegirla."""
 
     img = imagen_de_prueba(100, 37)
     sigma = _sigma(img.size)
@@ -104,7 +104,7 @@ def test_el_argsort_es_estable():
     EXACTAMENTE iguales, el introsort por defecto de NumPy resuelve el
     empate de una forma que depende del algoritmo interno y puede cambiar
     entre versiones. Un solo empate resuelto al reves hace el cifrado
-    irreversible en otra maquina (cap. 5.2).
+    irreversible en otra maquina.
 
     Aqui se fuerzan empates a proposito -en una orbita real son
     improbables, ~5e-7 por imagen de 256x256- y se exige el unico

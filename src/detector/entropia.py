@@ -3,7 +3,7 @@
 La min-entropia H_inf = -log2(max_i p_i) mide el caso peor, no la media
 (que es lo que mide Shannon). Es la que vale en criptografia: lo que
 importa no es cuanto tendria que adivinar un atacante de media, sino
-cuanto acierta con su mejor estrategia (guia Fase 4, cap. 4.2).
+cuanto acierta con su mejor estrategia.
 
 Se implementan tres estimadores y se toma el MINIMO, que es la regla de
 SP 800-90B: cada estimador es ciego a cierto tipo de estructura, y el que
@@ -29,16 +29,16 @@ exactamente a lo que dice el estandar (hay un test que lo comprueba para
 el de colision: con k = 2 el tiempo medio de colision vale 3 - p^2 - q^2,
 que es la expresion binaria del estandar).
 
-El motivo de generalizar en vez de binarizar lo da la propia guia (cap.
-4.3): el estimador que importa aqui es el de Markov, y lo que tiene que
+El motivo de generalizar en vez de binarizar: el estimador que importa
+aqui es el de Markov, y lo que tiene que
 cazar es la correlacion entre MUESTRAS consecutivas que deja el 1/f
 residual. Binarizar primero reparte esa correlacion entre los bits de cada
 muestra, y una cadena de Markov de orden 1 sobre bits ya no la ve.
 
 Y una tercera cosa que hay que decir aqui y repetir en las limitaciones
 (tarea 4.12): SP 800-90B define diez estimadores y pide del orden de 10^6
-muestras para una evaluacion completa. Esto son los tres que la guia pide,
-no una certificacion.
+muestras para una evaluacion completa. Esto son tres estimadores sobre
+una muestra, no una certificacion.
 """
 
 from __future__ import annotations
@@ -97,8 +97,8 @@ def _validar_simbolos(simbolos: Bits) -> npt.NDArray[np.int64]:
 def digitalizar(senal_filtrada: Espectro, n_bits: int) -> Bits:
     """Se queda con los n_bits de orden BAJO de cada muestra.
 
-    Mismo motivo que la cuantizacion del modulo 3 (guia Fase 3, cap. 4.4):
-    los bits de orden alto llevan la forma de la distribucion (aqui, la
+    Mismo motivo que la cuantizacion del modulo 3: los bits de orden
+    alto llevan la forma de la distribucion (aqui, la
     campana gaussiana y lo que quede de deriva); los de orden bajo son,
     a efectos practicos, uniformes.
 
@@ -426,7 +426,7 @@ def h_min_markov(simbolos: Bits) -> float:
 
 
 def estimar_entropia(simbolos: Bits) -> EstimacionEntropia:
-    """Aplica los tres estimadores y devuelve el MINIMO (guia Fase 4, cap. 4.3).
+    """Aplica los tres estimadores y devuelve el MINIMO.
 
     No es "elegir el que mejor sale": es la regla de SP 800-90B.
 

@@ -13,7 +13,7 @@ def intercept_resend(
     """Ataque intercept-resend sobre una fraccion `rate` de los fotones.
     Devuelve (bits_reenviados, bases_reenviadas, mascara_interceptados).
     El estado que llega a Bob es el que Eve reenvio, en LA BASE DE EVE.
-    Nota de diseño: esta funcion recibe alice_bases porque en la simulacion hay
+    Nota de diseno: esta funcion recibe alice_bases porque en la simulacion hay
     que calcular el resultado de la medida de Eve, no porque Eve las conozca.
     Eve NUNCA usa alice_bases para elegir su base: ver la linea de eve_bases.
     """

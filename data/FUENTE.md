@@ -20,16 +20,16 @@ estructura), incluso cuando el fichero ROOT incluye el streamer completo de
 la clase. Es una limitación conocida de uproot frente a formatos anteriores
 a NanoAOD, no un problema de esta exploración concreta.
 
-Se cambio a un dataset derivado en formato NanoAOD (PFNano), que por diseño
-usa tipos de C++ estándar en vez de clases custom, y es explícitamente
-legible con "bare ROOT or other ROOT-compatible software" segun su propia
-documentacion. Dentro de el, `nPFCands` es la variable mas cercana al
-espiritu del modulo: en un evento ZeroBias (sin seleccion de fisica, sin
-colision garantizada), la mayoria de los candidatos reconstruidos en el
-detector son fluctuaciones de baja actividad -ruido del calorimetro y del
-trazador que sobrevive al umbral del algoritmo de reconstruccion- así que
-su fluctuacion evento a evento lleva la firma estadistica del ruido
-subyacente, un paso mas lejos del ADC crudo que un pedestal run ideal.
+Se cambió a un *dataset* derivado en formato NanoAOD (PFNano), que por diseño
+usa tipos de C++ estándar en vez de clases propias, y es explícitamente
+legible con «bare ROOT or other ROOT-compatible software» según su propia
+documentación. Dentro de él, `nPFCands` es la variable más cercana al
+espíritu del módulo: en un evento ZeroBias —sin selección de física, sin
+colisión garantizada— la mayoría de los candidatos reconstruidos en el
+detector son fluctuaciones de baja actividad (ruido del calorímetro y del
+trazador que sobrevive al umbral del algoritmo de reconstrucción), así que
+su fluctuación evento a evento lleva la firma estadística del ruido
+subyacente: un paso más lejos del ADC crudo que un *pedestal run* ideal.
 
 ## Dataset de origen
 
@@ -38,14 +38,14 @@ subyacente, un paso mas lejos del ADC crudo que un pedestal run ideal.
 - Registro: https://opendata.cern.ch/record/31316
 - Dataset padre: /ZeroBias/Run2016G-UL2016_MiniAODv2-v1/MINIAOD
 - Licencia: Creative Commons Zero v1.0 Universal (CC0)
-- Fichero concreto usado: nano_data2016_44.root (uno de 67 ficheros del
-  indice del dataset)
+- Fichero concreto usado: nano_data2016_44.root (uno de los 67 ficheros del
+  índice del *dataset*)
 - URI: root://eospublic.cern.ch//eos/opendata/cms/derived-data/PFNano/
   29-Feb-24/ZeroBias/Run2016G-UL2016_MiniAODv2_PFNanoAODv1/240212_182529/
   0000/nano_data2016_44.root
-- Tamano del fichero original: ~124 MB (495.562 eventos)
+- Tamaño del fichero original: ~124 MB (495.562 eventos)
 
-## Como se genero este subconjunto
+## Cómo se generó este subconjunto
 
 ```python
 import uproot
@@ -65,28 +65,28 @@ np.savez_compressed("data/muestra_pedestal.npz", senal=senal, fs=np.float64(1000
 `fs = 1000.0` Hz es una **convención**, no una medida física. Los eventos de
 ZeroBias no llegan a intervalos perfectamente regulares del reloj del
 acelerador, y no se ha investigado la tasa de eventos real del run 2016G.
-Se fija un valor nominal solo para que el eje de frecuencias del analisis
-de Welch (capitulo 3 de la guia) tenga una escala consistente. Cualquier
-frecuencia que se identifique en el analisis debe interpretarse en
-unidades de "por cada mil eventos", no en Hz reales.
+Se fija un valor nominal solo para que el eje de frecuencias del análisis
+de Welch tenga una escala consistente. Cualquier frecuencia que se
+identifique en ese análisis debe interpretarse en unidades de «por cada mil
+eventos», no en Hz reales.
 
 ## Se intentaron primero, y no funcionaron (por orden)
 
-1. EBDigiCollection / EEDigiCollection (ECAL digis) — vacias en la muestra
+1. EBDigiCollection / EEDigiCollection (ECAL digis) — vacías en la muestra
    explorada.
 2. DetIdedmEDCollection (siStripDigis) — NotImplementedError, vector de
    objetos DetId.
-3. BeamSpotOnlines — error de tamano de estructura (padding de la clase).
-4. LumiScalerss — NotImplementedError pese a tener el streamer completo
-   (incluye el campo lumiNoise_, vector<float>, que hubiera sido ideal).
+3. BeamSpotOnlines — error de tamaño de estructura (relleno de la clase).
+4. LumiScalerss — NotImplementedError pese a tener el *streamer* completo
+   (incluye el campo lumiNoise_, vector<float>, que habría sido ideal).
 
-## Verificacion de calidad hecha antes de fijar el fichero
+## Verificación de calidad hecha antes de fijar el fichero
 
-- Se probo primero concatenar 5 ficheros elegidos al azar (semilla 42) del
-  indice de 67: las medias por fichero iban de 871 a 1436 (65% de rango),
-  con escalones claros entre ficheros. Se descarto por introducir
-  estructura de baja frecuencia ARTIFICIAL, que hubiera contaminado el
-  ajuste del exponente alfa del capitulo 3.5.1.
-- El fichero final es un unico bloque CONTIGUO, sin ese riesgo.
+- Se probó primero concatenar 5 ficheros elegidos al azar (semilla 42) del
+  índice de 67: las medias por fichero iban de 871 a 1436, un 65 % de rango,
+  con escalones claros entre ficheros. Se descartó por introducir
+  estructura de baja frecuencia ARTIFICIAL, que habría contaminado el
+  ajuste del exponente alfa.
+- El fichero final es un único bloque CONTIGUO, sin ese riesgo.
 - Solo 4 de 495.562 muestras (0.0008%) tienen nPFCands = 0; no requiere
   filtrado.

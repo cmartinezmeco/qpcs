@@ -20,14 +20,14 @@ TipoRuido = Literal["disparo", "termico", "flicker", "interferencia"]
 # Cambiarlas cambia todos los resultados publicados. No se tocan sin
 # decirlo en el PR y regenerar las figuras.
 
-NPERSEG: int = 4096  # tramo de Welch (guia Fase 4, cap. 3.5)
+NPERSEG: int = 4096  # longitud del tramo de Welch
 SOLAPAMIENTO: float = 0.5  # 50%, el estandar
 VENTANA: str = "hann"
 
 # Rango de ajuste del exponente alfa, en fraccion de la frecuencia de
 # Nyquist. Se ajusta SOLO donde domina el 1/f, no en todo el espectro
-# (guia Fase 4, cap. 3.5.1: a alta frecuencia manda el suelo blanco y
-# tira de alfa hacia abajo).
+# (a alta frecuencia manda el suelo blanco, que es plano, y tira de alfa
+# hacia abajo).
 RANGO_ALFA: tuple[float, float] = (1e-4, 1e-2)
 
 # Un pico cuenta como interferencia si supera el fondo suave por este
@@ -76,7 +76,7 @@ class AnalisisEspectral:
 
 @dataclass(frozen=True)
 class EstimacionEntropia:
-    """Salida de la tarea 4.6. Se toma el MINIMO de los tres (guia cap. 4.3)."""
+    """Salida de la tarea 4.6. Se toma el MINIMO de los tres."""
 
     h_mas_comun: float  # estimador del valor mas comun
     h_colision: float  # estimador de colision

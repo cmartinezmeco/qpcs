@@ -1,6 +1,6 @@
 """src/detector/identificacion.py - identificar los 4 tipos de ruido.
 
-Cada tipo tiene una firma distinta (guia Fase 4, cap. 3.4):
+Cada tipo tiene una firma distinta:
   - disparo: espectro plano, Fano = 1 (Poisson)
   - termico: espectro plano, Fano != 1 (gaussiano)
   - flicker (1/f): espectro decreciente, exponente alfa
@@ -57,7 +57,7 @@ def ajustar_alfa(
     asi que alfa sale de una regresion lineal y su error del error
     estandar de la pendiente.
 
-    DOS COSAS QUE HAY QUE HACER BIEN (guia Fase 4, cap. 3.5.1):
+    DOS COSAS QUE HAY QUE HACER BIEN:
     1. Ajustar SOLO en el rango de baja frecuencia donde domina el 1/f.
        A alta frecuencia manda el suelo blanco, que es plano, e incluirlo
        tira de alfa hacia abajo.
@@ -145,7 +145,7 @@ def factor_fano(senal: Senal) -> float:
 
     Es lo UNICO que distingue ruido de disparo de ruido termico: los dos
     tienen espectro plano, y solo se diferencian por la distribucion
-    (guia Fase 4, cap. 3.2.1). Se calcula sobre la senal CON su pedestal,
+    de sus cuentas. Se calcula sobre la senal CON su pedestal,
     no sobre la version centrada: la media es el propio denominador.
     """
     if len(senal) == 0:

@@ -95,7 +95,7 @@ def run_bb84(
     eve_rate: float = 0.0,
     noise: float = 0.0,
     backend: Literal["qiskit", "numpy"] = "numpy",
-    k: int = 16,  # Tamaño del lote, por defecto 16 como en QRNG
+    k: int = 16,  # Tamano del lote, por defecto 16 como en QRNG
 ) -> SiftedKeys:
     """Ejecuta el protocolo BB84 procesando en lotes de k qubits si usa
     Qiskit y usando arrays si se usa NumPy.
@@ -161,9 +161,9 @@ def run_bb84(
         sim = AerSimulator(seed_simulator=semilla_sim)
         bob_bits_list = []
 
-        # Procesamos los fotones en porciones (lotes) de tamaño k
+        # Procesamos los fotones en porciones (lotes) de tamano k
         for i in range(0, n_photons, k):
-            # Tamaño real del bloque (el ultimo lote puede ser menor a k)
+            # Tamano real del bloque (el ultimo lote puede ser menor a k)
             current_k = min(k, n_photons - i)
 
             # Extraemos los datos de este lote

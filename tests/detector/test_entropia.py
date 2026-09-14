@@ -28,7 +28,7 @@ Z_99 = 2.5758293035489004  # cuantil 0.995 de la normal: el 2.576 del estandar
 
 def _deficit(p: float, cuentas: float, sigmas: float = 4.0) -> float:
     """Cuanto baja un estimador por debajo de -log2(p) por usar la cota
-    superior de p (guia Fase 4, cap. 4.3).
+    superior de p.
 
     La cota sustituye p por p + z*sqrt(p(1-p)/(c-1)), asi que la entropia
     baja en log2(1 + z*sqrt((1-p)/(p(c-1)))). A z se le suman `sigmas`

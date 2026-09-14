@@ -49,7 +49,7 @@ def test_round_trip_sin_perdida(alto, ancho):
 
 
 def test_round_trip_de_una_imagen_de_un_solo_pixel():
-    """Caso degenerado de la tabla de casos borde (cap. 8.9): cifra y
+    """Caso degenerado de la tabla de casos borde: cifra y
     descifra, no lanza."""
 
     img = np.array([[42]], dtype=np.uint8)
@@ -62,7 +62,7 @@ def test_round_trip_de_una_imagen_de_un_solo_pixel():
 def test_imagen_constante_se_cifra_a_algo_con_entropia_maxima(valor):
     """Una imagen toda a cero (o toda a 255) tiene entropia 0 y su cifrado
     tiene que llegar al valor ESPERADO del estimador, no a 8.0 exacto,
-    que es inalcanzable (cap. 6.1). Tolerancia derivada, 4 sigma."""
+    que es inalcanzable. Tolerancia derivada, 4 sigma."""
 
     img = np.full((256, 256), valor, dtype=np.uint8)
     cifrada = cifrar_imagen(img, CLAVE)
@@ -76,7 +76,7 @@ def test_imagen_constante_se_cifra_a_algo_con_entropia_maxima(valor):
 
 def test_el_cifrado_rompe_la_correlacion_en_las_tres_direcciones():
     """De ~0.95 en el original a ~0 en el cifrado, con la tolerancia
-    derivada de 1/sqrt(n) y no con un 0.05 redondo (cap. 6.2)."""
+    derivada de 1/sqrt(n) y no con un 0.05 redondo."""
 
     img = imagen_de_prueba()
     cifrada = cifrar_imagen(img, CLAVE).datos
@@ -89,7 +89,7 @@ def test_el_cifrado_rompe_la_correlacion_en_las_tres_direcciones():
 def test_dos_cifrados_de_lo_mismo_son_IGUALES():
     """Propiedad incomoda pero real: el esquema es DETERMINISTA, sin
     nonce. Cifrar dos veces con la misma clave da el mismo resultado.
-    Se documenta como limitacion (cap. 6.6): es lo que hace que la
+    Se documenta como limitacion: es lo que hace que la
     reutilizacion de clave sea catastrofica, igual que en un one-time
     pad reutilizado. AES-GCM del baseline SI lleva nonce fresco."""
 
@@ -116,7 +116,7 @@ def test_la_reutilizacion_de_clave_filtra_la_estructura():
     anulan. Un atacante con dos cifrados de la misma clave recupera esa
     funcion de los dos planos sin saber nada de la clave.
 
-    Es el ataque de reutilizacion de clave del cap. 6.6, y esta aqui
+    Es el ataque de reutilizacion de clave, y esta aqui
     porque una limitacion que solo aparece en el README es una limitacion
     que nadie ha comprobado.
     """
@@ -137,14 +137,27 @@ def test_la_reutilizacion_de_clave_filtra_la_estructura():
 def test_no_muta_la_imagen_de_entrada():
     """Mutar la entrada in place destruye el original que el test de
     round-trip necesita, y el fallo se manifiesta como un test que pasa
-    cuando no deberia (cap. 5.4)."""
+    cuando no deberia.
+
+    Se comprueban las dos direcciones: que cifrar no toca la imagen que
+    recibe, y que descifrar no consume el contenedor cifrado. La segunda
+    importa porque el contenedor se guarda para volver a usarlo -el panel
+    lo descifra dos veces, con la clave buena y con la equivocada- y un
+    descifrado que escribiera sobre sus propios datos haria que la segunda
+    pasada devolviese basura sin avisar de nada.
+    """
 
     img = imagen_de_prueba(64, 64)
     copia = img.copy()
     cifrada = cifrar_imagen(img, CLAVE)
     np.testing.assert_array_equal(img, copia)
+
+    # La copia se toma ANTES de descifrar. Comparar cifrada.datos consigo
+    # mismo despues de la llamada no comprueba nada: pasa siempre, mute o
+    # no mute descifrar_imagen.
+    cifrada_antes = cifrada.datos.copy()
     descifrar_imagen(cifrada, CLAVE)
-    np.testing.assert_array_equal(cifrada.datos, cifrada.datos)
+    np.testing.assert_array_equal(cifrada.datos, cifrada_antes)
     np.testing.assert_array_equal(img, copia)
 
 
@@ -163,7 +176,7 @@ def test_la_clave_equivocada_no_descifra():
 
 
 def test_sensibilidad_a_la_clave_en_NPCR_y_UACI():
-    """Criterio de cierre 8 (cap. 2.2): cambiar un solo bit de la clave
+    """Criterio de cierre 8: cambiar un solo bit de la clave
     produce dos cifrados que difieren en ~99.6% de los pixeles, con UACI
     en su valor teorico. Aqui SI se alcanzan los dos valores ideales,
     porque los dos keystreams son independientes entre si.
@@ -171,7 +184,7 @@ def test_sensibilidad_a_la_clave_en_NPCR_y_UACI():
     Y el motivo es fisico: 1e-15 se amplifica como e^(lambda*n) y tras el
     transitorio de 1000 iteraciones las dos orbitas no tienen ninguna
     relacion. El descarte del transitorio no es higiene numerica, es lo
-    que produce la sensibilidad a la clave (cap. 6.5).
+    que produce la sensibilidad a la clave.
     """
     img = imagen_de_prueba()
     c1 = cifrar_imagen(img, CLAVE).datos
@@ -185,8 +198,8 @@ def test_sensibilidad_a_la_clave_en_NPCR_y_UACI():
 def test_avalancha_ante_un_cambio_en_el_plano(posicion):
     """LIMITACION MEDIDA, no supuesta. Leer entero antes de tocar nada.
 
-    La guia (cap. 5.3.2) espera que cambiar un pixel del plano de NPCR
-    ~99.6%. Con la difusion que la propia guia especifica, c_i = p_i XOR
+    Lo que la literatura del campo espera es que cambiar un pixel del
+    plano de NPCR ~99.6%. Con la difusion de este esquema, c_i = p_i XOR
     k_i XOR c_{i-1}, eso NO ocurre, y el motivo es algebraico:
 
       - El esquema completo (permutacion fija + XOR con un keystream que
@@ -232,7 +245,7 @@ def test_avalancha_ante_un_cambio_en_el_plano(posicion):
 
     assert calcular_npcr(c1, c2) == pytest.approx(npcr_predicho, abs=1e-9)
 
-    # Y la mitad que si cumple lo que la guia pide de la pasada de vuelta:
+    # Y la mitad que si cumple lo que se le pide a la pasada de vuelta:
     # con una sola pasada, tocar el ultimo pixel cambiaria UN byte. Con
     # las dos, cambian decenas de miles.
     assert calcular_npcr(c1, c2) > 100.0 / m
@@ -280,7 +293,7 @@ def test_rechaza_una_clave_no_caotica():
 
 def test_rechaza_entradas_que_no_son_una_imagen_de_8_bits():
     """uint8 siempre: un float en el camino del XOR es una conversion
-    silenciosa (cap. 7.2)."""
+    silenciosa."""
 
     with pytest.raises(ValueError, match="uint8"):
         cifrar_imagen(np.zeros((8, 8), dtype=np.float64), CLAVE)
@@ -315,8 +328,7 @@ def test_lorenz_rechaza_un_rho_que_no_haria_nada():
     """clave.rho no lo lee nadie: keystream_lorenz integra con
     LORENZ_RHO, la constante del contrato. Aceptar un rho distinto seria
     tener un campo de la clave que no cambia el cifrado, es decir, un
-    espacio de claves mas pequeno de lo que la clave aparenta (cap.
-    6.5.1)."""
+    espacio de claves mas pequeno de lo que la clave aparenta."""
 
     img = imagen_de_prueba(8, 8)
     with pytest.raises(ValueError, match="rho"):
@@ -326,7 +338,7 @@ def test_lorenz_rechaza_un_rho_que_no_haria_nada():
 def test_el_hash_del_plano_permite_verificar_el_descifrado():
     """hash_plano existe para que el dashboard pueda decir 'descifrado
     correcto' con fundamento. Filtra informacion y va documentado como
-    limitacion (cap. 5.5), pero funciona."""
+    limitacion, pero funciona."""
 
     import hashlib
 

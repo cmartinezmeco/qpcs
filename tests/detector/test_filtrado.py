@@ -17,8 +17,8 @@ def test_el_filtro_no_ensucia_ruido_blanco(rng):
     picos_hz = ()
     senal_filtrada = filtrar(ruido_blanco, fs, picos_hz)
 
-    # Calcular la autocorrelación a desplazamiento (lag) 1
-    # Normalizada para que la autocorrelación en lag 0 sea 1.0
+    # Calcular la autocorrelacion a desplazamiento (lag) 1
+    # Normalizada para que la autocorrelacion en lag 0 sea 1.0
     media = np.mean(senal_filtrada)
     v = senal_filtrada - media
     autocorr_1 = np.sum(v[:-1] * v[1:]) / np.sum(v**2)
@@ -85,7 +85,7 @@ def test_el_resto_del_espectro_sobrevive(senal_sintetica):
     psd_antes_fuera = np.mean(psd_antes[mascara_fuera])
     psd_despues_fuera = np.mean(psd_despues[mascara_fuera])
 
-    # La potencia media fuera del notch no debe cambiar más de un 5% (relativo)
+    # La potencia media fuera del notch no debe cambiar mas de un 5% (relativo)
     cambio_relativo = np.abs(psd_despues_fuera - psd_antes_fuera) / psd_antes_fuera
     assert cambio_relativo < 0.05
 
@@ -105,7 +105,7 @@ def test_la_varianza_baja_pero_no_se_desploma(senal_sintetica):
 
     # La varianza debe bajar (por quitar deriva y picos de potencia fuerte)
     assert var_despues < var_antes
-    # Pero no debe reducirse en más de un orden de magnitud (factor 10)
+    # Pero no debe reducirse en mas de un orden de magnitud (factor 10)
     assert var_despues >= var_antes / 10.0
 
 

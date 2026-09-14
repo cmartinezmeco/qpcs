@@ -2,14 +2,14 @@
 
 Los tests de cada tarea vienen con su PR; aqui va el de integracion -de la
 senal cargada a bits validados- y las comprobaciones que solo tienen
-sentido con la cadena montada. Los ocho casos borde de la guia viven en el
-fichero de la tarea a la que pertenecen (test_carga, test_espectro,
+sentido con la cadena montada. Los ocho casos borde viven en el fichero de
+la tarea a la que pertenecen (test_carga, test_espectro,
 test_filtrado, test_identificacion, test_entropia y test_extraccion), que
 es donde alguien los va a buscar cuando toque esa parte.
 
 Lo que NO demuestra este fichero, y conviene tenerlo claro: que los bits
-pasen monobit y chi2 no prueba que la fuente sea buena (guia Fase 4, cap.
-4.5). Un contador cifrado con AES los pasa igual. Lo que sostiene la
+pasen monobit y chi2 no prueba que la fuente sea buena. Un contador
+cifrado con AES los pasa igual. Lo que sostiene la
 salida es la estimacion conservadora de la 4.6 mas el leftover hash lemma;
 estos dos estadisticos solo confirman que no hay un fallo grosero por el
 camino.
@@ -47,7 +47,7 @@ def _cadena(
 ) -> tuple[AnalisisEspectral, ResultadoExtraccion]:
     """cargar -> espectro -> identificar -> filtrar -> estimar -> extraer.
 
-    Es la cadena de la figura 2.1 de la guia, con los parametros del
+    Es la cadena completa del modulo, con los parametros del
     contrato (types.py) y sin ningun ajuste local: si alguien cambia
     NPERSEG o UMBRAL_PICO, este test se entera.
     """
@@ -87,7 +87,7 @@ def _comprobar_bits(resultado: ResultadoExtraccion) -> None:
     assert resultado.longitud_segura == math.floor(
         resultado.n_entrada * resultado.h_min_por_bit - PEAJE
     )
-    # Monobit, umbral 4 sigma (guia Fase 4, cap. 4.5).
+    # Monobit, umbral 4 sigma.
     assert resultado.z_monobit < 4.0
     # chi2 de bytes a dos colas, como en el modulo 3.
     assert abs(resultado.chi2 - CHI2_MEDIA) < 4 * CHI2_SIGMA
@@ -148,8 +148,8 @@ def test_el_analisis_es_determinista_y_solo_los_bits_cambian():
     mismo -el analisis no tiene azar- y devolver bits DISTINTOS, porque la
     semilla de Toeplitz sale de os.urandom en cada extraccion.
 
-    Es la distincion que la guia pide no perder de vista (cap. 5.4): en
-    este modulo hay azar en dos sitios y son de naturaleza distinta. El
+    Es una distincion que conviene no perder de vista: en este modulo hay
+    azar en dos sitios y son de naturaleza distinta. El
     de los tests se siembra; el de la semilla no puede sembrarse nunca.
     """
     senal, fs = senal_de_prueba(n=2**16, semilla=4)
@@ -169,9 +169,9 @@ def test_el_embudo_de_bits_solo_encoge():
     menor o igual que el anterior, y el ultimo salto es exactamente el
     peaje del lema.
 
-    Es la comprobacion que impide el error del capitulo 6.6 de la guia:
-    confundir "4 bits conservados por muestra" con "4 bits de entropia por
-    muestra" produciria mas bits extraidos que entropia disponible.
+    Es la comprobacion que impide el error mas comun del campo: confundir
+    "4 bits conservados por muestra" con "4 bits de entropia por muestra"
+    produciria mas bits extraidos que entropia disponible.
     """
     senal, fs = cargar_muestra()
     _, resultado = _cadena(senal, fs)

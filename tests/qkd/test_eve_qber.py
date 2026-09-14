@@ -20,7 +20,7 @@ def test_qber_converge_a_25_por_ciento():
 
 @pytest.mark.parametrize("p", [0.0, 0.25, 0.5, 0.75, 1.0])
 def test_qber_es_lineal_en_p(p):
-    """Q(p) = p/4 para todo p. Es la predicción teórica completa."""
+    """Q(p) = p/4 para todo p. Es la prediccion teorica completa."""
     est = run_until_qber(n_photons=40_000, eve_rate=p, rng=np.random.default_rng(7))
     esperado = p / 4
     sigma = np.sqrt(max(esperado * (1 - esperado), 1e-9) / est.n_sample)
@@ -59,7 +59,7 @@ def test_qber_sigue_al_ruido_del_canal(ruido, sigma_qber):
 
 
 def test_la_muestra_se_descarta():
-    """Bug clásico: estimar el QBER y seguir usando los bits publicados.
+    """Bug clasico: estimar el QBER y seguir usando los bits publicados.
 
     MEJORA D6 (cierra I5): la segunda asercion de este test comparaba una
     expresion CONSIGO MISMA (`x + y == approx(x + y)`), asi que pasaba

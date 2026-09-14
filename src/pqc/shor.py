@@ -7,8 +7,8 @@ devuelve una fase s/r; de ahi, por fracciones continuas, sale r; y con r par y
 a^(r/2) != -1 (mod N), gcd(a^(r/2) +/- 1, N) da un factor no trivial.
 
 N=15 es el caso didactico historico (primer Shor experimental, IBM 2001) y es
-REQUISITO DURO de esta tarea. N=21 es el objetivo firme con plan B documentado
-(ver la guia de Fase 2); no hace falta bloquearse en el.
+REQUISITO DURO de esta tarea. N=21 es el objetivo firme, con plan B
+documentado; no hace falta bloquearse en el.
 
 Convencion del proyecto: todo lo estocastico recibe un np.random.Generator
 EXPLICITO (la eleccion de la base `a` y el muestreo de shots), nunca

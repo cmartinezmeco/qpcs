@@ -1,7 +1,7 @@
 """src/detector/espectro.py - densidad espectral de potencia por Welch.
 
 El periodograma simple es un estimador INCONSISTENTE: su varianza no baja
-al aumentar N (guia Fase 4, cap. 3.5). Welch parte la senal en tramos
+al aumentar N. Welch parte la senal en tramos
 solapados, aplica ventana y promedia los periodogramas: la varianza baja
 por un factor K (numero de tramos) a cambio de resolucion en frecuencia.
 """
@@ -21,7 +21,7 @@ def densidad_espectral(
 
     Se resta la media ANTES de transformar: un pedestal de cientos o
     miles de cuentas mete un pico enorme en f=0 que domina la escala y
-    no deja ver nada (guia Fase 4, cap. 6.3, la caja roja).
+    no deja ver nada.
 
     Con N muestras y tramos de longitud nperseg al 50% de solapamiento,
     K ~ 2N/nperseg - 1 tramos, y el error relativo de cada punto de la

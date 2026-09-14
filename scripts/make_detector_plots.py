@@ -4,8 +4,7 @@ Regenera TODAS las figuras del modulo con un solo comando:
 
     python scripts/make_detector_plots.py
 
-Reglas de la tarea (guia Fase 4, cap. 6.9), heredadas de las tres fases
-anteriores:
+Reglas de la tarea, heredadas de las tres fases anteriores:
   - Cuatro figuras, ni una mas. Salida versionada en docs/img/ (PNG,
     dpi=150, fondo blanco).
   - Sin titulo dentro de la figura: el titulo va en el pie del README.
@@ -15,7 +14,7 @@ anteriores:
   - Determinismo: la cadena de analisis (espectro, filtrado, entropia) es
     deterministica sobre los datos de entrada. Los BITS finales de la
     figura 3 NO lo son -la semilla de Toeplitz es de os.urandom, nunca
-    sembrada (guia Fase 4, cap. 4.4)-, asi que las figuras que muestran
+    sembrada-, asi que las figuras que muestran
     bits extraidos (fig. 3) publican la LONGITUD, no el contenido, y no
     se comparan por MD5 bit a bit como las de los tres modulos previos:
     solo se compara que el fichero se REGENERA sin error.
@@ -61,8 +60,7 @@ COLOR_NEUTRO = "#6b6b6b"
 def figura_1_espectro_anotado() -> None:
     """La PSD en log-log, con el ajuste de 1/f, el suelo blanco y los
     picos de interferencia marcados. La figura estrella del modulo:
-    ensena los cuatro tipos de ruido en una sola imagen (guia Fase 4,
-    cap. 6.9.1).
+    ensena los cuatro tipos de ruido en una sola imagen.
 
     NOTA HONESTA (tarea 4.9, encontrado al revisar esta figura): con
     los datos reales, el primer punto valido del espectro (0.244 Hz)
@@ -104,8 +102,8 @@ def figura_1_espectro_anotado() -> None:
         label="PSD (Welch)",
     )
 
-    # La recta del ajuste, dibujada SOLO en su rango de validez (cap.
-    # 3.5.1 de la guia: fuera de ese rango, el ajuste no dice nada).
+    # La recta del ajuste, dibujada SOLO en su rango de validez: fuera de
+    # ese rango, el ajuste no dice nada.
     f_min, f_max = rango_hz
     f_recta = np.array([f_min, f_max])
     # S(f) = A / f^alfa. La A se despeja de un punto medio del ajuste
@@ -161,8 +159,7 @@ def figura_1_espectro_anotado() -> None:
 
 def figura_2_antes_y_despues_del_filtro() -> None:
     """Dos espectros superpuestos: antes y despues de filtrar. Se ve el
-    pico de interferencia desaparecer y el resto del espectro sobrevivir
-    (guia Fase 4, cap. 6.9.1).
+    pico de interferencia desaparecer y el resto del espectro sobrevivir.
     """
     senal, fs = cargar_muestra()
     freqs, psd_antes, _ = densidad_espectral(senal, fs, NPERSEG)
@@ -230,8 +227,8 @@ def figura_3_embudo_de_entropia() -> None:
     """Cascada muestras -> bits conservados -> bits de min-entropia ->
     bits extraidos. Equivalente al embudo de bits del modulo 1: ensena
     de un vistazo cuanto se pierde en cada paso, y en particular que el
-    ultimo salto es EXACTAMENTE el peaje del leftover hash lemma
-    (guia Fase 4, cap. 6.9.1), no una perdida arbitraria.
+    ultimo salto es EXACTAMENTE el peaje del leftover hash lemma, no una
+    perdida arbitraria.
 
     Escala logaritmica en el eje: bits_conservados = muestras x
     BITS_BAJOS es mayor que muestras, asi que en escala lineal la
@@ -241,7 +238,7 @@ def figura_3_embudo_de_entropia() -> None:
 
     Solo la LONGITUD de los bits extraidos es determinista: su
     CONTENIDO no lo es (semilla de Toeplitz de os.urandom, nunca
-    sembrada, guia cap. 4.4).
+    sembrada).
     """
     senal, fs = cargar_muestra()
     freqs, psd, _ = densidad_espectral(senal, fs, NPERSEG)
@@ -308,7 +305,7 @@ def figura_3_embudo_de_entropia() -> None:
 def figura_4_los_tres_estimadores() -> None:
     """Barras con h_mas_comun, h_colision y h_markov, con el minimo
     destacado. Ensena visualmente por que se toma el minimo de los tres
-    (regla de SP 800-90B, guia Fase 4, cap. 4.3): cada estimador es
+    (regla de SP 800-90B): cada estimador es
     ciego a cierto tipo de estructura, y con los datos reales de este
     modulo es el estimador de COLISION el que da el minimo, no el de
     Markov como cabria esperar por el argumento teorico de que Markov

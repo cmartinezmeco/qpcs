@@ -5,7 +5,7 @@ preferencia de estilo: el introsort por defecto de NumPy no garantiza el
 mismo orden ante valores empatados de la orbita. Los empates son
 improbables (~5e-7 por imagen de 256x256, por la paradoja del cumpleanos)
 pero no imposibles, y uno solo hace el cifrado irreversible en otra
-version de NumPy (guia Fase 3, cap. 5.2).
+version de NumPy.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ def permutacion_desde_orbita(orb: Orbita, m: int) -> Permutacion:
     Se ordenan los m primeros valores de la orbita y la permutacion es el
     vector de indices que produce ese orden. Es la alternativa al mapa del
     gato de Arnold que usa casi toda la literatura, y se elige por dos
-    motivos concretos (guia Fase 3, cap. 5.2):
+    motivos concretos:
 
       1. Arnold exige imagenes CUADRADAS; esto acepta cualquier forma.
       2. Arnold es periodico con periodo corto (192 para N=256): iterarlo
@@ -41,8 +41,8 @@ def permutacion_desde_orbita(orb: Orbita, m: int) -> Permutacion:
     Raises:
         ValueError: si la orbita tiene menos de m valores. Truncar en
             silencio daria una permutacion mas corta que la imagen y el
-            cifrado seria irreversible sin avisar (guia Fase 3, cap. 4.1:
-            el fallo silencioso es el riesgo del modulo).
+            cifrado seria irreversible sin avisar, que es el fallo
+            silencioso al que este modulo tiene que tener mas respeto.
     """
     if orb.size < m:
         raise ValueError(

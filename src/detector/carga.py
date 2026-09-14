@@ -1,7 +1,7 @@
 """src/detector/carga.py - lectura de la senal de ruido de detector.
 
 El subconjunto versionado en data/muestra_pedestal.npz permite ejecutar
-todo el modulo sin descargar nada (guia Fase 4, cap. 5.1). El procedimiento
+todo el modulo sin descargar nada. El procedimiento
 para regenerarlo desde el fichero original esta en data/FUENTE.md.
 """
 
@@ -44,8 +44,8 @@ def cargar_muestra(
 
     Avisa por logging (no lanza) si el canal esta muerto, es decir, si la
     senal es constante. Caso borde anadido en la tarea 4.8: los detectores
-    tienen canales muertos, saturados o averiados (guia Fase 4, cap.
-    6.2.2), y un canal plano recorre toda la cadena sin fallar -espectro
+    tienen canales muertos, saturados o averiados, y un canal plano
+    recorre toda la cadena sin fallar -espectro
     plano, cero picos, filtro que no quita nada- hasta que la 4.6 mide
     min-entropia cero. No se lanza porque cargar el fichero SI ha
     funcionado: quien decide si eso es un error es quien llama, igual que
@@ -66,8 +66,7 @@ def cargar_muestra(
         logger.warning(
             "el canal cargado desde %s esta MUERTO: las %d muestras valen "
             "todas %d. Una senal constante no tiene ruido que analizar y su "
-            "min-entropia es cero; hay que elegir otro canal (guia Fase 4, "
-            "cap. 6.2.2).",
+            "min-entropia es cero; hay que elegir otro canal.",
             ruta,
             senal.size,
             int(senal[0]),
@@ -77,7 +76,7 @@ def cargar_muestra(
 
 def _ruido_potencia(n: int, alfa: float, rng: np.random.Generator) -> Espectro:
     """Genera ruido con densidad espectral S(f) ~ 1/f^alfa, por filtrado
-    en el dominio de la frecuencia (guia Fase 4, cap. 3.5 y 6.1).
+    en el dominio de la frecuencia.
 
     Metodo: ruido blanco -> FFT -> escalar cada componente de frecuencia
     por 1/sqrt(f^alfa) (raiz porque se escalan AMPLITUDES, la densidad de
@@ -110,7 +109,7 @@ def senal_de_prueba(
     """Genera una senal sintetica con composicion CONOCIDA, para tests
     y para verificar que el analisis espectral RECUPERA lo que se puso
     dentro. Misma idea que el test de RK4 del modulo 3: se valida contra
-    la teoria, no contra otra implementacion (guia Fase 4, cap. 6.1).
+    la teoria, no contra otra implementacion.
 
     Mezcla ruido blanco gaussiano, ruido 1/f (alfa=1.0, por filtrado
     espectral), una interferencia senoidal de 50 Hz, y ruido de disparo

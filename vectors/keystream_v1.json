@@ -1,5 +1,5 @@
 {
-  "_aviso": "NO REGENERAR. Este fichero es la unica defensa contra el fallo silencioso de determinismo (guia Fase 3, cap. 4). Si un test falla contra el, el bug esta en el codigo, no en el vector. Cambiar el algoritmo => keystream_v2.json en su propio PR.",
+  "_aviso": "NO REGENERAR. Este fichero es la unica defensa contra el fallo silencioso de determinismo. Si un test falla contra el, el bug esta en el codigo, no en el vector. Cambiar el algoritmo => keystream_v2.json en su propio PR.",
   "version": 1,
   "sistema": "logistico",
   "clave": {

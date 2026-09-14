@@ -4,8 +4,7 @@ Regenera TODAS las figuras del modulo con un solo comando:
 
     python scripts/make_chaos_plots.py
 
-Reglas de la tarea (guia Fase 3, cap. 8.10), heredadas de las dos fases
-anteriores:
+Reglas de la tarea, heredadas de las dos fases anteriores:
   - Cuatro figuras y un GIF, ni una mas. Salida versionada en docs/img/
     (PNG, dpi=150, fondo blanco).
   - Sin titulo dentro de la figura: el titulo va en el pie del README.
@@ -76,7 +75,7 @@ PUNTOS_BIFURCACION = 300
 # minutos. Con 3000 la curva ya es lisa y la figura tarda segundos. Es una
 # figura, no el test: el valor exacto lo fija test_lyapunov_de_r4_es_ln2.
 N_LYAPUNOV = 3000
-# La ventana de periodo 3, que es la trampa del modulo (cap. 3.2).
+# La ventana de periodo 3, que es la trampa del modulo.
 R_VENTANA = 3.83
 
 # --- Figura 2: la cadena visual ----------------------------------------
@@ -219,7 +218,7 @@ def _histograma(ax: plt.Axes, img: np.ndarray, color: str) -> None:
 def figura_2_la_cadena_visual() -> None:
     """Original, permutada, cifrada y descifrada, con sus histogramas.
 
-    Ensena de un vistazo el argumento del cap. 5.1: el histograma de la
+    Ensena de un vistazo el argumento del modulo: el histograma de la
     PERMUTADA es identico al del original -permutar mueve pixeles, no los
     altera- y solo se aplana despues de la difusion. Es decir, ninguna de
     las dos etapas basta sola.
@@ -274,7 +273,7 @@ def figura_3_correlacion() -> None:
     sobre la diagonal -un pixel se parece muchisimo a su vecino- y en la
     cifrada llenan el cuadrado uniformemente. El coeficiente de Pearson de
     cada panel va anotado dentro, con la tolerancia derivada de 1/sqrt(n)
-    y no con un 0.05 redondo (cap. 6.2).
+    y no con un 0.05 redondo.
     """
     img = imagen_de_prueba()
     cifrada = cifrar_imagen(img, CLAVE).datos

@@ -1,15 +1,15 @@
 """src/chaos/metrics.py - metricas de calidad del cifrado.
 
 Cada valor esperado se deriva en su propio docstring, nunca se copia de
-un articulo (guia Fase 3, cap. 6). Esa derivacion es criterio de revision
-de PR: un numero sin derivacion se devuelve.
+un articulo. Esa derivacion es criterio de revision de PR: un numero sin
+derivacion se devuelve.
 
 Lo que estas cinco metricas SI dicen y lo que NO: detectan defectos
 groseros -un histograma sesgado, una permutacion que no permuta, una
 difusion que no propaga- y nada mas. Que un esquema las pase significa
 que no tiene errores obvios, no que sea seguro. La tarea 3.8 lo hace
 visible pasandoselas tambien a AES-256-GCM y a un flujo trivial: las tres
-columnas salen iguales (cap. 6.6).
+columnas salen iguales.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ DIRECCIONES = ("horizontal", "vertical", "diagonal")
 
 def entropia_esperada(n_pixeles: int, k: int = 256) -> float:
     """Valor esperado del estimador de entropia de Shannon (sesgo de
-    Miller-Madow): H - (K-1)/(2*N*ln 2). Ver guia Fase 3, cap. 6.1.
+    Miller-Madow): H - (K-1)/(2*N*ln 2).
 
     Un test que exija H > 7.999 para 256x256 falla siempre: el valor
     esperado real es 7.99719, no 8.0.
@@ -68,7 +68,7 @@ def entropia_shannon(img: Imagen) -> float:
 
     minlength=256 no es opcional en el bincount: sin el, los valores que
     no aparecen en la imagen desaparecen del histograma, la longitud del
-    array cambia y el chi2 posterior falla por forma (guia Fase 3, ap. B).
+    array cambia y el chi2 posterior falla por forma.
     """
     h = np.bincount(np.ascontiguousarray(img).ravel(), minlength=256).astype(np.float64)
     p = h / h.sum()
@@ -84,7 +84,7 @@ def correlacion_adyacente(
     Args:
         direccion: "horizontal", "vertical" o "diagonal".
         n_muestras: pares a muestrear. La tolerancia de 4*sigma se deriva
-            de este numero como 1/sqrt(n_muestras) (ver guia Fase 3, cap. 6.2).
+            de este numero como 1/sqrt(n_muestras).
 
     Returns:
         El coeficiente en [-1, 1], o NaN si no es medible (menos de dos
@@ -134,7 +134,7 @@ def correlacion_adyacente(
 
 
 def npcr_esperado() -> float:
-    """(1 - 1/256) * 100 = 99.6094%. Derivado, no copiado (cap. 6.3).
+    """(1 - 1/256) * 100 = 99.6094%. Derivado, no copiado.
 
     Si los dos cifrados fueran independientes y uniformes, cada pixel
     coincidiria con probabilidad 1/256, luego cambiaria con probabilidad
@@ -153,7 +153,7 @@ def npcr_esperado() -> float:
 
 
 def uaci_esperado() -> float:
-    """255*257/(3*256) / 255 * 100 = 33.4635%. Derivado (cap. 6.3).
+    """255*257/(3*256) / 255 * 100 = 33.4635%. Derivado.
 
     La cuenta completa, que casi todos los articulos citan y casi ninguno
     deriva: para X, Y uniformes e independientes en {0..255},
@@ -187,7 +187,7 @@ def calcular_npcr(c1: Imagen, c2: Imagen) -> float:
     metrica mide la sensibilidad del cifrado a un cambio minimo en la
     entrada, asi que C1 y C2 salen de cifrar dos imagenes que difieren en
     UN SOLO pixel (o de cifrar la misma con dos claves que difieren en un
-    bit, que es el test de sensibilidad a la clave del cap. 6.5).
+    bit, que es el test de sensibilidad a la clave).
     """
     _misma_forma(c1, c2)
     distintos = int(np.count_nonzero(c1 != c2))
@@ -203,7 +203,7 @@ def calcular_uaci(c1: Imagen, c2: Imagen) -> float:
     La resta se hace en int16 y no en uint8 a proposito: en uint8,
     250 - 10 = 240 pero 10 - 250 = 16, no -240. Restar dos uint8 sin
     ampliar el tipo da diferencias envueltas y una UACI silenciosamente
-    equivocada (guia Fase 3, ap. B).
+    equivocada.
     """
     _misma_forma(c1, c2)
     diferencia = np.abs(c1.astype(np.int16) - c2.astype(np.int16))
@@ -214,7 +214,7 @@ def chi2_histograma(img: Imagen) -> float:
     """Estadistico chi-cuadrado del histograma contra la uniforme.
 
     255 grados de libertad. Es un test de DOS COLAS: un valor
-    sospechosamente bajo tambien es señal de alarma (cap. 6.4).
+    sospechosamente bajo tambien es senal de alarma.
 
     chi2 = sum((o_i - e_i)^2 / e_i) con e_i = M/256. Bajo la hipotesis de
     uniformidad sigue una chi-cuadrado con 255 grados de libertad, cuya
@@ -240,7 +240,7 @@ def chi2_histograma(img: Imagen) -> float:
 def medir_imagen(etiqueta: str, plano: Imagen, cifrada: Imagen) -> MetricasImagen:
     """Calcula todas las metricas de una vez y las empaqueta.
 
-    Devuelve una fila de la tabla comparativa del cap. 6.6: las metricas
+    Devuelve una fila de la tabla comparativa de los tres esquemas: las metricas
     se miden sobre la imagen CIFRADA, que es la que tiene que parecer
     ruido. `plano` esta para dejar constancia de contra que original se
     ha medido y para comprobar que las dos formas coinciden.

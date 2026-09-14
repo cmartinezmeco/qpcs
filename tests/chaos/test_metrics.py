@@ -45,7 +45,7 @@ def test_la_imagen_de_prueba_pasa_su_comprobacion_de_cordura():
     """Un array de ruido tendria correlacion cero y entropia ~8 ANTES de
     cifrar, y la metrica estrella del modulo no demostraria nada. La
     imagen de prueba tiene que estar correlacionada y tener poca
-    entropia; si no, no sirve de punto de partida (cap. 8.1)."""
+    entropia; si no, no sirve de punto de partida."""
 
     img = imagen_de_prueba()
     assert correlacion_adyacente(img, "horizontal") > 0.9
@@ -75,7 +75,7 @@ def test_entropia_esperada_es_la_de_miller_madow():
 
 def test_un_test_que_exigiera_7_999_fallaria_siempre():
     """La consecuencia practica del sesgo, escrita como test para que no
-    se le ocurra a nadie volver a poner 7.999 en un assert (cap. 6.1)."""
+    se le ocurra a nadie volver a poner 7.999 en un assert."""
 
     assert entropia_esperada(65536) < 7.999
 
@@ -103,7 +103,7 @@ def test_entropia_de_una_fuente_uniforme_cae_en_su_banda(rng):
 
 def test_la_correlacion_cae_al_cifrar_en_las_tres_direcciones():
     """De >0.9 a ~0 con tolerancia derivada de 1/sqrt(5000) = 0.0141;
-    4 sigma dan |r| < 0.057, no un 0.05 redondo (cap. 6.2)."""
+    4 sigma dan |r| < 0.057, no un 0.05 redondo."""
 
     img = imagen_de_prueba()
     cifrada = cifrar_imagen(img, CLAVE).datos
@@ -151,7 +151,7 @@ def test_direccion_desconocida_es_un_error():
 def test_npcr_esperado_es_255_entre_256():
     """(1 - 1/256) * 100 = 99.6094%. Y no es 'cuanto mas alto mejor':
     un 100% seria estadisticamente imposible entre dos secuencias
-    uniformes independientes y delataria estructura (cap. 6.3.1)."""
+    uniformes independientes y delataria estructura."""
 
     assert npcr_esperado() == pytest.approx(99.6094, abs=1e-4)
     assert npcr_esperado() < 100.0
@@ -189,8 +189,8 @@ def test_npcr_de_los_extremos():
 
 def test_uaci_no_envuelve_al_restar_uint8():
     """250 - 10 = 240 pero 10 - 250 = 16 en uint8. Restar sin ampliar el
-    tipo da diferencias envueltas y una UACI silenciosamente equivocada
-    (guia Fase 3, ap. B)."""
+    tipo da diferencias envueltas y una UACI silenciosamente
+    equivocada."""
 
     a = np.array([[250, 10]], dtype=np.uint8)
     b = np.array([[10, 250]], dtype=np.uint8)
@@ -226,7 +226,7 @@ def test_chi2_del_cifrado_no_rechaza_la_uniformidad_por_ninguna_cola():
     """El test es de DOS COLAS y hay que decirlo: un chi2 por encima del
     critico rechaza la uniformidad, y uno sospechosamente bajo indica que
     algo esta forzando el histograma a ser demasiado uniforme para ser
-    aleatorio (cap. 6.4)."""
+    aleatorio."""
 
     cifrada = cifrar_imagen(imagen_de_prueba(), CLAVE).datos
     medido = chi2_histograma(cifrada)
@@ -247,7 +247,7 @@ def test_la_cuantizacion_ingenua_falla_el_chi2_y_la_buena_no():
     """El gemelo del test de la tarea 3.4, desde el lado de las metricas:
     int(x*256) hereda el sesgo de la densidad invariante
     rho(x) = 1/(pi sqrt(x(1-x))) y su histograma es rechazado por goleada;
-    quedarse con los bits bajos no (cap. 4.4)."""
+    quedarse con los bits bajos no."""
 
     orb = orbita_logistica(0.4, 4.0, 100_000)
     ingenua = (orb * 256).astype(np.uint8)

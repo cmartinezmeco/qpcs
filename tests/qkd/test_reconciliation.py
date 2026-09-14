@@ -1,8 +1,8 @@
 # tests/qkd/test_reconciliation.py — tests de la tarea 1.5 (Cascade).
 #
-# Nota para el equipo: la guia de Fase 1 importa binary_entropy desde
-# qkd.utils, pero en el scaffold real (tarea 1.1) esa funcion vive en
-# qkd/privacy.py y asi la exporta la API publica. Importamos de ahi.
+# Nota para el equipo: binary_entropy no vive en qkd.utils, que es donde
+# uno la buscaria por costumbre, sino en qkd/privacy.py, y asi la exporta
+# la API publica. Importamos de ahi.
 
 import numpy as np
 import pytest
@@ -64,7 +64,7 @@ def test_el_oraculo_cuenta_todo():
 
 
 def test_qber_cero_exacto_no_diverge():
-    """Caso borde de la tabla 5.1: Q = 0 exacto => k1 acotado (no division
+    """Caso borde: Q = 0 exacto => k1 acotado (no division
     por cero) y Cascade termina con las claves intactas."""
     alice, _, rng = _par(2_000, 0.0, seed=5)
     r = cascade(alice, alice.copy(), qber=0.0, rng=rng)

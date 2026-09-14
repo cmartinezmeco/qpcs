@@ -2,8 +2,7 @@
 
 > **Tarea 4.10** del proyecto QPCS — Fase 4. Entregable: este fichero (`docs/theory/detector.md`).
 > Repartida entre **Gonzalo** (mitad física del ruido) y **Marco** (mitad entropía y honestidad),
-> según el capítulo 8 de la guía de la fase. El material de origen son los **capítulos 3 y 4** de esa
-> guía.
+> que es el mismo reparto con el que se hicieron las tareas de las que sale este texto.
 
 ## Cómo se lee este documento
 
@@ -33,24 +32,21 @@ Convenciones heredadas de los tres documentos anteriores, que se respetan aquí:
 
 ## Reparto de la tarea 4.10
 
-El capítulo 8 de la guía de la fase declara la partición: Gonzalo lleva la física del ruido (tareas
-4.3 a 4.5, con material del capítulo 3) y Marco la entropía (tareas 4.6 y 4.7, con material del
-capítulo 4). El reparto de este documento sigue esa línea, de modo que quien enlaza una afirmación con
-un test es quien escribió ese test:
+La partición de la fase es clara: Gonzalo lleva la física del ruido (tareas 4.3 a 4.5) y Marco la
+entropía (tareas 4.6 y 4.7). El reparto de este documento sigue esa línea, de modo que quien enlaza
+una afirmación con un test es quien escribió ese test:
 
-| Parte | Responsable | Secciones de origen |
-|---|---|---|
-| [Parte I — La física del ruido](#parte-i--la-física-del-ruido-gonzalo) | Gonzalo (`gonzaloz-hub`) | §3.1, §3.2, §3.3, §3.4, §3.4.1 (+ §6.5, el filtrado) |
-| [Parte II — De ruido físico a bits](#parte-ii--de-ruido-físico-a-bits-utilizables-marco) | Marco (`Marcociber`) | §4.1, §4.2, §4.3, §4.4, §4.4.1, §4.5 |
-| [Parte III — Sección compartida](#parte-iii--sección-compartida) | Sin asignar en las fuentes | §4.6 |
+| Parte | Responsable |
+|---|---|
+| [Parte I — La física del ruido](#parte-i--la-física-del-ruido-gonzalo) | Gonzalo (`gonzaloz-hub`) |
+| [Parte II — De ruido físico a bits](#parte-ii--de-ruido-físico-a-bits-utilizables-marco) | Marco (`Marcociber`) |
+| [Parte III — Sección compartida](#parte-iii--sección-compartida) | Sin asignar |
 
 ---
 
 # Parte I — La física del ruido (Gonzalo)
 
 ## 1. Qué mide realmente un detector, y qué es un pedestal
-
-*(§3.1)*
 
 Un detector no «ve» partículas. Mide los efectos que dejan al atravesar materia, y esos efectos acaban
 siendo siempre lo mismo: una **carga eléctrica** que hay que amplificar, moldear y digitalizar. La
@@ -84,8 +80,6 @@ código se enfrente a ello desde el primer test y no el día que llegan los dato
 pedestal explícito, y su test de cordura comprueba que el espectro tiene un pico donde se puso.
 
 ## 2. Ruido de disparo (shot noise), y el factor de Fano
-
-*(§3.2.1)*
 
 Es el más fundamental de los cuatro y **el único que no se puede reducir con mejor electrónica**. La
 llegada de partículas o fotones es un proceso de Poisson: si el número medio de sucesos en una ventana
@@ -140,8 +134,6 @@ muestral, `√(2/(n−1))`) y su pareja obligatoria `test_fano_de_gaussiana_no_e
 
 ## 3. Ruido térmico (Johnson–Nyquist)
 
-*(§3.2.2)*
-
 Los portadores de carga de cualquier resistencia se agitan por temperatura y producen una tensión
 fluctuante **incluso sin señal**. Su valor cuadrático medio es
 
@@ -170,8 +162,6 @@ distribución, el contraste de `test_fano_de_gaussiana_no_es_uno`.
 
 ## 4. Ruido flicker o 1/f
 
-*(§3.2.3)*
-
 Su densidad espectral **crece al bajar la frecuencia**, aproximadamente como una ley de potencias:
 
 &nbsp;&nbsp;&nbsp;&nbsp;**S(f) ∝ 1 / f^α**  &nbsp;&nbsp;con&nbsp;&nbsp; **α ≈ 0,8 – 1,2**
@@ -192,7 +182,7 @@ más universal y más molesto de los cuatro.
 
 ### 4.1 El filtrado, y la trampa que lleva dentro
 
-*(§6.5 de la guía; se documenta aquí porque su justificación es puramente física)*
+*(se documenta aquí, y no con el resto del filtrado, porque su justificación es puramente física)*
 
 El módulo aplica dos filtros, **de fase cero** (`filtfilt`: hacia adelante y hacia atrás, de modo que
 el desfase que introduce en un sentido se cancela en el otro):
@@ -224,8 +214,6 @@ un filtro que lo borrara todo pasaría el primero con nota) y
 
 ## 5. Interferencias y patrones
 
-*(§3.2.4)*
-
 La red eléctrica a 50 Hz y sus armónicos (100, 150, 200 Hz…), el reloj de la electrónica de lectura,
 el ciclo del propio acelerador. Son **deterministas o casi**, y aparecen como picos estrechos en el
 espectro.
@@ -249,8 +237,6 @@ frecuencias encontradas son armónicos de 50 Hz, que es la firma inconfundible d
 50 Hz ± la resolución `Δf = fs/nperseg`). Figura 1, *el espectro anotado*.
 
 ## 6. Los cuatro tipos, y la estrategia completa del análisis
-
-*(§3.3)*
 
 | Tipo | Espectro | Distribución | Cómo se identifica |
 |---|---|---|---|
@@ -285,8 +271,6 @@ inútil— en lugar de «cuánto de lo que queda es Poisson».
 figura 1, que enseña los cuatro tipos en una sola imagen.
 
 ## 7. La densidad espectral de potencia y el método de Welch
-
-*(§3.4)*
 
 Para una señal muestreada `x_n` de longitud `N`, el **periodograma** es el módulo al cuadrado de su
 transformada discreta de Fourier, normalizado:
@@ -338,8 +322,6 @@ mal, y ningún examen visual del espectro lo habría revelado.
 
 ## 8. Cómo se ajusta el exponente α
 
-*(§3.4.1)*
-
 En escala log-log, una ley de potencias es una recta:
 
 &nbsp;&nbsp;&nbsp;&nbsp;**S(f) = A / f^α**  &nbsp;&nbsp;⟹&nbsp;&nbsp; **log S = log A − α · log f**
@@ -368,8 +350,6 @@ más). Figura 1, con la recta del ajuste superpuesta y `α` en la leyenda.
 # Parte II — De ruido físico a bits utilizables (Marco)
 
 ## 9. Por qué una señal de ruido no es un flujo de bits
-
-*(§4.1)*
 
 La tentación es directa: tenemos ruido físico aleatorio, lo digitalizamos y ya tenemos bits
 aleatorios. Es **falso**, por tres motivos que se acumulan:
@@ -413,8 +393,6 @@ vistazo la caída de muestras → bits conservados → bits de min-entropía →
 
 ## 10. Min-entropía, y por qué no vale la de Shannon
 
-*(§4.2)*
-
 La **entropía de Shannon** mide la incertidumbre *media*:
 
 &nbsp;&nbsp;&nbsp;&nbsp;**H = − Σᵢ pᵢ · log₂ pᵢ**
@@ -446,8 +424,6 @@ cuánto tendría que adivinar un atacante *de media*, sino cuánto acierta con *
 sustituye un estimador por otro y se equivoca de fórmula o de base del logaritmo, salta.
 
 ## 11. Cómo se estima la min-entropía: NIST SP 800-90B
-
-*(§4.3)*
 
 No se puede calcular exactamente, porque no conocemos la distribución verdadera de la fuente: hay que
 **estimarla** a partir de una muestra. El estándar de referencia es **NIST SP 800-90B**, que define
@@ -507,8 +483,6 @@ estimadores*, con el mínimo destacado.
 > un solo test que contiene la idea central del módulo entero.
 
 ## 12. La extracción: el mismo Toeplitz del Módulo 1
-
-*(§4.4)*
 
 Con la min-entropía estimada, la longitud de salida segura sale de **la misma fórmula de la tarea
 1.6**, sin el término de la reconciliación (aquí no hay canal público que filtre nada):
@@ -570,8 +544,6 @@ tiene `H∞ = 0` y la extracción devuelve un array vacío, sin fallar ni invent
 
 ## 13. Validar la salida: qué se puede afirmar y qué no
 
-*(§4.5)*
-
 Los bits extraídos pasan por los mismos tests que el QRNG del Módulo 1:
 
 | Test | Qué comprueba, y su tolerancia derivada |
@@ -604,8 +576,8 @@ se desincronicen sin que nadie lo note.
 
 ## 14. Lo que este módulo NO puede afirmar
 
-*(§4.6 — sección que las fuentes **no asignan** explícitamente a ninguna de las dos mitades; ver el
-punto 1 del [Apéndice B](#apéndice-b--puntos-que-las-fuentes-dejan-sin-decidir))*
+*(sección que **no quedó asignada** explícitamente a ninguna de las dos mitades; ver el
+punto 1 del [Apéndice B](#apéndice-b--puntos-que-quedaron-sin-decidir))*
 
 Esta sección va aquí, en la teoría, y va **otra vez** en el README y en
 [`docs/limitaciones.md`](../limitaciones.md) (sección «Módulo 4», entradas M4.1–M4.6, cada una con su
@@ -662,33 +634,33 @@ La regla de oro exige que toda fórmula enlace a un test o a una figura que **ex
 convierte esa exigencia en un paso de CI (`comm -23` entre los tests citados en `docs/theory/*.md` y
 los `def test_` reales de `tests/`), de modo que renombrar un test citado aquí pone la CI en rojo.
 
-| Resultado teórico | Sección origen | Aquí | Test / figura que lo verifica |
-|---|---|---|---|
-| El pedestal desplaza la señal | 3.1 | §1 | fixture `senal_sintetica` + su test de cordura |
-| `F = 1` para Poisson | 3.2.1 | §2.1 | `test_fano_de_poisson_es_uno` |
-| `F ≠ 1` para gaussiana | 3.2.1 | §2.1 | `test_fano_de_gaussiana_no_es_uno` |
-| El ruido térmico es blanco | 3.2.2 | §3 | `test_ruido_blanco_da_espectro_plano` |
-| El filtro no introduce correlación | 6.5 | §4.1 | `test_el_filtro_no_ensucia_ruido_blanco` |
-| El notch elimina la interferencia | 6.5 | §4.1 | `test_el_pico_desaparece`; fig. 2 |
-| El filtro no se lleva el resto | 6.5 | §4.1 | `test_el_resto_del_espectro_sobrevive` |
-| El filtro no desploma la varianza | 6.5 | §4.1 | `test_la_varianza_baja_pero_no_se_desploma` |
-| Las interferencias son picos estrechos | 3.2.4 | §5 | `test_encuentra_los_50_hz`; fig. 1 |
-| El pico cae en su frecuencia ± `Δf` | 3.4 | §5 | `test_el_pico_aparece_donde_se_puso` |
-| Welch reduce la varianza por `K` | 3.4 | §7 | `test_ruido_blanco_da_espectro_plano` |
-| La normalización de la PSD es correcta | 3.4 | §7 | `test_parseval` |
-| `α` se recupera de una fuente conocida | 3.4.1 | §8 | `test_alfa_de_ruido_generado_con_alfa_conocido`; fig. 1 |
-| `α ≈ 0` para ruido blanco | 3.4.1 | §8 | `test_alfa_de_ruido_blanco_es_cero` |
-| Digitalizar no basta (menos entropía) | 4.1 | §9 | `test_fuente_uniforme_da_la_entropia_maxima`; fig. 3 |
-| `H∞ ≤ H` siempre | 4.2 | §10 | `test_min_entropia_es_MENOR_que_shannon` |
-| Fuente sesgada da el valor teórico | 4.3 | §11 | `test_fuente_sesgada_da_lo_que_dice_la_teoria` |
-| Markov ve lo que los otros no | 4.3 | §11.4 | `test_markov_caza_lo_que_los_otros_no`; fig. 4 |
-| Se toma el mínimo de los tres | 4.3 | §11.4 | `test_se_devuelve_el_minimo`; fig. 4 |
-| Se reutiliza el extractor del Módulo 1 | 4.4 | §12 | `test_usa_el_extractor_del_modulo_1` |
-| `ℓ = ⌊n·H∞ − 2log₂(1/ε)⌋` | 4.4 | §12 | `test_la_longitud_sale_de_la_formula` |
-| Menos `H∞` ⟹ menos bits | 4.4 | §12 | `test_h_min_baja_implica_menos_bits`; fig. 3 |
-| `H∞ = 0` no produce bits | 4.4 | §12 | `test_h_min_cero_no_produce_bits` |
-| Los bits extraídos no tienen sesgo | 4.5 | §13 | `test_los_bits_extraidos_pasan_el_monobit` |
-| La cadena completa es coherente | 4.1–4.5 | §13 | `test_la_cadena_completa` |
+| Resultado teórico | Aquí | Test / figura que lo verifica |
+|---|---|---|
+| El pedestal desplaza la señal | §1 | fixture `senal_sintetica` + su test de cordura |
+| `F = 1` para Poisson | §2.1 | `test_fano_de_poisson_es_uno` |
+| `F ≠ 1` para gaussiana | §2.1 | `test_fano_de_gaussiana_no_es_uno` |
+| El ruido térmico es blanco | §3 | `test_ruido_blanco_da_espectro_plano` |
+| El filtro no introduce correlación | §4.1 | `test_el_filtro_no_ensucia_ruido_blanco` |
+| El notch elimina la interferencia | §4.1 | `test_el_pico_desaparece`; fig. 2 |
+| El filtro no se lleva el resto | §4.1 | `test_el_resto_del_espectro_sobrevive` |
+| El filtro no desploma la varianza | §4.1 | `test_la_varianza_baja_pero_no_se_desploma` |
+| Las interferencias son picos estrechos | §5 | `test_encuentra_los_50_hz`; fig. 1 |
+| El pico cae en su frecuencia ± `Δf` | §5 | `test_el_pico_aparece_donde_se_puso` |
+| Welch reduce la varianza por `K` | §7 | `test_ruido_blanco_da_espectro_plano` |
+| La normalización de la PSD es correcta | §7 | `test_parseval` |
+| `α` se recupera de una fuente conocida | §8 | `test_alfa_de_ruido_generado_con_alfa_conocido`; fig. 1 |
+| `α ≈ 0` para ruido blanco | §8 | `test_alfa_de_ruido_blanco_es_cero` |
+| Digitalizar no basta (menos entropía) | §9 | `test_fuente_uniforme_da_la_entropia_maxima`; fig. 3 |
+| `H∞ ≤ H` siempre | §10 | `test_min_entropia_es_MENOR_que_shannon` |
+| Fuente sesgada da el valor teórico | §11 | `test_fuente_sesgada_da_lo_que_dice_la_teoria` |
+| Markov ve lo que los otros no | §11.4 | `test_markov_caza_lo_que_los_otros_no`; fig. 4 |
+| Se toma el mínimo de los tres | §11.4 | `test_se_devuelve_el_minimo`; fig. 4 |
+| Se reutiliza el extractor del Módulo 1 | §12 | `test_usa_el_extractor_del_modulo_1` |
+| `ℓ = ⌊n·H∞ − 2log₂(1/ε)⌋` | §12 | `test_la_longitud_sale_de_la_formula` |
+| Menos `H∞` ⟹ menos bits | §12 | `test_h_min_baja_implica_menos_bits`; fig. 3 |
+| `H∞ = 0` no produce bits | §12 | `test_h_min_cero_no_produce_bits` |
+| Los bits extraídos no tienen sesgo | §13 | `test_los_bits_extraidos_pasan_el_monobit` |
+| La cadena completa es coherente | §13 | `test_la_cadena_completa` |
 
 Las cuatro figuras citadas, todas regenerables con un comando y con su MD5 comprobado en CI:
 
@@ -710,57 +682,57 @@ diagrama a mano:
 
 ---
 
-# Apéndice B — Puntos que las fuentes dejan sin decidir
+# Apéndice B — Puntos que quedaron sin decidir
 
-La guía de la Fase 4 no resuelve los puntos siguientes. Se recogen aquí marcados como tales, en lugar
-de rellenarlos con suposiciones; **las decisiones tomadas provisionalmente en este borrador se señalan
-explícitamente y están pendientes de acuerdo del equipo**.
+El reparto de la Fase 4 no dejó resueltos los puntos siguientes. Se recogen aquí marcados como tales,
+en lugar de rellenarlos con suposiciones; **las decisiones tomadas provisionalmente en este borrador
+se señalan explícitamente y están pendientes de acuerdo del equipo**.
 
-1. **La sección 4.6 no pertenece a ninguna mitad.** «Lo que este módulo NO puede afirmar» es material
-   de honestidad técnica que la guía asigna a Marco como *encargo de fondo* (capítulo 8: revisor
-   obligatorio de todo lo que toque afirmaciones de seguridad), pero cuya redacción no está asignada
-   dentro de la tarea 4.10, que es de Gonzalo. Aquí figura como
+1. **La sección compartida no pertenece a ninguna mitad.** «Lo que este módulo NO puede afirmar» es material
+   de honestidad técnica, que en esta fase es encargo de fondo de Marco —revisor obligatorio de
+   todo lo que toque afirmaciones de seguridad—, pero cuya redacción no está asignada dentro de la
+   tarea 4.10, que es de Gonzalo. Aquí figura como
    [Parte III — sección compartida](#parte-iii--sección-compartida); queda pendiente decidir si la
    escribe Gonzalo y la revisa Marco, o al revés.
-2. **La sección 6 del guion oficial, resuelta.** La tabla de la tarea 4.10 exige un apartado
+2. **El apartado «Real vs. simulación», resuelto.** La tarea 4.10 exige un apartado
    «Real vs. simulación» que diga si se usaron datos del CERN o si se activó el plan B. La tarea 4.2
    cerró con datos reales (plan B no activado); el apartado está ahora al final de §14, con el mismo
    matiz de `nPFCands` como *proxy* y `fs` como convención que usa `docs/limitaciones.md` §M4.2–M4.3.
-3. **El filtrado se documenta aquí aunque su material esté en el capítulo 6.** La justificación del
+3. **El filtrado se documenta aquí aunque por tema tocaría más adelante.** La justificación del
    filtro es puramente física (el 1/f introduce correlación; un filtro con memoria introduce otra), de
    modo que separarla de §4 dejaría la explicación del 1/f a medias. Se ha colocado como §4.1, dentro
    de la mitad de Gonzalo, que es quien hace la tarea 4.5. **Esa colocación es una decisión de este
-   borrador, no algo que fijen las fuentes.**
-4. **Extensión, formato y figuras.** La guía pide nueve apartados y un lector ajeno que lo entienda en
-   quince minutos, pero no fija la extensión, ni la estructura interna, ni si las figuras van
-   incrustadas. En este borrador las figuras se **enlazan** por ruta relativa a `docs/img/`, sin
+   borrador y nada más.**
+4. **Extensión, formato y figuras.** El encargo pide nueve apartados y que un lector ajeno lo
+   entienda en quince minutos, pero no fija la extensión, ni la estructura interna, ni si las figuras
+   van incrustadas. En este borrador las figuras se **enlazan** por ruta relativa a `docs/img/`, sin
    incrustarlas, y la numeración de secciones es continua en vez de seguir literalmente los nueve
-   apartados de la tabla —que se cubren todos, repartidos entre las tres partes—. **Es una decisión
+   apartados —que se cubren todos, repartidos entre las tres partes—. **Es una decisión
    provisional.**
 
 ---
 
 # Apéndice C — Verificación pendiente contra el código
 
-La **regla de precedencia** del proyecto dice: *para todo lo técnico (firmas, nombres, comportamiento)
-manda el código real; para el contexto, las decisiones y los porqués, mandan la guía y los ficheros de
-contexto*. Este documento se ha redactado a partir de los capítulos 3 y 4 de la guía de la Fase 4,
-cuando las tareas 4.3 a 4.7 estaban aún declaradas con `NotImplementedError`.
+La **regla de precedencia** del proyecto dice: *para todo lo técnico —firmas, nombres,
+comportamiento— manda el código real; para el contexto, las decisiones y los porqués, mandan los
+documentos*. Este texto se redactó cuando las tareas 4.3 a 4.7 estaban aún declaradas con
+`NotImplementedError`, así que se escribió contra lo previsto y no contra lo implementado.
 
 Por tanto, **antes de dar por cerrada la tarea 4.10, cada firma, nombre de test, constante y valor
 numérico citados aquí deben contrastarse contra el código real de `src/detector/` y `tests/detector/`**,
-y donde el código haya avanzado respecto de la guía, gana el código. En particular quedan pendientes de
-contraste tres cosas concretas:
+y donde el código haya avanzado respecto de lo que aquí se cuenta, gana el código. En particular
+quedan pendientes de contraste tres cosas concretas:
 
 - Los **valores del contrato** (`NPERSEG`, `RANGO_ALFA`, `UMBRAL_PICO`, `BITS_BAJOS`) tal como quedaron
   en `types.py` tras la tarea 4.1, y el `K` real que sale de la longitud de la señal efectivamente
   cargada en la 4.2 —el ejemplo de §7 usa `N = 2²⁰`, que es el de la fixture, no necesariamente el de
   los datos.
-- Los **nombres exactos de los tests** del Apéndice A, que la guía escribe en su forma prevista. El
-  paso de CI de la tarea 4.11 los comprobará automáticamente en cuanto exista, pero hasta entonces la
-  comprobación es manual.
-- El **apartado 6 del guion** («Real vs. simulación») ya está resuelto en §14: la tarea 4.2 cerró
-  con datos reales de CERN Open Data, plan B no activado.
+- Los **nombres exactos de los tests** del Apéndice A, escritos aquí en su forma prevista antes de
+  que existieran. El paso de CI de la tarea 4.11 los comprobará automáticamente en cuanto exista, pero
+  hasta entonces la comprobación es manual.
+- El apartado **«Real vs. simulación»** ya está resuelto en §14: la tarea 4.2 cerró con datos reales
+  de CERN Open Data, plan B no activado.
 
 ## Limitaciones
 
