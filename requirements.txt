@@ -1,7 +1,7 @@
 qiskit==1.0.2
 qiskit-aer==0.13.3
 numpy==1.26.4
-scipy==1.13.0
+scipy==1.17.1
 matplotlib==3.8.4
 # pylatexenc (Fase 2, tarea 2.9): dependencia OPCIONAL del dibujante
 # matplotlib de Qiskit. Sin ella, qc.draw("mpl") -el circuito de Shor de la
