@@ -261,9 +261,9 @@ Tres personas. Lo que llevó cada una:
 
 | | Responsabilidad |
 |---|---|
-| **Carlos Martínez-Meco López** ([@cmartinezmeco](https://github.com/cmartinezmeco)) | Infraestructura, CI, contenedores, datos, benchmarking, visualización e integración |
 | **Marco López Ballestrino** ([@Marcociber](https://github.com/Marcociber)) | Reconciliación de claves, criptografía post-cuántica, análisis de entropía y seguridad |
 | **Gonzalo Zaballos Galán** ([@gonzaloz-hub](https://github.com/gonzaloz-hub)) | Física y modelado teórico: BB84, Shor, sistemas caóticos, ruido de detector |
+| **Carlos Martínez-Meco López** ([@cmartinezmeco](https://github.com/cmartinezmeco)) | Infraestructura, CI, contenedores, datos, benchmarking, visualización e integración |
 
 Aquí había una columna con el número de *commits* de cada uno y ya no está. El motivo es que
 no medía lo que parecía medir: un *commit* cuenta cuántas veces alguien guardó, no cuánto

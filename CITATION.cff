@@ -3,15 +3,15 @@ message: "Si usas este software, por favor cita este repositorio."
 type: software
 title: "QPCS — Quantum & Physics Cryptography Suite"
 authors:
-  - family-names: "Martínez-Meco López"
-    given-names: "Carlos"
-    alias: "cmartinezmeco"
-  - family-names: "Zaballos Galán"
-    given-names: "Gonzalo"
-    alias: "gonzaloz-hub"
   - family-names: "López Ballestrino"
     given-names: "Marco"
     alias: "Marcociber"
+  - family-names: "Zaballos Galán"
+    given-names: "Gonzalo"
+    alias: "gonzaloz-hub"
+  - family-names: "Martínez-Meco López"
+    given-names: "Carlos"
+    alias: "cmartinezmeco"
 repository-code: "https://github.com/cmartinezmeco/qpcs"
 abstract: >-
   Cuatro módulos de criptografía —cuántica, post-cuántica, caótica y entropía
