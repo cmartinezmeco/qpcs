@@ -25,4 +25,5 @@ keywords:
   - bb84
   - chaos-encryption
   - entropy-extraction
-# license-url se anade cuando se cierre la decision B3 (docs/decisiones.md)
+license: Apache-2.0
+license-url: "https://github.com/cmartinezmeco/qpcs/blob/main/LICENSE"
