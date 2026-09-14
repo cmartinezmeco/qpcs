@@ -1,14 +1,13 @@
-# Decisiones abiertas de QPCS
+# Decisiones del proyecto QPCS
 
 Las decisiones que el proyecto dejó **declaradas pero sin cerrar** al llegar a la
-Fase 4, con sus opciones, su recomendación razonada y su estado. Una decisión que
-se queda sin tomar no desaparece: reaparece en cada revisión y nadie sabe si es
-un descuido o una postura.
+Fase 4, con sus opciones, su recomendación razonada y lo que finalmente se
+acordó. Una decisión que se queda sin tomar no desaparece: reaparece en cada
+revisión y nadie sabe si es un descuido o una postura.
 
 > Tarea 4.13 de la Fase 4. Entregable: este fichero.
 > Las limitaciones ya asumidas y cerradas están en
-> [`limitaciones.md`](limitaciones.md); este documento es solo lo que **sigue
-> abierto**.
+> [`limitaciones.md`](limitaciones.md); este documento es el de las decisiones.
 
 ## Cómo se lee una entrada
 
@@ -20,14 +19,21 @@ FECHA       : la del acuerdo, no la de la redacción
 ACORDADO POR: quién estuvo
 ```
 
-Mientras `ESTADO` diga `PENDIENTE DE REUNIÓN`, la recomendación escrita aquí es
-**una propuesta**, no un acuerdo. Está redactada para que la reunión parta de
-algún sitio en vez de empezar en blanco, que es como se toman las decisiones
-malas y lentas.
+Mientras `ESTADO` no diga `CERRADA`, la recomendación escrita aquí es **una
+propuesta**, no un acuerdo. Está redactada para que la reunión parta de algún
+sitio en vez de empezar en blanco, que es como se toman las decisiones malas y
+lentas. Cuando se cierra, la entrada conserva la recomendación original y añade
+un apartado **Lo acordado**: importa tanto lo que se decidió como si coincidió o
+no con lo que se proponía.
 
-Las tres decisiones de esta tarea son **A1**, **A2** y **A3**. Hay además dos
-decisiones más que llegan con tareas posteriores del bloque B y que se anotarán
-aquí cuando toque; están listadas al final para que no se pierdan.
+Son ocho decisiones: **A1**, **A2** y **A3**, que venían de esta tarea; **B1**,
+**B2** y **B3**, que llegaron con el bloque B; **C**, sobre los correos del
+historial, y **D**, sobre dos dependencias con avisos de seguridad conocidos,
+que aparecieron las dos en la auditoría previa a la publicación.
+
+**Estado a 13 de septiembre de 2026: las ocho están cerradas.** No queda
+ninguna casilla abierta, que era la condición para poder publicar el
+repositorio sin contradecir su propio proceso.
 
 ---
 
@@ -80,10 +86,20 @@ Tres razones, en orden de peso:
    esas métricas no prueban seguridad —alcanzar sus valores canónicos sería
    coherente con la literatura que el módulo cuestiona, no con el módulo.
 
+### Lo acordado
+
+**Opción 1: se deja como está y se documenta.** No se toca el Módulo 3.
+
+No hay trabajo detrás de esta decisión, y ese es justamente el punto: la
+explicación de por qué las métricas dan lo que dan ya está escrita en el README,
+en `docs/limitaciones.md` y en el propio panel, y los dos tests que fijan el
+comportamiento siguen donde estaban. Lo único que cambia es que deja de ser una
+deuda abierta.
+
 ```
-ESTADO      : PENDIENTE DE REUNIÓN
-FECHA       : ____________
-ACORDADO POR: ____________
+ESTADO      : CERRADA
+FECHA       : 2026-09-13
+ACORDADO POR: Gonzalo, Marco, Carlos
 ```
 
 ---
@@ -134,10 +150,22 @@ para consumo general.
 La matización: si en la reunión se prefiere la opción 1, es un cambio de cinco
 minutos en un solo fichero. Lo que no puede es quedarse otra fase sin decidir.
 
+### Lo acordado
+
+**Opción 2: se quedan privados.** `_valores_de_permutacion` y `_material` siguen
+con su guion bajo y sin exportarse en `__init__.py`.
+
+El razonamiento que se impuso en la reunión es el de arriba: la API pública de un
+módulo debe contener lo que necesita un *usuario* del módulo, no lo que necesitan
+sus propias figuras y sus *benchmarks*. Esos tres consumidores son código del
+mismo proyecto, no terceros, y promocionarlos convertiría un detalle interno en un
+compromiso de estabilidad hacia fuera a cambio de nada. El test que vigila que no
+desaparezcan cubre el riesgo real, que es que alguien los renombre sin enterarse.
+
 ```
-ESTADO      : PENDIENTE DE REUNIÓN
-FECHA       : ____________
-ACORDADO POR: ____________
+ESTADO      : CERRADA
+FECHA       : 2026-09-13
+ACORDADO POR: Gonzalo, Marco, Carlos
 ```
 
 ---
@@ -150,7 +178,7 @@ semanas. No consta que se haya hecho ninguna.
 ### La medida
 
 Medido el **2026-09-05** sobre `origin/main` en el commit `9f090ef`
-(2026-09-02), 51 *commits* sin contar *merges*, con los comandos que fija la guía:
+(2026-09-02), 51 *commits* sin contar *merges*, con estos comandos:
 
 ```bash
 git shortlog -sn --no-merges
@@ -217,7 +245,7 @@ Hay que decirlo antes de que alguien los use para repartir mérito:
 |---|---|
 | **1. Escribir el reparto real, con `.mailmap`** | Añadir un fichero `.mailmap` que una los alias de cada persona, y redactar la sección de reparto del README con lo que salga después de unirlos, describiendo **qué hizo cada uno** (módulos y tareas) y no solo cuántos *commits* tiene. |
 | **2. Escribir el reparto real sin tocar los alias** | Misma sección de reparto, pero quien ejecute `git shortlog` seguirá viendo cinco autores y tendrá que consolidarlos a mano. |
-| **3. Escribir el reparto planeado** | Lo que decían las guías de fase. **Descartada**: el plan de proyecto es explícito —«si Gonzalo acabó escribiendo Cascade, hay que decirlo y ajustar, **no fingir**»— y la *checklist* de la Fase 1 añade que «si no coincide, se corrige el README, no el `git log`». |
+| **3. Escribir el reparto planeado** | Lo que estaba previsto al repartir las tareas, en vez de lo que acabó pasando. **Descartada**: el plan de proyecto es explícito —«si Gonzalo acabó escribiendo Cascade, hay que decirlo y ajustar, **no fingir**»— y la *checklist* de la Fase 1 añade que «si no coincide, se corrige el README, no el `git log`». |
 
 ### Recomendación
 
@@ -246,81 +274,103 @@ a 4.5 son suyas y son tres de las siete tareas de código del módulo.
    historial habrá crecido con el propio bloque B, así que esta tabla es una
    foto del 2026-09-05, no la definitiva.
 
+### Lo acordado
+
+**Opción 1: `.mailmap` y reparto por trabajo.** Con un matiz sobre los nombres.
+
+1. Se crea `.mailmap` en la raíz. Une las **seis** identidades de git que
+   aparecen en el historial —eran cinco cuando se escribió esta entrada; el
+   propio trabajo de las últimas semanas añadió una más— en las tres personas
+   que somos. `git shortlog -sn --no-merges` pasa a devolver tres nombres.
+2. El nombre canónico de cada uno es su **alias de GitHub**: `cmartinezmeco`,
+   `Marcociber` y `gonzaloz-hub`. Así lo que dice `git log` y lo que dice la web
+   coinciden, que es lo que mira quien llega de fuera.
+3. La tabla de *commits* del README **desaparece**, y solo se queda la columna de
+   responsabilidad. El motivo, además del de arriba: la tabla ya estaba desfasada
+   —publicaba 31 para Carlos cuando el método que ella misma describe daba 35— y
+   cualquier tabla de *commits* queda obsoleta con el *commit* siguiente, incluido
+   el que la corrija. Quien quiera los números tiene el comando en el README.
+
+Conviene dejar dicho, porque es el error fácil: el `.mailmap` cambia lo que
+**muestran** `git log`, `git shortlog` y `git blame`, pero no reescribe los
+objetos de *commit*. Los correos siguen dentro del historial. Eso es otra
+decisión, y está más abajo.
+
 ```
-ESTADO      : PENDIENTE DE REUNIÓN
-FECHA       : ____________
-ACORDADO POR: ____________
+ESTADO      : CERRADA
+FECHA       : 2026-09-13
+ACORDADO POR: Gonzalo, Marco, Carlos
 ```
 
 ---
 
 ## B1 — Publicar la imagen en GitHub Container Registry
 
-**De donde viene.** Declarada en la guia de la Fase 4 (cap. 7.5, tarea 4.15):
-si el arranque compila liboqs cada vez, la primera experiencia de un revisor
-son varios minutos de `docker build` antes de ver nada.
+**De dónde viene.** De la tarea 4.15: si el arranque compila liboqs cada vez, la primera
+experiencia de un revisor son varios minutos de `docker build` antes de ver nada.
 
 ### El hecho, medido (no supuesto)
 
-En esta misma tarea se cronometraron dos builds reales, en la misma maquina:
+En esta misma tarea se cronometraron dos *builds* reales, en la misma máquina:
 
 | Build | Tiempo | Contexto |
 |---|---|---|
-| Con cache de Buildx (CI, PR #48) | ~15 min la primera vez que se activo la cache; bajara en ejecuciones siguientes | Runner de GitHub Actions |
-| Sin cache (`--no-cache`, local) | ~17 min (197s el `git clone` + compilacion de liboqs, ~756s instalando requirements, resto en exportar capas) | Maquina de Carlos, WSL2 |
-| `docker pull` de una imagen ya publicada | Segundos (no medido aqui: no hay imagen publicada todavia) | — |
+| Con caché de Buildx (CI, PR #48) | ~15 min la primera vez que se activó la caché; baja en las siguientes | Runner de GitHub Actions |
+| Sin caché (`--no-cache`, local) | ~17 min (197 s el `git clone` + compilación de liboqs, ~756 s instalando requirements, el resto exportando capas) | Máquina de Carlos, WSL2 |
+| `docker pull` de una imagen ya publicada | Segundos (no medido aquí: no había imagen publicada todavía) | — |
 
-El numero que importa para la decision no es el de la CI (esa cache ya esta
-resuelta, tarea 4.14): es el de alguien que clona el repo por primera vez y
-sigue el Quick Start del README. Hoy son minutos de compilacion antes de ver
-el dashboard.
+El número que importa para la decisión no es el de la CI —esa caché ya está resuelta en la
+tarea 4.14—, sino el de alguien que clona el repositorio por primera vez y sigue el arranque
+rápido del README. Hoy son minutos de compilación antes de ver el panel.
 
 ### Opciones
 
-| Opcion | Que gana | Que cuesta |
+| Opción | Qué gana | Qué cuesta |
 |---|---|---|
-| **1. Publicar en GHCR** (`ghcr.io/cmartinezmeco/qpcs`) | El Quick Start pasa de `docker build` (~10-17 min) a `docker pull` (segundos). Primera impresion mucho mejor para un revisor. | Hay que mantener la imagen al dia: un paso de CI que la reconstruya y la suba en cada push a `main`, y decidir el etiquetado (`latest`, por commit, por version). Exige que el repositorio sea publico (GHCR gratuito solo lo es para repos publicos) -ver B2-. |
-| **2. Dejarlo como esta** (`docker build` local, con la cache de Buildx de la tarea 4.14 acelerando reconstrucciones sucesivas) | Cero mantenimiento extra. Ninguna dependencia de que el repo sea publico. | El primer build de cualquiera sigue tardando minutos. La cache de Buildx solo ayuda en la CI (GitHub Actions), no en la maquina de quien clona el repo por primera vez. |
+| **1. Publicar en GHCR** (`ghcr.io/cmartinezmeco/qpcs`) | El arranque rápido pasa de `docker build` (~10–17 min) a `docker pull` (segundos). Primera impresión mucho mejor para un revisor. | Hay que mantener la imagen al día: un paso de CI que la reconstruya y la suba en cada *push* a `main`, y decidir el etiquetado. Exige que el repositorio sea público, porque GHCR solo es gratuito para repositorios públicos —ver B2—. |
+| **2. Dejarlo como está** (`docker build` local, con la caché de Buildx de la tarea 4.14 acelerando reconstrucciones sucesivas) | Cero mantenimiento extra. Ninguna dependencia de que el repositorio sea público. | El primer *build* de cualquiera sigue tardando minutos. La caché de Buildx solo ayuda en la CI, no en la máquina de quien clona el repositorio por primera vez. |
 
-### Recomendacion
+### Recomendación
 
-**Publicar en GHCR (opcion 1), pero solo cuando B2 (repositorio publico) este
-decidido primero** -B1 no se puede cerrar en el vacio, depende de esa otra
-decision-. Si el repositorio se queda privado, la opcion 2 es la unica viable
-y esta decision se cierra sola por descarte.
+**Publicar en GHCR (opción 1), pero solo cuando B2 esté decidida primero** —B1 no se puede
+cerrar en el vacío, depende de esa otra decisión—. Si el repositorio se queda privado, la
+opción 2 es la única viable y esta decisión se cierra sola por descarte.
 
-Coste de mantenimiento estimado: un job de CI adicional (`push` a `main` ->
-`docker build` + `docker push` a GHCR), unas 15-20 lineas de YAML siguiendo el
-mismo patron que `build-limpio` de la tarea 4.14.
+Coste de mantenimiento estimado: un *job* de CI adicional (*push* a `main` → `docker build` +
+`docker push` a GHCR), unas 15–20 líneas de YAML siguiendo el mismo patrón que `build-limpio`
+de la tarea 4.14.
 
-**Lo que hay que hacer con esto, en orden:**
+### Lo acordado
 
-1. Cerrar primero B2 (repositorio publico) en la reunion del bloque B.
-2. Si B2 sale que si: implementar el job de publicacion en GHCR (encaja en
-   `ci/cache-y-endurecimiento` o en una tarea propia; se decide en la reunion),
-   y cambiar el paso 3 del Quick Start del README de `docker build` a
-   `docker pull ghcr.io/cmartinezmeco/qpcs`.
-3. Si B2 sale que no: esta decision se cierra como "opcion 2, por descarte",
-   sin trabajo adicional.
+**Opción 1: se publica en GHCR.** B2 salió público, así que la dependencia queda satisfecha.
+
+Lo que se hizo al cerrarla:
+
+1. Un *job* `publicar-imagen` en `.github/workflows/ci.yml` que construye y sube la imagen en
+   cada *push* a `main`, solo si el *job* `test` ha pasado. Reutiliza la caché de Buildx del
+   *job* anterior, así que publicar cuesta segundos y no otra compilación de liboqs.
+2. Dos etiquetas: `:main`, que se mueve y es la que apunta el README, y `:sha-<commit>`, que no
+   se mueve nunca y permite reproducir una ejecución concreta meses después.
+3. El arranque rápido del README pasa a `docker pull`, con las instrucciones de construir la
+   imagen a mano justo debajo para quien quiera probar un cambio propio.
 
 ```
-ESTADO      : PENDIENTE DE REUNIÓN
-FECHA       : ____________
-ACORDADO POR: ____________
+ESTADO      : CERRADA
+FECHA       : 2026-09-13
+ACORDADO POR: Gonzalo, Marco, Carlos
 ```
 
 ---
 
 ## B3 — Qué licencia
 
-**De donde viene.** Sin fichero `LICENSE`, por defecto nadie puede usar, copiar ni distribuir
-este codigo, aunque el repositorio sea publico. Declarada en la guia de la Fase 4 (cap. 7.7,
-tarea 4.17).
+**De dónde viene.** Sin fichero `LICENSE`, por defecto nadie puede usar, copiar ni distribuir
+este código, aunque el repositorio sea público. Viene de la tarea 4.17.
 
 ### Las licencias de las dependencias, comprobadas (no supuestas)
 
-Verificado con `pip-licenses` sobre el entorno real, mas la licencia de `liboqs` (biblioteca en
-C, no esta en PyPI) comprobada en su repositorio:
+Verificado con `pip-licenses` sobre el entorno real, más la licencia de `liboqs` —biblioteca en
+C, que no está en PyPI— comprobada en su repositorio:
 
 | Paquete | Licencia |
 |---|---|
@@ -333,52 +383,302 @@ C, no esta en PyPI) comprobada en su repositorio:
 
 Todas permisivas. **Ninguna es incompatible con MIT, Apache 2.0 ni GPL-3.0.** Una salvedad
 honesta: `liboqs` incluye implementaciones de terceros de algunos algoritmos bajo licencias
-distintas, en sus propias subcarpetas (documentado en su propio `LICENSE.txt`); no afecta a
-este proyecto, que solo consume la libreria compilada a traves de `liboqs-python`, pero se dice
-en vez de asumir que "MIT en general" cubre absolutamente todo.
+distintas, en sus propias subcarpetas, documentado en su propio `LICENSE.txt`. No afecta a este
+proyecto, que solo consume la biblioteca compilada a través de `liboqs-python`, pero se dice en
+vez de asumir que «MIT en general» cubre absolutamente todo.
 
 ### Opciones
 
-| Opcion | Que permite | Que exige |
+| Opción | Qué permite | Qué exige |
 |---|---|---|
 | **MIT** | Todo: usar, copiar, modificar, distribuir, uso comercial. | Mantener el aviso de copyright y la licencia en las copias. |
-| **Apache 2.0** | Lo mismo que MIT. | Lo mismo que MIT, mas una clausula explicita de concesion de patentes -relevante si alguien quisiera usar esto comercialmente y le preocupara litigio de patentes. |
-| **GPL-3.0** | Usar, copiar, modificar. | Que cualquier derivado se distribuya tambien bajo GPL-3.0 (copyleft). Incompatible en la practica con que una empresa integre el codigo en un producto propietario. |
+| **Apache 2.0** | Lo mismo que MIT. | Lo mismo que MIT, más una cláusula explícita de concesión de patentes: quien contribuye al proyecto concede los derechos de patente necesarios para usar lo que aportó, y quien demande por patentes pierde la licencia. |
+| **GPL-3.0** | Usar, copiar, modificar. | Que cualquier derivado se distribuya también bajo GPL-3.0 (*copyleft*). Incompatible en la práctica con que una empresa integre el código en un producto propietario. |
 
-### Recomendacion
+### Recomendación
 
-**MIT.** Es la opcion mas simple, la mas comun en portafolios, y no impone nada a quien lo use
-salvo mantener el aviso. Dado el proposito declarado del proyecto -demostrar dominio tecnico
-ante quien lo revise, no proteger un producto-, GPL-3.0 desincentivaria precisamente la lectura
-que se busca: una empresa evaluando un candidato no va a integrar copyleft en nada, y podria
-simplemente no mirarlo. Apache 2.0 es una alternativa razonable si se prefiere la clausula de
-patentes, pero para un proyecto sin pretension comercial esa clausula no aporta nada que MIT no
-de ya.
+**MIT o Apache 2.0.** La primera es la más simple y la más común en portafolios; la segunda
+añade la cláusula de patentes. GPL-3.0 queda descartada: el propósito declarado del proyecto es
+demostrar dominio técnico ante quien lo revise, no proteger un producto, y el *copyleft*
+desincentiva precisamente la lectura que se busca.
 
-**Lo que hay que hacer con esto, en orden:**
+### Lo acordado
 
-1. Cerrar esta decision en la reunion del bloque B (puede ir en la misma reunion que B1/B2).
-2. Crear `LICENSE` en la raiz con el texto de la licencia elegida.
-3. Añadir el badge de licencia al README y el campo `license-url` a `CITATION.cff` (dejado sin
-   rellenar a proposito en este PR, ver su comentario).
+**Apache 2.0.** Se elige sobre MIT por la cláusula explícita de patentes. En un repositorio que
+implementa criptografía —y en particular esquemas post-cuánticos, que es un terreno con patentes
+vivas— una licencia que diga expresamente qué pasa con las patentes vale más que una que calle.
+El coste sobre MIT es un fichero más largo y poco más.
+
+Lo que se hizo al cerrarla:
+
+1. `LICENSE` en la raíz con el texto íntegro de Apache 2.0 y el aviso de copyright a nombre de
+   los tres.
+2. `license: Apache-2.0` y `license-url` en `CITATION.cff`, que hasta ahora invitaba a citar un
+   software que nadie podía usar legalmente.
+3. Badge de licencia en el README, enlazado al fichero, y la sección de reparto diciendo cuál es
+   y por qué.
 
 ```
-ESTADO      : PENDIENTE DE REUNIÓN
-FECHA       : ____________
-ACORDADO POR: ____________
+ESTADO      : CERRADA
+FECHA       : 2026-09-13
+ACORDADO POR: Gonzalo, Marco, Carlos
 ```
-
 
 ---
 
-## Decisiones que llegan con tareas posteriores
+## B2 — Si el repositorio va a ser público
 
-No se deciden aquí, pero se anotan para que no se pierdan entre tareas. Cuando se
-tomen, su entrada se añade a este mismo fichero con el mismo bloque de estado.
+**De dónde viene.** Es la decisión que condiciona a las otras dos del bloque B:
+sin repositorio público no hay GHCR gratuito (B1) y la licencia (B3) importa
+mucho menos. Y es la única con consecuencias fuera del repositorio.
 
-| Ref. | Decisión | Tarea que la cierra |
-|---|---|---|
-| **B2** | **Si el repositorio va a ser público.** Condiciona a B1 y a B3 (ambas arriba, ya con opciones preparadas). | 4.15 / 4.17 |
+### Opciones
+
+| Opción | Qué implica |
+|---|---|
+| **Público** | Cualquiera puede verlo y clonarlo. Habilita GHCR gratis. Es el escenario para el que se escribió el README de escaparate y toda la Fase 4. Y expone de forma permanente el historial completo. |
+| **Privado** | Solo se enseña con invitación. El README de escaparate sigue sirviendo para un tribunal o una entrevista, pero pierde su función de que alguien lo encuentre. |
+
+### Lo acordado
+
+**Público**, con acceso de escritura restringido a los tres.
+
+El trabajo entero de la Fase 4 está construido sobre esa hipótesis: el README de
+escaparate, los *badges*, los *topics*, el `CITATION.cff`, la prueba de los diez
+minutos. Mantenerlo privado después de haberlo pulido para ser visto es pagar el
+coste y no cobrar el beneficio.
+
+La objeción que se puso sobre la mesa: publicar significa que las limitaciones
+también son públicas, y alguien que lea solo la frase «esto no es un QRNG
+certificado» fuera de contexto puede quedarse con la impresión equivocada. La
+respuesta es que las limitaciones están escritas con sus tres partes —qué no
+hace, por qué, qué haría falta— y un revisor técnico eso lo lee como una virtud.
+
+**Sobre los permisos, que es la otra mitad de la decisión.** Colaboradores con
+permiso de escritura: solo Carlos, Marco y Gonzalo. De cara al público, el
+repositorio queda en modo lectura más *issues*: cualquiera puede abrir una
+*issue*, y nadie de fuera puede escribir en el repositorio ni aprobar nada.
+
+Y hay algo que conviene saber antes de que sorprenda: **GitHub no permite
+desactivar los *forks* ni los *pull requests* en un repositorio público.**
+Cualquiera puede clonar, bifurcar y abrir un PR. Lo que eso no le da es ningún
+permiso: un PR de fuera es una propuesta que solo se integra si uno de los tres
+la aprueba y la mergea. El `README` lo dice con todas las letras —las *issues* se
+agradecen, el código lo escribimos nosotros— para que nadie pierda el tiempo.
+
+### Lo que tenía que ocurrir antes de cambiar la visibilidad
+
+1. Que existiera `LICENSE` (B3), **en el repositorio y subido**, no solo
+   decidido. Un repositorio público que invita a citarse y que nadie puede usar
+   legalmente es el peor de los dos mundos.
+2. Que Marco y Gonzalo dieran su conformidad sobre sus correos (decisión C, justo
+   debajo).
+
+```
+ESTADO      : CERRADA
+FECHA       : 2026-09-13
+ACORDADO POR: Gonzalo, Marco, Carlos
+```
+
+---
+
+## C — Los correos personales en el historial
+
+**De dónde viene.** De la auditoría previa a la publicación. No estaba en este
+documento porque no salió del trabajo de ninguna tarea, sino de mirar el
+historial completo antes de hacerlo público.
+
+### El hecho, medido
+
+Los metadatos de *commit* de este repositorio contienen tres direcciones de
+correo personales, repartidas por la mayor parte del historial:
+
+| Identidad | Dónde aparece |
+|---|---|
+| La dirección personal de Carlos (`cmartinez…@gmail.com`) | Como autor y como *committer* |
+| La dirección personal de Marco (`marcogit…@gmail.com`) | Como autor y como *committer* |
+| La dirección personal de Gonzalo (`gonzaloz…@gmail.com`) | Como autor y como *committer* |
+| La dirección `noreply` de GitHub de Carlos | Como autor, desde media fase |
+
+> Las direcciones van recortadas **aquí a propósito**. Están enteras en los
+> metadatos de los *commits*, que es de lo que trata esta decisión, pero
+> escribirlas completas en un fichero de texto de un repositorio público sería
+> ponérselo aún más fácil a un *scraper*: no habría ni que consultar la API.
+> Quien las necesite las tiene en `git log`; quien solo quiera entender la
+> decisión no las necesita.
+
+Al publicar, esas tres direcciones quedan expuestas de forma permanente y
+legibles por cualquiera a través de la API de GitHub. **Dos de las tres son de
+terceros**, no de quien pulsa el botón de publicar. Que Carlos cambiara a la
+dirección `noreply` a mitad de proyecto sugiere que la exposición no era
+intencionada.
+
+### Por qué no vale el `.mailmap` de A3
+
+Un `.mailmap` cambia lo que **muestran** `git log`, `git shortlog` y `git blame`,
+pero no borra nada de los objetos de *commit*. Resuelve A3 —que el historial
+parezca de tres personas y no de seis— y no resuelve esto. Son dos problemas
+distintos que casualmente se parecen.
+
+### Opciones
+
+| Opción | Qué implica |
+|---|---|
+| **1. Conformidad por escrito** | Marco y Gonzalo dicen que les parece bien y se deja el historial como está. Coste: cero. |
+| **2. Reescribir el historial** | `git filter-repo` sobre los *commits* afectados. Cambian **todos** los hashes desde el primero reescrito, se rompen las referencias por hash de `docs/decisiones.md`, hay que hacer `push --force` y que los tres reclonen, y los *pull requests* ya fusionados quedan apuntando a *commits* que no existen. |
+
+### Lo acordado
+
+**Opción 1: conformidad por escrito.** Se preguntó explícitamente a Marco y a
+Gonzalo si les parecía bien que sus direcciones de correo personales quedaran
+expuestas en el historial al publicar el repositorio. Los dos confirmaron que
+sí, en la reunión de cierre del 13 de septiembre de 2026. El historial **no**
+se reescribe: se queda tal como está, con las tres direcciones visibles.
+
+De cara al futuro, y aunque la decisión ya esté tomada: los tres deberíamos
+activar en nuestras cuentas el correo `noreply` de GitHub y la opción *Block
+command line pushes that expose my email*, que es lo que Carlos ya hizo a
+mitad de proyecto, para que los *commits* nuevos no sigan exponiendo la
+dirección personal por defecto.
+
+```
+ESTADO      : CERRADA
+FECHA       : 2026-09-13
+ACORDADO POR: Gonzalo, Marco, Carlos
+```
+
+---
+
+## D — Dependencias con avisos de seguridad conocidos
+
+**De dónde viene.** Auditoría de dependencias con `pip-audit` previa a la
+publicación.
+
+`cryptography` se subió de la `42.0.5` a la `48.0.1`, que es lo que se podía
+subir sin romper nada. Del resto, seis paquetes siguen teniendo avisos
+publicados, y esta entrada explica qué se hace con cada uno. El criterio es el
+mismo para todos: **mirar si el camino de código que dispara el fallo existe en
+este proyecto**, y decidir con eso en vez de con el número de la versión.
+
+### El hecho, medido
+
+`pillow` no está pineada en `requirements.txt`: es dependencia transitiva
+de Streamlit, resuelta hoy en `10.4.0`. `pip-audit` reporta más de veinte
+avisos sobre esa versión, arreglados en versiones que van de 12.1.1 a
+12.3.0. La inmensa mayoría son fallos de lectura o escritura fuera de
+límites al decodificar formatos de imagen específicos y manipulados a
+propósito: PSD, FITS, PCF, BDF, GD, McIdas AREA, JPEG2000, TGA y PDF.
+
+El vector de entrada real en este proyecto es la pestaña del Módulo 3, que
+acepta imágenes subidas por el usuario (`_imagen_subida` en
+`dashboard/qkd_app.py`). El filtro `type=[...]` de `st.file_uploader` es
+solo una ayuda del selector de fichero en el navegador, **no** una barrera
+de seguridad: cualquiera puede renombrar un fichero manipulado con
+extensión `.png` y Pillow lo abre igual si reconoce su firma interna,
+porque `Image.open()` autodetecta el formato por el contenido del
+fichero, no por su nombre.
+
+### Por qué no se sube la versión
+
+Streamlit 1.33.0 declara `pillow<11,>=7.1.0` como dependencia. La versión
+que cierra todos los avisos conocidos es la 12.3.0, **incompatible** con
+esa restricción. Subir Pillow sin subir Streamlit rompe la instalación;
+subir Streamlit también exige repetir el ciclo completo de verificación
+(tests y comparación de MD5 de las figuras) que ya se hizo con
+`cryptography`, con más riesgo de romper algo a pocas horas de cerrar el
+proyecto.
+
+### Lo acordado
+
+**Mitigar en el código, no en la versión.** Se añade una restricción
+explícita de formatos en `_imagen_subida`:
+
+```python
+formatos_permitidos = ("PNG", "JPEG", "BMP", "TIFF")
+with Image.open(fichero, formats=formatos_permitidos) as abierta:
+```
+
+Esto corta el acceso a los complementos vulnerables (PSD, FITS, PCF, BDF,
+GD, McIdas, JPEG2000, TGA) **independientemente de la versión de Pillow**
+instalada: si Pillow nunca intenta interpretar esos formatos, da igual
+que su implementación tenga un fallo o no. Es además una mitigación más
+duradera que subir de versión, porque protege también contra
+vulnerabilidades de esos mismos complementos que se descubran en el
+futuro.
+
+Queda como deuda declarada, no resuelta del todo: la versión de Pillow
+sigue siendo la 10.4.0, y si algún día Streamlit se actualiza a una
+versión que acepte Pillow ≥ 12.3.0, debería aprovecharse ese momento para
+subirla también.
+
+Verificado: `_imagen_subida` sigue abriendo un PNG válido correctamente
+tras el cambio.
+
+### protobuf, el mismo problema y sin necesitar mitigación
+
+`protobuf` tampoco está pineada: es transitiva de Streamlit, resuelta hoy
+en `4.25.9`. `pip-audit` reporta PYSEC-2026-1805, una denegación de
+servicio en `google.protobuf.json_format.ParseDict()` al parsear mensajes
+`Any` anidados de forma profunda, arreglada en `5.29.6`.
+
+Streamlit 1.33.0 exige `protobuf<5,>=3.20`: la versión que arregla el
+aviso, 5.29.6, es incompatible con esa restricción, igual que con
+Pillow.
+
+A diferencia de Pillow, aquí no hace falta ninguna mitigación de código:
+`grep` confirma que el proyecto no llama a `json_format.ParseDict()` ni a
+ninguna otra función de `google.protobuf.json_format` en ningún sitio.
+El vector de la vulnerabilidad no existe en esta aplicación porque el
+camino de código que la dispara nunca se ejecuta.
+
+### Los otros cuatro: `cryptography`, `qiskit`, `pyarrow` y `streamlit`
+
+Los cuatro arrastran avisos y en los cuatro el camino vulnerable **no existe en
+este proyecto**. Comprobado a mano antes de escribirlo, no supuesto:
+
+| Paquete | Avisos | Dónde está el fallo | Por qué aquí no aplica |
+|---|---|---|---|
+| `cryptography` 48.0.1 | 3 | Validación de cadenas X.509 (restricciones de nombre, recursión con certificados autofirmados duplicados) y descifrado PKCS#7 | El proyecto solo importa de `hazmat.primitives`: AEAD, HKDF y las asimétricas. **Cero usos** de `x509`, de `pkcs7` y de verificación de cadenas. No hay certificados en ninguna parte de este código. |
+| `qiskit` 1.0.2 | 3 | Deserialización de ficheros **QPY** manipulados, con ejecución de código en el peor caso | El proyecto no lee ni escribe QPY en ningún sitio: los circuitos se construyen en memoria y se simulan. **Cero usos** de `qpy`. |
+| `pyarrow` 16.1.0 | 2 | Lectura de ficheros **Parquet** e **IPC de Arrow** no confiables | Es dependencia transitiva de Streamlit, que la usa para *serializar* los `DataFrame` que el panel enseña. El proyecto no lee Parquet ni IPC de ninguna fuente. **Cero usos** directos. |
+| `streamlit` 1.33.0 | 3 | Dos son **exclusivos de Windows** (recorrido de rutas en el servicio de ficheros estáticos, y SSRF con exposición de credenciales NTLM). El tercero es un hash débil en la caché, que exige acceso local y el propio aviso califica de explotación difícil | El despliegue documentado es el contenedor, que es Linux. Y el servicio de ficheros estáticos ni se activa: `.streamlit/config.toml` no toca la sección `[server]`, así que queda en su valor por defecto, desactivado. |
+
+### Por qué no se suben, y qué haría falta para subirlos
+
+`streamlit` es el tapón. La 1.33.0 fija `pillow<11`, `protobuf<5` y arrastra la
+`pyarrow` contemporánea, así que **los cuatro se mueven juntos o no se mueve
+ninguno**. Y `pyarrow` no se puede subir sola por un motivo propio y ya medido:
+la 25.x revienta al serializar `DataFrame` en `st.dataframe`, que es lo que hace
+la mitad del panel.
+
+`cryptography` sí se podría subir a la 49 o la 50, pero cerraría avisos de un
+camino de código que este proyecto no recorre, a cambio de repetir el ciclo
+completo de verificación a pocas horas de cerrar.
+
+Subir todo eso es una tarea de verdad: actualizar Streamlit, revisar que el panel
+sigue funcionando, volver a pasar los tests y **regenerar las diecisiete figuras
+comparadas por MD5**, que es donde está el trabajo real. Se declara aquí como lo
+que es —deuda conocida y acotada, no un descuido— y se hace cuando haya tiempo
+para hacerlo bien.
+
+### Lo que sí queda montado para no enterarse tarde
+
+`.github/dependabot.yml` abre un *pull request* mensual por cada actualización, y
+la CI ejecuta `pip-audit` en cada vuelta y deja el informe en el resumen de la
+ejecución. Ese paso **no tumba la CI a propósito**: si lo hiciera, hoy mismo
+estaría en rojo y las dos únicas salidas serían subir a ciegas o silenciar el
+paso. Las dos son peores que leer el informe.
+
+```
+ESTADO      : CERRADA
+FECHA       : 2026-09-13
+ACORDADO POR: Carlos
+```
+
+> **Resumen, para quien venga de fuera.** Seis dependencias tienen avisos
+> publicados. En Pillow el camino existía y se ha cerrado por código. En los
+> otros cinco el camino no existe en este proyecto, y está comprobado uno por
+> uno. Ninguno se ha silenciado.
 
 ---
 
@@ -387,3 +687,6 @@ tomen, su entrada se añade a este mismo fichero con el mismo bloque de estado.
 | Fecha | Qué cambió |
 |---|---|
 | 2026-09-05 | Fichero creado con A1, A2 y A3 redactadas y la medida de reparto tomada sobre `9f090ef`. Las tres quedan pendientes de la reunión del bloque B. |
+| 2026-09-13 | **Reunión de cierre.** Se cierran las seis decisiones: A1 (dejarlo), A2 (dejarlo), A3 (`.mailmap` con los alias de GitHub y reparto sin tabla de *commits*), B1 (publicar en GHCR), B2 (repositorio público, escritura solo para los tres) y B3 (Apache 2.0). Se añade la decisión **C**, sobre los correos del historial: Marco y Gonzalo dan su conformidad por escrito en la propia reunión y el historial no se reescribe. |
+| 2026-09-13 | Se añade la decisión **D**, de la auditoría de dependencias con `pip-audit`. `cryptography` sube a la `48.0.1`. Los seis paquetes que conservan avisos se revisan uno por uno: en Pillow el camino vulnerable existía y se cierra por código (restricción explícita de formatos en `_imagen_subida`); en `protobuf`, `qiskit`, `pyarrow`, `streamlit` y el propio `cryptography` se comprueba que ese camino no se recorre en este proyecto. Queda declarada como deuda acotada, no como resuelta del todo. |
+| 2026-09-14 | Última revisión antes de publicar. Las ocho decisiones cerradas, `LICENSE` en la raíz, la imagen publicándose en GHCR y el reparto escrito por trabajo. El documento queda sin ninguna casilla abierta. |

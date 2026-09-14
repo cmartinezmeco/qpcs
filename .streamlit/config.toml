@@ -1,0 +1,32 @@
+# Configuracion del panel QPCS.
+#
+# EL TEMA ES CLARO Y NO HAY INTERRUPTOR. Streamlit, por defecto, sigue el
+# tema del sistema operativo de quien abre la pagina: si el navegador pide
+# modo oscuro, repinta el fondo en negro. Ese comportamiento no sirve aqui.
+#
+# Las figuras del panel se generan con Matplotlib y llevan el fondo blanco
+# escrito a fuego (fig.patch.set_facecolor("#ffffff") en dashboard/qkd_app.py
+# y en scripts/make_*_plots.py, para que la figura de la pagina y la
+# publicada en docs/img/ sean la misma). Sobre fondo negro salian como
+# recortes blancos flotando, con las etiquetas de los ejes y el texto de los
+# graficos en gris claro sobre gris claro. Y las 17 figuras versionadas
+# tendrian que regenerarse con dos paletas para arreglarlo.
+#
+# Fijar base = "light" deja el panel en un solo tema, el unico sobre el que
+# esta calibrada la hoja de estilo, y ademas hace que el conmutador de tema
+# deje de decidir nada.
+[theme]
+base = "light"
+primaryColor = "#1b7472"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f4f7fa"
+textColor = "#16222f"
+
+[client]
+# El menu de la esquina es donde vive el conmutador de tema. Con la barra en
+# modo minimo desaparece, que es la otra mitad de "no hay modo oscuro": sin
+# esto, base = "light" fija el arranque pero el conmutador sigue ahi.
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
