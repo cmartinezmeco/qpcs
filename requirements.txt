@@ -15,7 +15,7 @@ streamlit==1.33.0
 # la 25.x (año y medio posterior a streamlit 1.33), que segfaultea al
 # serializar DataFrames en st.dataframe (reproducido el 2026-07-18 con la
 # tabla de sifting del dashboard). 16.1.0 es la contemporanea de 1.33.
-pyarrow==16.1.0
+pyarrow==25.0.1
 # numba: retirada en la tarea 4.11 (cierra la deuda I2, abierta desde la
 # Fase 3). Cero usos en todo el repositorio, confirmado de nuevo antes de
 # quitarla (`grep -rn numba src/ tests/ scripts/ dashboard/`). numpy se
