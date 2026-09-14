@@ -1,5 +1,5 @@
 qiskit==1.0.2
-qiskit-aer==0.13.3
+qiskit-aer==0.17.2
 numpy==1.26.4
 scipy==1.13.0
 matplotlib==3.8.4
