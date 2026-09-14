@@ -1,4 +1,14 @@
-FROM python:3.11-slim-bookworm
+# La base va fijada por digest y no solo por etiqueta. "3.11-slim-bookworm"
+# es una etiqueta movil: apunta a una imagen distinta cada vez que Debian
+# publica parches, asi que dos construcciones separadas por unas semanas no
+# parten del mismo sitio. Este proyecto compara figuras por MD5 bit a bit y
+# presume de que "si funciona en Docker, funciona": eso solo es cierto si la
+# primera linea del Dockerfile nombra una imagen concreta.
+#
+# El digest corresponde a python:3.11-slim-bookworm. Para subirlo mas
+# adelante, resolver la etiqueta otra vez y sustituirlo aqui; hay que
+# regenerar las figuras en el mismo commit porque su MD5 puede moverse.
+FROM python:3.11-slim-bookworm@sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84
 
 # Dependencias del sistema para compilar liboqs y liboqs-python
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -40,14 +50,32 @@ COPY . .
 # cifrar_imagen" fallan en el dashboard y en pytest dentro del contenedor.
 RUN pip install --no-cache-dir -e .
 
-# TAREA 4.14: el CMD por defecto lanzaba "python main.py" (un placeholder del
-# setup inicial de la Fase 1, commit 5eac863, que solo imprime una linea y
-# termina). Con eso, el paso 4 del Quick Start del README
-# ("docker run --rm -it -p 8501:8501 qpcs") NO levantaba el dashboard: el
-# contenedor arrancaba, imprimia el mensaje y salia. Nadie lo habia probado
-# de forma automatica hasta el paso "Arranque rapido" de la CI (tarea 4.14),
-# que lo destapo. docker-compose.yml ya sobreescribia este comando para el
-# servicio "app" con las mismas flags (--server.address=0.0.0.0 es
-# obligatorio, ver su comentario); ahora es tambien el comportamiento por
-# defecto de la imagen, que es lo que el README promete.
+# Todo lo que hay encima de esta linea necesita root: instalar paquetes del
+# sistema, compilar liboqs y escribir en site-packages. Lo que va debajo, no.
+#
+# Un contenedor que sirve una aplicacion web como root es un riesgo gratuito:
+# si algo de la cadena falla, el proceso comprometido arranca con todos los
+# permisos dentro del contenedor. Streamlit no necesita ninguno.
+#
+# El UID 1000 no es arbitrario. El servicio "figuras" de docker-compose.yml
+# monta el repositorio del anfitrion dentro del contenedor y regenera los PNG
+# ahi; con el proceso corriendo como root, esos ficheros aparecian en la
+# maquina del anfitrion como root:root y no se podian borrar sin sudo. Es de
+# donde salia el .coverage de root que arrastraba el directorio de trabajo.
+# 1000 es el primer UID de usuario en Debian y en la practica coincide con el
+# del usuario del anfitrion en Linux y en WSL.
+RUN groupadd --gid 1000 qpcs \
+    && useradd --uid 1000 --gid 1000 --create-home --shell /bin/bash qpcs \
+    && chown -R qpcs:qpcs /app
+
+USER qpcs
+
+# El CMD por defecto levanta el dashboard, que es lo que el Quick Start del
+# README promete con "docker run --rm -it -p 8501:8501 qpcs". Durante mucho
+# tiempo apunto a un placeholder de la Fase 1 que solo imprimia una linea y
+# terminaba, asi que el contenedor arrancaba y se cerraba sin dashboard;
+# nadie lo detecto hasta que la CI empezo a comprobar el arranque de verdad.
+# El servicio "app" de docker-compose.yml repite el mismo comando con las
+# mismas banderas (--server.address=0.0.0.0 es obligatoria: ver su
+# comentario).
 CMD ["streamlit", "run", "dashboard/qkd_app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]

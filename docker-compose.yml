@@ -15,7 +15,7 @@ services:
     # --server.address=0.0.0.0 es OBLIGATORIO: con el localhost por defecto
     # el contenedor escucha solo dentro de si mismo y desde el navegador del
     # anfitrion no se ve nada aunque el puerto este publicado (la causa del
-    # 90% de los "a mi no me funciona el dashboard", seccion 5.9 de la guia).
+    # 90% de los "a mi no me funciona el dashboard").
     command: >
       streamlit run dashboard/qkd_app.py
       --server.address=0.0.0.0

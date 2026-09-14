@@ -9,7 +9,7 @@ matplotlib==3.8.4
 # puro, no compila nada, y Qiskit no la arrastra por defecto.
 pylatexenc==2.10
 liboqs-python==0.16.0
-cryptography==42.0.5
+cryptography==48.0.1
 streamlit==1.33.0
 # pyarrow es dependencia transitiva de streamlit; sin pinear, pip resolvia
 # la 25.x (año y medio posterior a streamlit 1.33), que segfaultea al

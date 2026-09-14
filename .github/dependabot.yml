@@ -1,0 +1,45 @@
+# Avisos automaticos de dependencias (hallazgo B6 de la auditoria previa a la
+# publicacion).
+#
+# El proyecto fija todas las versiones con == y eso es deliberado: las figuras
+# de docs/img/ se comparan por MD5 bit a bit en la CI, asi que subir una
+# version puede cambiar un PNG y poner la CI en rojo. Es un coste asumido a
+# cambio de reproducibilidad.
+#
+# El problema de ese modelo no son los pines: es enterarse tarde. Sin nadie
+# mirando, un aviso de seguridad sobre cryptography o sobre pillow puede pasar
+# meses sin que el equipo lo sepa. Dependabot no sube nada por su cuenta: abre
+# un pull request con el cambio y la CI decide. Si una subida mueve el MD5 de
+# una figura, el PR se pone rojo y ahi esta la conversacion, que es justo
+# donde queremos tenerla.
+#
+# Una vez al mes y con el tope de PR abiertos bajo: somos tres y esto no puede
+# convertirse en ruido de fondo que se acabe ignorando.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencias"
+    commit-message:
+      prefix: "deps"
+    # Agrupar los parches en un solo PR: veinte pull requests de version de
+    # parche al mes acaban sin leerse. Las subidas de version mayor y menor
+    # van sueltas, que son las que hay que mirar una por una.
+    groups:
+      parches:
+        update-types:
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencias"
+    commit-message:
+      prefix: "ci"

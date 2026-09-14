@@ -13,11 +13,31 @@ on:
     # limpio cada semana para destaparlo antes de que lo haga un PR.
     - cron: "0 4 * * 1"
 
+# PERMISOS DEL GITHUB_TOKEN, declarados y al minimo.
+#
+# Sin este bloque, el token que GitHub inyecta en cada ejecucion hereda el
+# permiso por defecto del repositorio, que puede ser de escritura sobre todo:
+# contenido, issues, releases, paquetes. Nada de lo que hace esta CI necesita
+# escribir: clona el repositorio, construye una imagen y corre pruebas dentro.
+# Declararlo aqui lo deja en solo lectura para TODOS los jobs, y el que
+# necesite mas (publicar la imagen en GHCR) se lo amplia en su propio bloque.
+#
+# Esto importa mas ahora que el repositorio es publico: cualquiera puede abrir
+# un pull request contra esta CI, y un token de escritura en manos de un
+# workflow que ejecuta codigo de un PR es la via clasica para escribir en el
+# repositorio desde fuera.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Las acciones de terceros van fijadas por SHA, no por etiqueta.
+      # actions/checkout@v4 apunta a donde su autor decida en cada
+      # momento; el SHA es inmutable. El numero de version va al lado
+      # para saber que se esta usando sin tener que resolver el hash.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # MIGRACION A DOCKER (Fase 2, tarea 2.1). Hasta ahora la CI instalaba
       # requirements-qkd.txt (un subconjunto minimo) en el runner para no tener
@@ -40,10 +60,10 @@ jobs:
       # esta caché se añade JUNTO CON el job build-limpio de abajo
       # (--no-cache, semanal), nunca la primera sin el segundo.
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Build image (con cache)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
         with:
           context: .
           load: true
@@ -98,8 +118,8 @@ jobs:
         run: docker run --rm qpcs:ci pytest tests/ -v -m "slow"
 
       # DETERMINISMO DEL MODULO 3 (Fase 3, tarea 3.9). Es EL paso de CI de
-      # este modulo, y protege contra el unico fallo del capitulo 4 de la guia
-      # que es a la vez catastrofico y silencioso: que la orbita en coma
+      # este modulo, y protege contra el unico fallo que es a la vez
+      # catastrofico y silencioso: que la orbita en coma
       # flotante salga distinta en dos entornos. Cuando eso pasa no hay
       # excepcion ni aviso, sale una imagen que parece ruido -que es
       # exactamente lo que sale cuando el descifrado funciona bien y tambien
@@ -234,14 +254,43 @@ jobs:
       - name: Regla de oro (tests citados en la teoria existen de verdad)
         run: bash scripts/check_regla_de_oro.sh
 
+      # HALLAZGO B6 de la auditoria previa a la publicacion: el proyecto fija
+      # todas las versiones con == y no tenia nada vigilando los avisos de
+      # seguridad. Este paso cruza lo que hay instalado en la imagen contra
+      # la base de avisos publica y lo deja escrito en el log de cada
+      # ejecucion.
+      #
+      # NO TUMBA LA CI, Y ES A PROPOSITO. Los pines sostienen figuras que se
+      # comparan por MD5 bit a bit unas lineas mas arriba: subir una version
+      # puede cambiar un PNG, asi que cada actualizacion es una decision con
+      # trabajo detras y no algo que se hace para poner un paso en verde.
+      # Que falle aqui obligaria a elegir entre subir a ciegas o silenciar el
+      # paso, y las dos salidas son peores que leer el informe.
+      #
+      # Lo que convierte esto en un proceso y no en un log que nadie mira es
+      # .github/dependabot.yml: Dependabot abre un pull request por cada
+      # actualizacion y esa CI si es vinculante.
+      - name: Avisos de seguridad de las dependencias (informativo)
+        continue-on-error: true
+        run: |
+          docker run --rm qpcs:ci pip-audit --progress-spinner off \
+            | tee /tmp/pip-audit.txt
+          {
+            echo "## Avisos de seguridad de las dependencias"
+            echo
+            echo '```'
+            cat /tmp/pip-audit.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # TAREA 4.14: gemelo de los pasos de figuras de arriba, para el Modulo
       # 4, que no lo tenia. OJO, asimetria real y documentada: de las cuatro
       # figuras del modulo, tres son deterministas (detector_espectro.png,
       # detector_filtro.png, detector_estimadores.png) pero detector_embudo.png
       # (fig. 3) NO lo es -su propio docstring en make_detector_plots.py lo
       # dice: la semilla de Toeplitz es de os.urandom sin sembrar, decision
-      # consciente de la guia cap. 4.4-. Comparar esa por MD5 pondria la CI
-      # roja al azar. El script se ejecuta igualmente (si revienta, el paso
+      # consciente-. Comparar esa por MD5 pondria la CI roja al azar.
+      # El script se ejecuta igualmente (si revienta, el paso
       # falla: eso ya cubre "se regenera sin reventar"), pero detector_embudo.png
       # queda fuera de la lista que se compara por MD5.
       #
@@ -271,6 +320,73 @@ jobs:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Build image (sin cache, para destapar lo que la cache esconde)
         run: docker build --no-cache -t qpcs:limpio .
+
+  # =========================================================================
+  # DECISION B1 (cerrada el 13 de septiembre de 2026): la imagen se publica.
+  #
+  # El arranque rapido del README compilaba liboqs en la maquina de quien
+  # probaba el proyecto: entre diez y diecisiete minutos de espera antes de
+  # ver nada. liboqs es una biblioteca en C sin wheel y no hay forma de
+  # acelerar esa compilacion desde aqui. Lo que si se puede es compilarla una
+  # sola vez, aqui, y que quien llegue se descargue el resultado.
+  #
+  # Este job publica la imagen en GitHub Container Registry cada vez que algo
+  # entra en main y los tests pasan. Nada mas lo dispara: en un pull request
+  # no corre, porque un PR de alguien de fuera no debe poder escribir en el
+  # registro del proyecto.
+  #
+  # Dos etiquetas a proposito:
+  #   - :main, que se mueve y es la que apunta el README.
+  #   - :sha-<commit>, que no se mueve nunca y permite reproducir una
+  #     ejecucion concreta meses despues. Sin ella, "funcionaba con la imagen
+  #     de septiembre" no es una frase verificable.
+  # =========================================================================
+  publicar-imagen:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      # El unico job que necesita escribir, y solo en paquetes. El resto del
+      # workflow se queda con el contents: read declarado arriba.
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      # GITHUB_TOKEN, no un secreto nuestro. GitHub lo genera para esta
+      # ejecucion, vale solo para este repositorio y caduca al terminar el
+      # job: no hay ninguna credencial que rotar ni que se pueda filtrar.
+      - name: Entrar en GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # El nombre del paquete va en minusculas porque GHCR las exige, y el
+      # del repositorio ya lo esta; se fuerza igualmente para que no dependa
+      # de como alguien escriba el nombre de la organizacion manana.
+      - name: Nombre de la imagen en minusculas
+        id: nombre
+        run: echo "imagen=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      # Mismo contexto y mismo Dockerfile que el job "test", y la misma cache
+      # de Buildx: las capas ya construidas ahi se reutilizan aqui, asi que
+      # publicar cuesta segundos y no otro build de liboqs entero. Y la
+      # imagen publicada es, capa por capa, la que acaba de pasar los tests.
+      - name: Construir y publicar
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.nombre.outputs.imagen }}:main
+            ${{ steps.nombre.outputs.imagen }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
