@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-# El nombre se queda en "qpcs-qkd" aunque desde la Fase 2 el paquete instale
+# El nombre se queda en "qpcs-qkd" aunque el paquete instale
 # tambien src/pqc: cambiarlo renombra la distribucion instalada y deja un
 # .egg-info huerfano en cada entorno ya creado, a cambio de nada. Lo que si
 # habia que corregir es la descripcion, que seguia anunciando solo el Modulo 1.
@@ -40,9 +40,9 @@ warn_unused_ignores = true
 # eso no rompe mypy porque los tipos de las firmas ya son correctos.
 
 [[tool.mypy.overrides]]
-# Librerias sin stubs de tipos publicados. scipy se anadio en la tarea 1.6
-# (matmul_toeplitz); oqs (liboqs-python) en la Fase 2 (modulo pqc: kem.py y
-# sig.py lo importan para ML-KEM / ML-DSA en crudo).
+# Librerias sin stubs de tipos publicados. scipy por matmul_toeplitz; oqs
+# (liboqs-python) por el modulo pqc (kem.py y sig.py lo importan para
+# ML-KEM / ML-DSA en crudo).
 module = ["qiskit.*", "qiskit_aer.*", "scipy.*", "oqs.*"]
 ignore_missing_imports = true
 

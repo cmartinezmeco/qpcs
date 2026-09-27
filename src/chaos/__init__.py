@@ -1,4 +1,4 @@
-"""API publica del paquete chaos (Fase 3: cifrado de imagenes con caos
+"""API publica del paquete chaos (cifrado de imagenes con caos
 determinista). Solo lo que se exporta aqui es "publico"; el resto son
 detalles de implementacion.
 """

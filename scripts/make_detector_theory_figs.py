@@ -10,8 +10,8 @@ modulo):
 
 Reglas del proyecto que este script respeta:
   - Nada de MathText ("$...$") en las etiquetas: se usan caracteres Unicode
-    (alfa, sigma, flechas). Es el bug que la Fase 1 documento y que reaparecio
-    en la Fase 2 con el formateador logaritmico.
+    (alfa, sigma, flechas). Es un bug conocido, que
+    tambien aparece con el formateador logaritmico.
   - dpi=150, fondo blanco, sin titulo dentro de la figura (el pie va en el
     documento que la enlaza).
   - Sin datos: son esquemas, no graficas, asi que no hay semilla que fijar.

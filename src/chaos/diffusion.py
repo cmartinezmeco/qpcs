@@ -34,8 +34,8 @@ def difundir_adelante(p: Keystream, k: Keystream, iv: int) -> Keystream:
         c: el resultado difundido, misma longitud que p.
 
     Raises:
-        ValueError: si k es mas corto que p. Es el tercero de los errores
-            tipicos de la tarea 3.6: un keystream
+        ValueError: si k es mas corto que p. Es uno de los errores
+            tipicos: un keystream
             regenerado con otra longitud desalinea el flujo desde el primer
             byte, y truncar en silencio convertiria eso en ruido en vez de
             en un error.

@@ -1,4 +1,4 @@
-"""tests/qkd/test_scaffold.py — tarea 1.1.
+"""tests/qkd/test_scaffold.py — andamiaje del modulo 1.
 
 Comprueba que la API publica del paquete qkd existe. Si alguien renombra o
 borra algo sin avisar al equipo, este test se pone rojo.

@@ -5,8 +5,8 @@ invariante del mapa logistico con r=4 es rho(x) = 1/(pi*sqrt(x(1-x))), no
 uniforme. Los bits de orden alto de x heredan ese sesgo; los de orden bajo
 (en torno a la posicion 32) son, a efectos practicos, uniformes.
 
-EL AVISO DE CICLO CORTO (tarea 3.9)
------------------------------------
+EL AVISO DE CICLO CORTO
+-----------------------
 Un float64 tiene un numero finito de estados, asi que CUALQUIER orbita en
 coma flotante es periodica: la unica pregunta es cual es su periodo. Si la
 orbita cicla antes de agotar la imagen, el keystream se repite y el cifrado

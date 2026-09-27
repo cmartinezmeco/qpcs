@@ -1,4 +1,4 @@
-"""scripts/bench_chaos.py — tareas 3.9 y 3.10 (Carlos). Banco de medidas del modulo 3.
+"""scripts/bench_chaos.py — Banco de medidas del modulo 3.
 
     python scripts/bench_chaos.py             # etapas + cadena completa
     python scripts/bench_chaos.py --ciclos    # ademas, la longitud del ciclo (lento)
@@ -52,8 +52,8 @@ from chaos import (
 )
 from chaos.cipher import _material, _valores_de_permutacion
 
-# Lados de las imagenes cuadradas que se miden. 512 es el tamano del criterio
-# de cierre de la tarea 3.6 ("cifra 512x512 en menos de 2 segundos").
+# Lados de las imagenes cuadradas que se miden. 512 es el tamano de
+# referencia ("cifra 512x512 en menos de 2 segundos").
 LADOS = (128, 256, 512)
 # Lado para Lorenz: RK4 evalua el campo cuatro veces por paso sobre arrays de
 # NumPy y va dos ordenes de magnitud mas lento por muestra que el mapa

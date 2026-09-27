@@ -1,4 +1,4 @@
-"""tests/chaos/test_baseline.py - tarea 3.8, el contraste honesto.
+"""tests/chaos/test_baseline.py - el contraste honesto.
 
 La tesis del modulo en forma de test: el esquema caotico, AES-256-GCM y
 un flujo trivial de SHA256(clave || contador) pasan EXACTAMENTE las

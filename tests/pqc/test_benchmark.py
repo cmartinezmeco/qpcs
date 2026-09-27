@@ -1,4 +1,4 @@
-"""tests/pqc/test_benchmark.py - tareas 2.7 / 2.8 (el benchmark del modulo).
+"""tests/pqc/test_benchmark.py - el benchmark del modulo.
 
 Un benchmark no se puede testear por sus VALORES: los milisegundos dependen de
 la maquina, de la carga del sistema y del planificador, y un test que exigiera
@@ -9,8 +9,8 @@ que hay aqui, son tres cosas:
      mecanismo, su operacion, sus repeticiones y las tres cifras (media, sigma
      y p50) coherentes entre si.
   2. Que la sigma es DERIVADA de la muestra: con una sola repeticion vale 0.0
-     (no hay dispersion que medir) y con varias es positiva. Es la regla de la
-     Fase 1 -toda barra de error sale de un calculo- convertida en test.
+     (no hay dispersion que medir) y con varias es positiva. Es la regla del
+     proyecto -toda barra de error sale de un calculo- convertida en test.
   3. Los TAMANOS, que si son deterministas: los fija FIPS 203/204 y el modulo
      RSA, asi que aqui si se puede exigir el numero exacto.
 

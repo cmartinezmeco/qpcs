@@ -1,7 +1,6 @@
 """tests/chaos/conftest.py - fixtures compartidas del modulo de caos.
 
-Semilla fija siempre, nunca np.random.default_rng() a pelo. Regla
-heredada de la Fase 1.
+Semilla fija siempre, nunca np.random.default_rng() a pelo.
 """
 
 from __future__ import annotations

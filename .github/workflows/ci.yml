@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
   schedule:
-    # Construccion semanal SIN cache (tarea 4.14). La cache de Buildx puede
+    # Construccion semanal SIN cache. La cache de Buildx puede
     # esconder un fallo real (ver el comentario del paso "Build image (con
     # cache)" mas abajo): si una dependencia sin version fijada desaparece
     # de su indice, una cache de dias antes lo tapa. Este job corre en
@@ -39,26 +39,21 @@ jobs:
       # para saber que se esta usando sin tener que resolver el hash.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # MIGRACION A DOCKER (Fase 2, tarea 2.1). Hasta ahora la CI instalaba
-      # requirements-qkd.txt (un subconjunto minimo) en el runner para no tener
-      # que compilar liboqs. El modulo 2 (PQC) depende de liboqs, que es una
-      # libreria en C SIN wheel: hay que compilarla. Replicar ese build en el
+      # La CI corre dentro de Docker. El modulo 2 (PQC) depende de liboqs, que
+      # es una libreria en C SIN wheel: hay que compilarla. Replicar ese build en el
       # runner duplicaria la logica del Dockerfile y acabaria divergiendo de
       # el. El Dockerfile ya es la fuente de verdad del proyecto ("si funciona
       # en Docker, funciona") e instala requirements.txt + requirements-dev.txt
       # completos (liboqs-python, cryptography, qiskit, ruff/black/mypy...), asi
-      # que la CI ahora construye esa imagen y corre TODO dentro de ella. Por
-      # eso desaparece requirements-qkd.txt.
-      # TAREA 4.14: caché de Docker en la CI (issue #36, deuda I1 desde la
-      # Fase 2). Cada ejecución recompilaba liboqs desde cero: 9-16 min por
-      # PR. Buildx con cache-from/cache-to type=gha reutiliza las capas del
-      # cache de GitHub Actions entre ejecuciones.
+      # que la CI construye esa imagen y corre TODO dentro de ella.
+      # Caché de Docker en la CI: sin ella cada ejecución recompila liboqs
+      # desde cero (9-16 min por PR). Buildx con cache-from/cache-to type=gha
+      # reutiliza las capas del cache de GitHub Actions entre ejecuciones.
       #
-      # LA CACHE PUEDE ESCONDER UN FALLO REAL: liboqs-python 0.14.1
-      # desapareció de PyPI en su día y la CI de una máquina siguió en verde
-      # porque Docker reutilizaba una capa cacheada de días antes. Por eso
-      # esta caché se añade JUNTO CON el job build-limpio de abajo
-      # (--no-cache, semanal), nunca la primera sin el segundo.
+      # LA CACHE PUEDE ESCONDER UN FALLO REAL: si una dependencia desaparece
+      # de PyPI, Docker puede reutilizar una capa cacheada de días antes y la
+      # CI sigue en verde. Por eso esta caché va JUNTO CON el job build-limpio
+      # de abajo (--no-cache, semanal), nunca la primera sin el segundo.
       - name: Set up Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
@@ -71,15 +66,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # HALLAZGO DE LA TAREA 4.14: pyproject.toml tiene [tool.ruff] configurado
-      # desde el principio del proyecto, pero nunca hubo un paso de CI que lo
-      # ejecutara. Ni una sola vez. Es mas grave que el hallazgo N2 de la
-      # auditoria del Modulo 2 (que solo señalaba que ruff no cubria scripts/
-      # ni dashboard/): en realidad no cubria nada, ni siquiera src/. El
-      # arbol ya estaba limpio al comprobarlo (con la excepcion de dos avisos
-      # en scripts/make_detector_theory_figs.py, corregidos en el mismo PR
-      # que añade este paso), asi que activarlo no rompe nada retroactivamente
-      # - pero a partir de aqui, cualquier violacion futura si para la CI.
+      # Ruff con la configuracion [tool.ruff] de pyproject.toml. Cualquier
+      # violacion para la CI.
       - name: Ruff (lint)
         run: docker run --rm qpcs:ci ruff check src/ tests/ scripts/ dashboard/
 
@@ -97,9 +85,8 @@ jobs:
 
       # --cov=src/pqc,src/chaos,src/detector y NUNCA --cov=src: el umbral
       # es el criterio de cierre de los MODULOS 2, 3 y 4. Medir src/ entero
-      # impondria un minimo a la Fase 1, que esta cerrada y no es objeto de
-      # este umbral. El modulo 4 arranca aqui con --cov-fail-under=85 desde
-      # la tarea 4.1, mismo patron que el modulo 3.
+      # impondria un minimo al modulo 1, que no es objeto de este umbral.
+      # El modulo 4 usa --cov-fail-under=85, mismo patron que el modulo 3.
       - name: Pytest (fast suite + coverage de los modulos 2, 3 y 4)
         run: >
           docker run --rm qpcs:ci pytest tests/ -v -m "not slow"
@@ -117,7 +104,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: docker run --rm qpcs:ci pytest tests/ -v -m "slow"
 
-      # DETERMINISMO DEL MODULO 3 (Fase 3, tarea 3.9). Es EL paso de CI de
+      # DETERMINISMO DEL MODULO 3. Es EL paso de CI de
       # este modulo, y protege contra el unico fallo que es a la vez
       # catastrofico y silencioso: que la orbita en coma
       # flotante salga distinta en dos entornos. Cuando eso pasa no hay
@@ -187,17 +174,17 @@ jobs:
             md5sum -c /tmp/figuras.md5
           '
 
-      # El gemelo del paso anterior para el modulo 2, que no lo tenia. Las tres
-      # figuras de la Fase 2 son igual de deterministas que las de la Fase 1:
-      # las de tiempos y tamanos se dibujan del JSON versionado y la de Shor
-      # lleva SEMILLA = 42 fija. La asimetria no tenia razon tecnica.
+      # El gemelo del paso anterior para el modulo 2. Las tres figuras del
+      # modulo 2 son igual de deterministas que las del modulo 1: las de
+      # tiempos y tamanos se dibujan del JSON versionado y la de Shor
+      # lleva SEMILLA = 42 fija.
       #
       # SIN --medir a proposito: asi el script solo lee docs/benchmark_pqc.json
       # y redibuja. Con --medir volveria a medir dentro del runner (cifras de
       # otra maquina, un minuto de CPU) y reescribiria el JSON, que es
       # justamente lo que no debe pasar en una comprobacion de reproducibilidad.
       #
-      # Es un paso INDEPENDIENTE del de la Fase 1: no toca sus tres ficheros ni
+      # Es un paso INDEPENDIENTE del del modulo 1: no toca sus tres ficheros ni
       # su comando. Si alguna vez se pone rojo, el fallo esta en el modulo 2.
       - name: Figuras PQC reproducibles bit a bit
         run: |
@@ -211,14 +198,11 @@ jobs:
             md5sum -c /tmp/figuras_pqc.md5
           '
 
-      # TAREA 4.14: el arranque rapido del README (seccion "Quick start") nunca
-      # se habia probado de forma automatica, y al probarlo aqui aparecio un
-      # bug real: el CMD por defecto del Dockerfile era "python main.py" (un
-      # placeholder desde el primer commit, Fase 1) en vez de Streamlit, asi
-      # que el paso 4 del Quick Start ("docker run --rm -it -p 8501:8501
-      # qpcs", sin comando explicito) NO levantaba el dashboard. Corregido en
-      # el mismo PR (ver Dockerfile). El comando de aqui es LITERAL el del
-      # README, sin -it (exige una TTY que no hay en el runner). Se lanza en
+      # Comprueba el arranque rapido del README (seccion "Quick start"): que
+      # "docker run --rm -it -p 8501:8501 qpcs", sin comando explicito,
+      # levanta el dashboard (ver el CMD del Dockerfile). El comando de
+      # aqui es LITERAL el del README, sin -it (exige una TTY que no hay en
+      # el runner). Se lanza en
       # segundo plano, se espera a que Streamlit responda en /_stcore/health
       # (su endpoint de salud interno) con un timeout, y se para el
       # contenedor al final pase lo que pase.
@@ -238,15 +222,15 @@ jobs:
           docker stop qpcs-arranque-rapido
           exit 1
 
-      # TAREA 4.14: el README nunca se comprobaba automaticamente. Solo
+      # Enlaces del README. Solo
       # enlaces relativos (internos al repo); los http(s) externos se dejan
       # fuera a proposito, para no depender de la disponibilidad de sitios de
       # terceros ni de rate limits.
       - name: Enlaces del README resuelven a ficheros que existen
         run: bash scripts/check_enlaces_readme.sh
 
-      # TAREA 4.14: la regla de oro (D1, tarea 4.11) pasa de comprobacion
-      # manual a paso de CI. El script vive en scripts/check_regla_de_oro.sh
+      # La regla de oro como paso de CI. El script vive en
+      # scripts/check_regla_de_oro.sh
       # (no embebido aqui: era shell anidado dentro de docker dentro de YAML,
       # dificil de leer y de probar). Corre directo en el runner porque solo
       # toca ficheros de texto ya presentes tras el checkout, no hace falta
@@ -254,10 +238,10 @@ jobs:
       - name: Regla de oro (tests citados en la teoria existen de verdad)
         run: bash scripts/check_regla_de_oro.sh
 
-      # HALLAZGO B6 de la auditoria previa a la publicacion: el proyecto fija
-      # todas las versiones con == y no tenia nada vigilando los avisos de
-      # seguridad. Este paso cruza lo que hay instalado en la imagen contra
-      # la base de avisos publica y lo deja escrito en el log de cada
+      # El proyecto fija todas las versiones con ==, asi que hace falta algo
+      # vigilando los avisos de seguridad. Este paso cruza lo que hay
+      # instalado en la imagen contra la base de avisos publica y lo deja
+      # escrito en el log de cada
       # ejecucion.
       #
       # NO TUMBA LA CI, Y ES A PROPOSITO. Los pines sostienen figuras que se
@@ -283,8 +267,8 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # TAREA 4.14: gemelo de los pasos de figuras de arriba, para el Modulo
-      # 4, que no lo tenia. OJO, asimetria real y documentada: de las cuatro
+      # Gemelo de los pasos de figuras de arriba, para el Modulo
+      # 4. OJO, asimetria real y documentada: de las cuatro
       # figuras del modulo, tres son deterministas (detector_espectro.png,
       # detector_filtro.png, detector_estimadores.png) pero detector_embudo.png
       # (fig. 3) NO lo es -su propio docstring en make_detector_plots.py lo
@@ -295,7 +279,7 @@ jobs:
       # queda fuera de la lista que se compara por MD5.
       #
       # Los dos esquemas de teoria (detector_cadena_lectura.png,
-      # detector_estrategia.png, tarea 4.10) SI son deterministas -son
+      # detector_estrategia.png) SI son deterministas -son
       # diagramas sin datos, sin RNG- y entran en el MD5 estricto.
       - name: Figuras del detector reproducibles bit a bit (menos el embudo)
         run: |

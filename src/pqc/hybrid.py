@@ -1,4 +1,4 @@
-"""src/pqc/hybrid.py - tarea 2.5 (Marco). Cifrado hibrido real (KEM + AEAD).
+"""src/pqc/hybrid.py - Cifrado hibrido real (KEM + AEAD).
 
 Un KEM (ver `kem.py`) solo acuerda un secreto corto; no cifra mensajes. El
 esquema hibrido estandar convierte ese secreto en cifrado autenticado de
@@ -14,7 +14,7 @@ HKDF y descifra. El resultado empaquetado es un `MensajeCifrado` (ver
 
 Es "hibrido" en el sentido KEM+simetrico; combinarlo ademas con un KEM clasico
 (X25519) para defensa en profundidad seria una capa extra fuera del alcance de
-esta tarea. HKDF y AES-GCM salen de la libreria `cryptography`.
+este modulo. HKDF y AES-GCM salen de la libreria `cryptography`.
 """
 
 from __future__ import annotations

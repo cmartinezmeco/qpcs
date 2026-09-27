@@ -1,4 +1,4 @@
-"""tests/chaos/test_diffusion.py - tarea 3.6, la difusion encadenada.
+"""tests/chaos/test_diffusion.py - la difusion encadenada.
 
 Aqui solo se prueba la etapa: la formula, que se deshace exactamente y
 que la avalancha va hacia adelante y no hacia atras. El cifrado completo
@@ -100,7 +100,7 @@ def test_el_iv_forma_parte_de_la_cadena():
 @pytest.mark.parametrize("funcion", [difundir_adelante, deshacer_adelante])
 def test_longitudes_distintas_dan_error_y_no_truncan(funcion):
     """Regenerar el keystream con distinta longitud desalinea el flujo
-    desde el primer byte. Es uno de los tres errores tipicos de la tarea
+    desde el primer byte. Es uno de los errores tipicos
     y tiene que doler, no truncar en silencio."""
 
     p, k = _datos(100, 9), _datos(64, 10)

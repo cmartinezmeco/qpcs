@@ -1,4 +1,4 @@
-"""src/pqc/benchmark.py - tarea 2.7 (Carlos). Medidas de tiempo y tamano.
+"""src/pqc/benchmark.py - Medidas de tiempo y tamano.
 
 El entregable del modulo 2 es la comparacion cuantitativa clasico vs
 post-cuantico: cuanto tarda cada operacion y cuanto ocupan claves, ciphertexts
@@ -172,7 +172,7 @@ OPS_FIRMA_API: tuple[Operacion, ...] = ("sign", "verify")
 # contrato mapean directos a diccionarios, se preservan los tipos (float vs
 # str) sin ambiguedad y no hay que pelearse con el separador decimal del
 # locale espanol. Vive en docs/ (junto a docs/img/, la salida de las figuras)
-# porque es un artefacto de presentacion: las figuras de la tarea 2.9 leen de
+# porque es un artefacto de presentacion: las figuras leen de
 # aqui y no vuelven a medir cada vez que se regenera un PNG.
 RUTA_JSON = Path(__file__).resolve().parents[2] / "docs" / "benchmark_pqc.json"
 
@@ -708,7 +708,7 @@ def tabla_medidas(
 
     `mecanismo_rsa` deja cambiar el tamano de modulo, para comparar contra otro
     nivel de seguridad (RSA-2048 son ~112 bits, RSA-3072 ~128) y para que el
-    smoke test de la tarea 2.8 pueda usar un modulo pequeno sin pasarse diez
+    smoke test pueda usar un modulo pequeno sin pasarse diez
     segundos generando claves.
     """
     filas: list[Medida] = []
@@ -828,7 +828,7 @@ def _valor_literal(valor: object, literal: object, campo: str) -> str:
 def cargar_json(ruta: Path = RUTA_JSON) -> tuple[list[Medida], list[Tamanos]]:
     """Lee el JSON del benchmark y reconstruye (medidas, tamanos).
 
-    Es la puerta por la que las figuras (tarea 2.9) y el dashboard consumen
+    Es la puerta por la que las figuras y el dashboard consumen
     los resultados SIN volver a medir: regenerar un PNG no tiene por que
     costar un minuto de CPU ni dar numeros distintos cada vez.
 

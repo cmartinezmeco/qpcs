@@ -1,4 +1,4 @@
-"""tests/pqc/test_kem.py - tarea 2.5 (ML-KEM en crudo).
+"""tests/pqc/test_kem.py - ML-KEM en crudo.
 
 El KEM pelado: generar par, encapsular, desencapsular. El sobre completo
 (KEM + HKDF + AES-GCM sobre un mensaje real) se prueba en test_hybrid.py.

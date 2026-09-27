@@ -1,4 +1,4 @@
-"""src/qkd/bb84.py — tarea 1.3 (Gonzalo). Nucleo BB84 sin Eve."""
+"""src/qkd/bb84.py — Nucleo BB84 sin Eve."""
 
 from __future__ import annotations
 
@@ -143,7 +143,7 @@ def run_bb84(
     elif backend == "qiskit":
         if eve_rate > 0.0:
             # Eve solo se modela como ataque vectorizado en el backend
-            # numpy (ver eve.py, tarea 1.4). No hay circuito de Eve a
+            # numpy (ver eve.py). No hay circuito de Eve a
             # nivel de puertas: lanzamos un error explicito en vez de
             # devolver un QBER incorrecto en silencio.
             raise NotImplementedError(

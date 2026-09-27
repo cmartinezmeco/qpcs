@@ -1,4 +1,4 @@
-"""src/pqc/sig.py - tarea 2.6 (Marco). ML-DSA en crudo via liboqs.
+"""src/pqc/sig.py - ML-DSA en crudo via liboqs.
 
 ML-DSA (FIPS 204, antes "Dilithium") es el esquema de firma post-cuantico
 basado en reticulos. Firma un mensaje con la clave privada y cualquiera lo
@@ -10,7 +10,7 @@ oqs.Signature, como el KEM, se usa SIEMPRE como context manager (ver
 
 Sin np.random.Generator: liboqs firma con su propio CSPRNG interno (ML-DSA usa
 aleatoriedad "hedged" por defecto) y las claves deben ser impredecibles. Los
-tests (tarea 2.6) comprueban propiedades: una firma valida verifica, una firma
+tests comprueban propiedades: una firma valida verifica, una firma
 o un mensaje manipulados NO verifican.
 
 Firmar NO es cifrar: el mensaje viaja en claro dentro del `ResultadoFirma`. La
@@ -61,7 +61,7 @@ def firmar(mensaje: bytes, mecanismo: str = "ML-DSA-65") -> ResultadoFirma:
 
     Con ML-DSA-65: 1952 bytes de clave publica y 3309 de firma. Frente a los
     64 bytes de una firma Ed25519, unas 50 veces mas: el precio real de la
-    migracion, que la tabla de la tarea 2.7 pone encima de la mesa.
+    migracion, que la tabla del benchmark pone encima de la mesa.
     """
     with abrir_firma(mecanismo) as firmante:
         clave_publica = firmante.generate_keypair()

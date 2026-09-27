@@ -112,7 +112,7 @@ def test_encuentra_los_50_hz(senal_sintetica):
 
 
 def test_alfa_de_ruido_blanco_es_cero_con_la_funcion_del_modulo(rng):
-    """Caso borde de la tarea 4.8: alfa ajustado sobre ruido blanco tiene
+    """Caso borde: alfa ajustado sobre ruido blanco tiene
     que salir ~0, no un valor espurio. A diferencia del test de mas
     arriba, este llama a ajustar_alfa() del modulo, no a una regresion
     escrita aqui: el caso borde es del codigo, no de scipy.
@@ -120,8 +120,7 @@ def test_alfa_de_ruido_blanco_es_cero_con_la_funcion_del_modulo(rng):
     Tolerancia DERIVADA: el propio ajuste devuelve el error estandar de
     la pendiente, y se exige que el cero este dentro de 4 de esos errores.
 
-    OJO CON EL RANGO (esto es un aviso para la tarea 4.4, no un arreglo
-    aqui): types.py documenta RANGO_ALFA como "fraccion de la frecuencia
+    OJO CON EL RANGO: types.py documenta RANGO_ALFA como "fraccion de la frecuencia
     de Nyquist", pero ajustar_alfa compara ese rango contra frecuencias en
     Hz. Con fs = 1000 Hz, RANGO_ALFA = (1e-4, 1e-2) no contiene ningun bin
     del espectro y la funcion devuelve (0.0, 0.0) por la salida de
@@ -141,9 +140,9 @@ def test_alfa_de_ruido_blanco_es_cero_con_la_funcion_del_modulo(rng):
 
 
 def test_fano_y_picos_del_modulo_sobre_la_senal_sintetica(senal_sintetica):
-    """Cierra el caso borde anterior por el otro lado: las tres medidas de
-    la 4.4 (alfa, picos y Fano) llamadas de verdad sobre la fixture, que
-    es la forma de saber que la cadena de la tarea 4.8 se apoya en las
+    """Cierra el caso borde anterior por el otro lado: las tres medidas
+    (alfa, picos y Fano) llamadas de verdad sobre la fixture, que
+    es la forma de saber que la cadena se apoya en las
     funciones del modulo y no en reimplementaciones de los tests."""
     datos, verdad = senal_sintetica
     fs = 40_000.0

@@ -14,7 +14,7 @@ UNA ACLARACION DE UNIDADES, QUE ES DONDE MAS FACIL ES EQUIVOCARSE
 ------------------------------------------------------------------
 Los tres estimadores devuelven bits de entropia POR SIMBOLO, no por bit:
 un simbolo aqui es una muestra digitalizada de BITS_BAJOS bits, asi que su
-maximo es BITS_BAJOS (4 con el contrato), no 1. La formula de la tarea 4.7
+maximo es BITS_BAJOS (4 con el contrato), no 1. La formula de extraccion
 esta escrita con la min-entropia por BIT, y la conversion es la identidad
 n_bits * H_por_bit = n_simbolos * H_por_simbolo, que extraccion.py hace
 explicita y documenta.
@@ -36,7 +36,7 @@ residual. Binarizar primero reparte esa correlacion entre los bits de cada
 muestra, y una cadena de Markov de orden 1 sobre bits ya no la ve.
 
 Y una tercera cosa que hay que decir aqui y repetir en las limitaciones
-(tarea 4.12): SP 800-90B define diez estimadores y pide del orden de 10^6
+(docs/limitaciones.md): SP 800-90B define diez estimadores y pide del orden de 10^6
 muestras para una evaluacion completa. Esto son tres estimadores sobre
 una muestra, no una certificacion.
 """

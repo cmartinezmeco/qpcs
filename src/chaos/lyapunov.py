@@ -109,17 +109,11 @@ def espectro_lyapunov_lorenz(
         # EN PARALELO, el mismo numero de pasos cada una. Las cuatro
         # arrancan del mismo punto temporal y avanzan el mismo tau.
         #
-        # BUG ENCONTRADO AQUI (investigacion completa en el PR de la
-        # tarea 3.4): la version original
-        # integraba la referencia un tau, y LUEGO integraba las
-        # perturbadas OTRO tau mas desde ahi, comparando al final contra
-        # la referencia SIN ese segundo tau. Eso compara dos puntos con
-        # un tau entero de desfase temporal en vez de comparar la misma
-        # ventana temporal. Con lambda_1 ~ 0.9 y tau=0.5 ese desfase
-        # bastaba para que lambda_1 saliera ~42 en vez de ~0.9: NO era
-        # un problema de precision ni de "salirse del regimen lineal",
-        # era comparar el minuto 1 de una trayectoria contra el minuto 2
-        # de la otra.
+        # Integrar la referencia un tau y LUEGO las perturbadas otro tau
+        # mas desde ahi compararia dos puntos con un tau entero de
+        # desfase temporal en vez de la misma ventana temporal. Con
+        # lambda_1 ~ 0.9 y tau=0.5 ese desfase basta para que lambda_1
+        # salga ~42 en vez de ~0.9.
         perturbaciones = u + epsilon * Q
         u_sig = u.copy()
         nuevas_pert = perturbaciones.copy()

@@ -1,4 +1,4 @@
-"""src/qkd/eve.py — tarea 1.4 (Gonzalo). Espia intercept-resend."""
+"""src/qkd/eve.py — Espia intercept-resend."""
 
 from __future__ import annotations
 
