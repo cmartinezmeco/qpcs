@@ -1,4 +1,4 @@
-"""scripts/make_pqc_plots.py — tarea 2.9 (Carlos). Graficas Matplotlib.
+"""scripts/make_pqc_plots.py — Graficas Matplotlib.
 
 Regenera TODAS las figuras del modulo 2 con un solo comando:
 
@@ -12,7 +12,7 @@ figuras leen de ahi: retocar un color no obliga a re-medir ni cambia los
 numeros del README. --medir es lo que se lanza DENTRO del contenedor cuando se
 quieren cifras nuevas (ver el README del modulo).
 
-Reglas de la tarea:
+Reglas de las figuras:
   - Tres figuras, ni una mas. Salida versionada en docs/img/ (PNG, dpi=150,
     fondo blanco).
   - Semilla fija donde aplique: la parte Shor es reproducible bit a bit. La

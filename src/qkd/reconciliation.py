@@ -1,9 +1,9 @@
-"""src/qkd/reconciliation.py — tarea 1.5 (Marco). Cascade + contador de fugas.
+"""src/qkd/reconciliation.py — Cascade + contador de fugas.
 
-Reconciliacion de claves: Alice y Bob salen de la tarea 1.4 con dos cadenas
+Reconciliacion de claves: Alice y Bob salen de la estimacion del QBER con dos cadenas
 que difieren en una fraccion Q de posiciones y las igualan hablando por un
 canal publico que Eve escucha entero. Cada bit publicado se cuenta en el
-ParityOracle (leak_ec) porque despues se resta de la clave final (tarea 1.6).
+ParityOracle (leak_ec) porque despues se resta de la clave final (privacy.py).
 
 Referencia: G. Brassard y L. Salvail, "Secret-key reconciliation by public
 discussion", EUROCRYPT '93 (el algoritmo Cascade original).
@@ -189,7 +189,7 @@ def cascade(
     # publica nada y no cuenta como fuga).
     ok = bool(np.array_equal(alice, bob))
 
-    # La metrica de calidad de la tarea: f_EC = leak/(n h(Q)).
+    # Metrica de calidad: f_EC = leak/(n h(Q)).
     # ~1.1-1.2 excelente; ~1.5 mal afinado; < 1 imposible (Shannon) = bug.
     # Convencion del equipo: logging, nada de print.
     h = binary_entropy(qber)

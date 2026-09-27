@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Tarea 4.14: la regla de oro (D1, tarea 4.11) como paso de CI, no manual.
-#
 # Compara los test_* citados en los cuatro documentos de teoria (mas
 # limitaciones.md y decisiones.md, que tambien citan tests) contra los
 # def test_ reales de tests/. Se ejecuta directo en el runner: son ficheros

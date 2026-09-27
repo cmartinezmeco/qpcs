@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tarea 4.14: comprueba que los enlaces relativos del README.md resuelven a
+# Comprueba que los enlaces relativos del README.md resuelven a
 # ficheros que existen de verdad. Solo enlaces relativos (rutas de fichero
 # dentro del repo): los http(s) externos no se comprueban aqui a proposito,
 # para no depender de la disponibilidad de sitios de terceros ni de rate

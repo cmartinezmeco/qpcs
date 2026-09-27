@@ -1,5 +1,5 @@
-# tests/qkd/test_privacy.py — tests de la tarea 1.6 (amplificacion de
-# privacidad: Toeplitz + longitud segura).
+# tests/qkd/test_privacy.py — tests de la amplificacion de privacidad
+# (Toeplitz + longitud segura).
 
 import numpy as np
 import pytest

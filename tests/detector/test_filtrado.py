@@ -4,7 +4,7 @@ from scipy import signal
 
 
 def test_el_filtro_no_ensucia_ruido_blanco(rng):
-    """EL test de esta tarea. Ruido blanco filtrado sigue siendo blanco:
+    """EL test del filtrado. Ruido blanco filtrado sigue siendo blanco:
     su autocorrelacion a desplazamiento 1 tiene que quedar dentro de
     4/sqrt(n). Si falla, el filtro esta metiendo la correlacion que
     veniamos a quitar.
@@ -29,8 +29,8 @@ def test_el_filtro_no_ensucia_ruido_blanco(rng):
 
 def test_el_pico_desaparece(senal_sintetica):
     """La potencia en 50 Hz tras filtrar cae al menos un factor 100."""
-    # senal_sintetica es (senal, verdad), no un dict: la fixture de la
-    # tarea 4.1 fija fs=40_000.0 dentro de la propia funcion, no como
+    # senal_sintetica es (senal, verdad), no un dict: la fixture
+    # fija fs=40_000.0 dentro de la propia funcion, no como
     # clave de verdad. picos_hz sale de verdad["pico_hz"].
     datos, verdad = senal_sintetica
     fs = 40_000.0
@@ -110,7 +110,7 @@ def test_la_varianza_baja_pero_no_se_desploma(senal_sintetica):
 
 
 def test_sin_picos_que_filtrar_el_notch_no_hace_nada(rng):
-    """Caso borde de la tarea 4.8: sin picos detectados, el filtro no
+    """Caso borde: sin picos detectados, el filtro no
     falla y no aplica ningun notch. Lo unico que queda es el paso alto,
     que es lo que quita la deriva y va siempre.
 

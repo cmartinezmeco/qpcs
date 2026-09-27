@@ -21,7 +21,7 @@ def test_logistico_periodo_2():
 
 def test_lorenz_conserva_el_atractor():
     """Tras el transitorio, la orbita esta acotada en los rangos
-    declarados en LORENZ_RANGOS. Si se sale, la normalizacion de 3.4
+    declarados en LORENZ_RANGOS. Si se sale, la normalizacion del keystream
     produciria bytes fuera de rango y el cifrado seria irreversible."""
 
     orb = orbita_lorenz(np.array([1.0, 1.0, 1.0]), 200_000, h=0.01)
@@ -66,18 +66,18 @@ def test_rk4_converge_con_el_orden_correcto():
 
 @pytest.mark.parametrize("x0", [0.0, 1.0])
 def test_x0_en_un_punto_fijo_se_rechaza(x0):
-    """Caso borde de la tarea 3.9: x0 = 0 y x0 = 1 son
+    """Caso borde: x0 = 0 y x0 = 1 son
     los dos puntos fijos triviales del mapa y tienen que dar ValueError.
 
     Con x0 = 0 la orbita es cero para siempre; con x0 = 1 el primer paso la
     lleva a cero y se queda ahi. En los dos casos el keystream seria un solo
     byte repetido.
 
-    Y no es una comprobacion de cortesia: SIN esta guarda, x0 = 0 llegaba
-    hasta lyapunov_logistico y salia declarado CAOTICO. La derivada del mapa
+    Y no es una comprobacion de cortesia: SIN esta guarda, x0 = 0 llegaria
+    hasta lyapunov_logistico y saldria declarado CAOTICO. La derivada del mapa
     en x = 0 vale r, asi que el promedio de ln|f'| da ln(4) = 1.386, muy por
-    encima de UMBRAL_LYAPUNOV. El punto fijo mas degenerado del mapa pasaba
-    la validacion de la tarea 3.3 con nota (medido antes de anadir la guarda).
+    encima de UMBRAL_LYAPUNOV. El punto fijo mas degenerado del mapa pasaria
+    la validacion de caos con nota.
     """
     with pytest.raises(ValueError, match="puntos fijos"):
         orbita_logistica(x0, 4.0, 100)

@@ -1,7 +1,7 @@
-"""tests/detector/test_extraccion.py - tarea 4.7 (Toeplitz del modulo 1).
+"""tests/detector/test_extraccion.py - Toeplitz del modulo 1.
 
 Lo que hay que demostrar aqui es que NO se ha reimplementado nada: la
-compresion la hace privacy_amplify de la tarea 1.6, y la longitud sale de
+compresion la hace privacy_amplify del modulo 1, y la longitud sale de
 la formula del leftover hash lemma, comprobada a mano.
 """
 
@@ -197,7 +197,7 @@ def test_h_min_cero_no_produce_bits():
 
 
 def test_la_fuente_uniforme_se_extrae_casi_sin_perdida():
-    """Caso borde de la tarea 4.8: con una fuente uniforme perfecta lo
+    """Caso borde: con una fuente uniforme perfecta lo
     unico que se pierde respecto a la entropia estimada es el peaje del
     lema, unos 60 bits sobre cientos de miles."""
     simbolos = _simbolos_uniformes(50_000)

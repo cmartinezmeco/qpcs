@@ -1,10 +1,10 @@
-"""scripts/make_qkd_plots.py — tarea 1.8 (Carlos). Graficas Matplotlib.
+"""scripts/make_qkd_plots.py — Graficas Matplotlib.
 
 Regenera TODAS las figuras del README con un solo comando:
 
     python scripts/make_qkd_plots.py
 
-Reglas de la tarea:
+Reglas de las figuras:
   - Tres figuras, ni una mas. Salida versionada en docs/img/ (PNG, dpi=150,
     fondo blanco).
   - Semilla fija: las figuras son reproducibles bit a bit.
@@ -38,7 +38,7 @@ plt.switch_backend("Agg")
 SEMILLA = 42
 # Fotones por punto del barrido de Eve (figura 1). Con 40 000 fotones la
 # sigma binomial del QBER es ~0.005: las barras de error se ven pero no
-# dominan (mismo n que usan los tests de la tarea 1.4).
+# dominan (mismo n que usan los tests del QBER).
 N_BARRIDO = 40_000
 # Bits del QRNG para la figura 2.
 N_QRNG = 100_000
@@ -132,7 +132,7 @@ def figura_2_histograma_qrng() -> None:
     unos = int(bits.sum())
     ceros = n - unos
     # Estadistico monobit del NIST: z = |ceros - unos| / sqrt(n) ~ N(0,1).
-    # Mismo criterio que test_monobit_dentro_de_4_sigma (tarea 1.2).
+    # Mismo criterio que test_monobit_dentro_de_4_sigma.
     z = abs(2 * unos - n) / np.sqrt(n)
     print(f"[figura 2] monobit: ceros={ceros}, unos={unos}, z={z:.3f}")
 

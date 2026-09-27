@@ -1,4 +1,4 @@
-"""src/pqc/classical.py - tarea 2.4 (Marco). Cripto clasica de referencia.
+"""src/pqc/classical.py - Cripto clasica de referencia.
 
 La linea base contra la que se compara la PQC: RSA (OAEP para cifrar, PSS para
 firmar) y curva eliptica (X25519 para intercambio de clave, Ed25519 para
@@ -7,7 +7,7 @@ sus propios stubs de tipos, asi que no necesita override de mypy.
 
 A diferencia de la parte Shor, aqui NO entra ningun np.random.Generator: las
 claves las genera la propia `cryptography` con su CSPRNG interno y deben ser
-impredecibles por seguridad. Los tests de la tarea 2.4 comprueban PROPIEDADES
+impredecibles por seguridad. Los tests comprueban PROPIEDADES
 (descifrar deshace cifrar, una firma valida verifica, una manipulada no), no
 valores fijos.
 
@@ -23,7 +23,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519, padding, rsa, x25519
 
 # Los dos rellenos, fijados UNA sola vez para que quien cifra y quien descifra
-# (y el benchmark de la tarea 2.7) usen exactamente los mismos parametros: un
+# (y el benchmark) usen exactamente los mismos parametros: un
 # OAEP con distinto hash en cada lado no descifra. Son objetos de valor sin
 # estado interno, asi que compartirlos entre llamadas es seguro.
 #
@@ -63,7 +63,7 @@ def _cargar_rsa_privada(clave_privada_pem: bytes) -> rsa.RSAPrivateKey:
 
     password=None porque estas claves viven en memoria durante un benchmark,
     no en disco: cifrar el PEM aqui daria una falsa sensacion de custodia. La
-    gestion de claves persistente esta explicitamente fuera de la Fase 2.
+    gestion de claves persistente esta explicitamente fuera del alcance del modulo.
     """
     clave = serialization.load_pem_private_key(clave_privada_pem, password=None)
     if not isinstance(clave, rsa.RSAPrivateKey):
@@ -75,7 +75,7 @@ def rsa_generar(bits: int = 3072) -> tuple[bytes, bytes]:
     """Genera un par RSA y devuelve (clave_publica_pem, clave_privada_pem).
 
     3072 bits es el nivel de seguridad clasico ~128 bits, el comparable con
-    ML-KEM-768 / ML-DSA-65 en las tablas del benchmark (tarea 2.7). Comparar
+    ML-KEM-768 / ML-DSA-65 en las tablas del benchmark. Comparar
     RSA-2048 (~112 bits) contra ML-KEM-768 (nivel NIST 3) seria comparar peras
     con manzanas y regalarle ventaja a RSA en los tiempos.
 
@@ -156,7 +156,7 @@ def x25519_generar() -> tuple[bytes, bytes]:
     Formato raw de 32 bytes (RFC 7748), no PEM: X25519 no tiene overhead de
     codificacion y asi el tamano que reporta el benchmark es el real. Ese 32
     contra los 1184 de ML-KEM-768 es justo el precio en bytes de la migracion
-    post-cuantica que la tabla de la tarea 2.7 tiene que ensenar.
+    post-cuantica que la tabla del benchmark tiene que ensenar.
     """
     privada = x25519.X25519PrivateKey.generate()
     clave_publica_raw = privada.public_key().public_bytes(
@@ -211,7 +211,7 @@ def ed25519_firmar(clave_privada_raw: bytes, mensaje: bytes) -> bytes:
     """Firma `mensaje` con Ed25519. Devuelve la firma de 64 bytes.
 
     Esos 64 bytes son la referencia clasica del titular del modulo: una firma
-    ML-DSA-65 ocupa 3309, unas 50 veces mas (ver `tamanos_sig` en 2.7).
+    ML-DSA-65 ocupa 3309, unas 50 veces mas (ver `tamanos_sig` en benchmark.py).
     """
     privada = ed25519.Ed25519PrivateKey.from_private_bytes(clave_privada_raw)
     return privada.sign(mensaje)

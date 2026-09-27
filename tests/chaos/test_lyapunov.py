@@ -30,7 +30,7 @@ def test_lyapunov_de_r4_es_ln2():
     ],
 )
 def test_detecta_el_regimen(r, esperado_caotico):
-    """El test que justifica la existencia de esta tarea: r = 3.83 esta
+    """El test que justifica medir Lyapunov: r = 3.83 esta
     DENTRO del rango caotico nominal (3.57, 4] y sin embargo NO es
     caotico. Un modulo que solo comprobara el rango lo aceptaria."""
 
@@ -43,7 +43,7 @@ def test_lorenz_espectro_suma_la_divergencia():
     """lambda_1 + lambda_2 + lambda_3 = -(sigma + 1 + beta) = -13.667.
     Verificacion independiente y gratis del integrador.
 
-    MARCADO `slow` EN LA TAREA 3.9, y merece la explicacion porque es un
+    MARCADO `slow`, y merece la explicacion porque es un
     test de fisica de los que el criterio de cierre exige: tarda 179 s el
     solo (50 000 renormalizaciones x 50 pasos de RK4 x 4 trayectorias en
     bucles de Python) y la suite rapida tiene que quedarse por debajo de
@@ -73,12 +73,12 @@ def test_lorenz_espectro_tiene_la_forma_correcta_en_pocos_pasos():
       - lambda_3 muy negativo (la contraccion del atractor disipativo),
       - y la suma, negativa, porque el sistema contrae volumen.
 
-    Los dos bugs que la tarea 3.4 encontro en esta funcion (el desfase
-    temporal de un tau y la ortogonalizacion en el orden equivocado) daban
-    lambda_1 ~ 42 y tres exponentes iguales respectivamente: los dos habrian
-    caido aqui, en dos segundos, sin esperar a los tres minutos del test
-    completo. Las tolerancias son deliberadamente anchas: este test valida
-    la ESTRUCTURA, y el valor exacto lo valida el `slow`.
+    Dos errores tipicos en esta funcion (el desfase temporal de un tau y la
+    ortogonalizacion en el orden equivocado) dan lambda_1 ~ 42 y tres
+    exponentes iguales respectivamente: los dos caen aqui, en dos
+    segundos, sin esperar a los tres minutos del test completo. Las
+    tolerancias son deliberadamente anchas: este test valida la
+    ESTRUCTURA, y el valor exacto lo valida el `slow`.
     """
     l1, l2, l3 = espectro_lyapunov_lorenz(n=400)
     assert l1 > 0.5, "lambda_1 tiene que ser claramente positivo: es el caos"
@@ -88,7 +88,7 @@ def test_lorenz_espectro_tiene_la_forma_correcta_en_pocos_pasos():
 
 
 def test_la_ventana_periodica_se_diagnostica_Y_se_rechaza():
-    """Caso borde de la tarea 3.9: con r en una ventana
+    """Caso borde: con r en una ventana
     periodica el modulo NO cifra, lanza ValueError.
 
     Este test existe aparte del parametrico de arriba porque comprueba otra

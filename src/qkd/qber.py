@@ -1,4 +1,4 @@
-"""src/qkd/qber.py — tarea 1.4 (Gonzalo). Estimacion de QBER sobre muestra."""
+"""src/qkd/qber.py — Estimacion de QBER sobre muestra."""
 
 from __future__ import annotations
 

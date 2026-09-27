@@ -1,5 +1,4 @@
-# Avisos automaticos de dependencias (hallazgo B6 de la auditoria previa a la
-# publicacion).
+# Avisos automaticos de dependencias.
 #
 # El proyecto fija todas las versiones con == y eso es deliberado: las figuras
 # de docs/img/ se comparan por MD5 bit a bit en la CI, asi que subir una

@@ -43,11 +43,11 @@ def cargar_muestra(
             si el fichero no esta (ver data/FUENTE.md).
 
     Avisa por logging (no lanza) si el canal esta muerto, es decir, si la
-    senal es constante. Caso borde anadido en la tarea 4.8: los detectores
+    senal es constante. Los detectores
     tienen canales muertos, saturados o averiados, y un canal plano
     recorre toda la cadena sin fallar -espectro
-    plano, cero picos, filtro que no quita nada- hasta que la 4.6 mide
-    min-entropia cero. No se lanza porque cargar el fichero SI ha
+    plano, cero picos, filtro que no quita nada- hasta que la estimacion
+    de min-entropia da cero. No se lanza porque cargar el fichero SI ha
     funcionado: quien decide si eso es un error es quien llama, igual que
     con el aviso de ciclo corto del modulo 3.
     """
@@ -118,8 +118,8 @@ def senal_de_prueba(
     con pedestal ~1435).
 
     A diferencia de cargar_muestra(), esta funcion NO sustituye a los
-    datos reales: es la referencia teorica que permite comprobar en la
-    tarea 4.4 que ajustar_alfa() recupera alfa=1.0 cuando se le da una
+    datos reales: es la referencia teorica que permite comprobar
+    que ajustar_alfa() recupera alfa=1.0 cuando se le da una
     senal donde alfa=1.0 de verdad, cosa que con datos reales no se
     puede verificar porque no se conoce su composicion exacta.
 

@@ -1,4 +1,4 @@
-# tests/qkd/test_reconciliation.py — tests de la tarea 1.5 (Cascade).
+# tests/qkd/test_reconciliation.py — tests de Cascade.
 #
 # Nota para el equipo: binary_entropy no vive en qkd.utils, que es donde
 # uno la buscaria por costumbre, sino en qkd/privacy.py, y asi la exporta
@@ -13,7 +13,7 @@ from qkd.reconciliation import ParityOracle, _binary, _local_parity, cascade
 def _par(n: int, q: float, seed: int):
     """Par de claves de n bits que difieren en una fraccion ~q de posiciones.
 
-    Simula la salida de la tarea 1.4 (clave cribada tras descartar la
+    Simula la salida de la estimacion del QBER (clave cribada tras descartar la
     muestra del QBER) sin tener que correr BB84 entero: para probar Cascade
     solo importa el patron de errores, no de donde salio.
     """

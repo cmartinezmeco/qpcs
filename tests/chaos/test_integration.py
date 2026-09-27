@@ -1,4 +1,4 @@
-"""tests/chaos/test_integration.py - tarea 3.9. El arco completo del modulo 3.
+"""tests/chaos/test_integration.py - El arco completo del modulo 3.
 
 Cada pieza tiene ya sus tests (test_maps, test_lyapunov, test_keystream,
 test_permutation, test_diffusion, test_cipher, test_metrics, test_baseline).
@@ -13,12 +13,10 @@ alguna pieza se rompe al integrarse con otra -un contrato que cambia, una
 longitud que se deriva de otra cosa, una permutacion que se aplica en el orden
 equivocado-, es aqui donde se ve, y no en la demo.
 
-Este fichero se ocupa ademas de dos criterios de cierre que NO son de ninguna
-tarea en concreto porque son del modulo entero: que ninguna funcion
-del camino del keystream use funciones trascendentes, y que no haya np.random
-dentro de cipher.py. Los dos estaban escritos como "criterio de revision de
-PR", es decir, confiados a que un humano se acuerde de mirarlos en cada PR.
-Aqui pasan a comprobarse solos.
+Este fichero se ocupa ademas de dos criterios que son del modulo
+entero: que ninguna funcion del camino del keystream use funciones
+trascendentes, y que no haya np.random dentro de cipher.py. Aqui se
+comprueban solos, sin depender de que alguien los revise a mano.
 """
 
 import ast
@@ -147,7 +145,7 @@ def test_el_arco_completo_del_modulo():
     no solo "el round-trip no cuadra".
     """
     # 1. La clave define una orbita, y la orbita es caotica: se MIDE, no se
-    #    supone (tarea 3.3). Sin esto el resto del arco no deberia ocurrir.
+    #    supone. Sin esto el resto del arco no deberia ocurrir.
     diagnostico = lyapunov_logistico(CLAVE.x0, CLAVE.r)
     assert diagnostico.es_caotico
     assert diagnostico.lyapunov > 0.0

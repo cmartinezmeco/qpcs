@@ -1,4 +1,4 @@
-"""tests/pqc/test_scaffold.py - tarea 2.1.
+"""tests/pqc/test_scaffold.py - andamiaje del modulo 2.
 
 Espejo de tests/qkd/test_scaffold.py: comprueba que el andamiaje del modulo 2
 esta en su sitio antes de que nadie implemente nada. Dos cosas:

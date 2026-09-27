@@ -1,16 +1,16 @@
-"""tests/detector/test_integration.py - tarea 4.8, la cadena entera.
+"""tests/detector/test_integration.py - la cadena entera.
 
-Los tests de cada tarea vienen con su PR; aqui va el de integracion -de la
+Cada etapa tiene sus propios tests; aqui va el de integracion -de la
 senal cargada a bits validados- y las comprobaciones que solo tienen
 sentido con la cadena montada. Los ocho casos borde viven en el fichero de
-la tarea a la que pertenecen (test_carga, test_espectro,
+la etapa a la que pertenecen (test_carga, test_espectro,
 test_filtrado, test_identificacion, test_entropia y test_extraccion), que
 es donde alguien los va a buscar cuando toque esa parte.
 
 Lo que NO demuestra este fichero, y conviene tenerlo claro: que los bits
 pasen monobit y chi2 no prueba que la fuente sea buena. Un contador
 cifrado con AES los pasa igual. Lo que sostiene la
-salida es la estimacion conservadora de la 4.6 mas el leftover hash lemma;
+salida es la estimacion conservadora de min-entropia mas el leftover hash lemma;
 estos dos estadisticos solo confirman que no hay un fallo grosero por el
 camino.
 """
@@ -53,13 +53,13 @@ def _cadena(
     """
     frecuencias, psd, n_tramos = densidad_espectral(senal, fs, NPERSEG)
     picos = detectar_picos(frecuencias, psd, UMBRAL_PICO)
-    # NOTA (tarea 4.8): RANGO_ALFA se pasa tal cual, que es lo que hace un
+    # NOTA: RANGO_ALFA se pasa tal cual, que es lo que hace un
     # consumidor del modulo. Con los datos reales (fs = 1000 Hz) ese rango
     # no contiene ningun bin del espectro y ajustar_alfa devuelve
     # (0.0, 0.0) por su salida de seguridad: types.py lo documenta como
     # fraccion de Nyquist y identificacion.py lo interpreta en hercios.
-    # Esta anotado como discrepancia de la tarea 4.4 y por eso aqui no se
-    # afirma nada sobre el VALOR de alfa, solo que la cadena lo produce.
+    # Por eso aqui no se afirma nada sobre el VALOR de alfa, solo que la
+    # cadena lo produce.
     alfa, alfa_error = ajustar_alfa(frecuencias, psd, RANGO_ALFA)
     analisis = AnalisisEspectral(
         frecuencias=frecuencias,
@@ -103,14 +103,12 @@ def test_la_cadena_completa():
     senal, fs = cargar_muestra()
     analisis, resultado = _cadena(senal, fs)
 
-    # El analisis espectral se rellena entero (contrato de la tarea 4.4).
+    # El analisis espectral se rellena entero (contrato de types.py).
     assert analisis.frecuencias.size == analisis.psd.size == NPERSEG // 2 + 1
-    # NOTA (discrepancia de la tarea 4.8, ARREGLADA en la 4.9): types.py
-    # documenta n_tramos como "K de Welch, para el error relativo", y
-    # densidad_espectral devolvia el propio nperseg (4096) en esa tercera
-    # posicion en vez del K real. Ya devuelve el K real -240 con 495.562
+    # types.py documenta n_tramos como "K de Welch, para el error
+    # relativo". densidad_espectral devuelve el K real -240 con 495.562
     # muestras y tramos de 4096 al 50%, ver el comentario de espectro.py-,
-    # y aqui se sigue exigiendo solo que el campo venga relleno y positivo.
+    # y aqui se exige solo que el campo venga relleno y positivo.
     assert analisis.n_tramos > 0
     assert analisis.suelo_blanco > 0.0
     assert analisis.fano > 0.0

@@ -1,10 +1,10 @@
-"""scripts/make_chaos_plots.py — tarea 3.10 (Carlos). Figuras y GIF del modulo 3.
+"""scripts/make_chaos_plots.py — Figuras y GIF del modulo 3.
 
 Regenera TODAS las figuras del modulo con un solo comando:
 
     python scripts/make_chaos_plots.py
 
-Reglas de la tarea, heredadas de las dos fases anteriores:
+Reglas de las figuras:
   - Cuatro figuras y un GIF, ni una mas. Salida versionada en docs/img/
     (PNG, dpi=150, fondo blanco).
   - Sin titulo dentro de la figura: el titulo va en el pie del README.
@@ -119,7 +119,7 @@ def _sin_ejes(ax: plt.Axes) -> None:
 def figura_1_bifurcacion_y_lyapunov() -> None:
     """Diagrama de bifurcacion con lambda(r) debajo, mismo eje r.
 
-    Es la figura que justifica la existencia de la tarea 3.3: se ve que
+    Es la figura que justifica la validacion de caos: se ve que
     lambda cruza a positivo exactamente donde empieza el caos y vuelve a
     negativo dentro de cada ventana periodica. La de periodo 3 en r = 3.83
     aparece marcada porque es la trampa del modulo: esta DENTRO del rango

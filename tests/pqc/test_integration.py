@@ -1,4 +1,4 @@
-"""tests/pqc/test_integration.py - tarea 2.8. Las dos vias, en un solo test.
+"""tests/pqc/test_integration.py - Las dos vias, en un solo test.
 
 Cada pieza del modulo ya tiene sus tests (test_shor, test_kem, test_hybrid,
 test_sig, test_classical, test_benchmark). Lo que falta, y es lo que hay aqui,
@@ -95,7 +95,7 @@ def test_manipular_el_canal_lo_cazan_las_dos_capas():
 def test_shor_es_reproducible_y_la_cripto_real_no():
     """La politica de semillas del proyecto, escrita como test.
 
-    Es la diferencia que mas confunde al llegar a la Fase 2: la mitad de Shor
+    Es la diferencia que mas confunde del modulo 2: la mitad de Shor
     es una simulacion determinista y se siembra (misma semilla, misma
     factorizacion, mismo camino); la mitad de cripto real NO se puede sembrar
     porque una clave reproducible seria una clave insegura. Que las dos

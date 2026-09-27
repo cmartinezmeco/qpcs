@@ -1,4 +1,4 @@
-"""tests/pqc/test_hybrid.py - tarea 2.5 (cifrado hibrido KEM + AES-GCM).
+"""tests/pqc/test_hybrid.py - cifrado hibrido KEM + AES-GCM.
 
 Aqui esta EL test del bloque PQC del criterio de cierre: se cifra un mensaje
 real con criptografia post-cuantica y se recupera identico. Y su contrapartida,

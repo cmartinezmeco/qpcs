@@ -7,7 +7,7 @@ derivacion se devuelve.
 Lo que estas cinco metricas SI dicen y lo que NO: detectan defectos
 groseros -un histograma sesgado, una permutacion que no permuta, una
 difusion que no propaga- y nada mas. Que un esquema las pase significa
-que no tiene errores obvios, no que sea seguro. La tarea 3.8 lo hace
+que no tiene errores obvios, no que sea seguro. El baseline lo hace
 visible pasandoselas tambien a AES-256-GCM y a un flujo trivial: las tres
 columnas salen iguales.
 """

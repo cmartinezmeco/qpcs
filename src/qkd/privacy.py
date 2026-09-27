@@ -1,6 +1,6 @@
-"""src/qkd/privacy.py — tarea 1.6 (Marco). Toeplitz + longitud segura.
+"""src/qkd/privacy.py — Toeplitz + longitud segura.
 
-Amplificacion de privacidad: al salir de Cascade (tarea 1.5) Alice y Bob
+Amplificacion de privacidad: al salir de Cascade Alice y Bob
 tienen la MISMA cadena de n bits, pero no es secreta: Eve tiene informacion
 parcial (del canal cuantico, acotada por h(Q); y de las paridades oidas en
 la reconciliacion, exactamente leak_ec bits). No sabemos QUE bits conoce, y
@@ -48,9 +48,9 @@ def secure_key_length(
     Cada termino tiene nombre y culpable:
       - n(1 - h(Q)):     lo que queda tras descontar lo que Eve pudo sacar
                          del canal cuantico (cota paranoica: TODO el QBER se
-                         atribuye a Eve). Viene de la tarea 1.4.
+                         atribuye a Eve). Viene de la estimacion del QBER.
       - leak_ec:         los bits gritados por el canal publico corrigiendo
-                         errores. Viene del ParityOracle de la tarea 1.5.
+                         errores. Viene del ParityOracle de Cascade.
       - 2 log2(1/eps):   el peaje del leftover hash lemma (~60 bits con
                          eps = 1e-9). Constante, ridiculo e imprescindible
                          para poder decir "eps-seguro" con propiedad.

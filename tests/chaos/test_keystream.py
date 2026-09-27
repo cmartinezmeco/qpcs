@@ -53,7 +53,7 @@ def test_sensibilidad_a_la_clave():
 def test_ciclo_medido_y_publicado():
     """Floyd sobre la orbita. No exige un minimo: MIDE y avisa.
 
-    MARCADO `slow` EN LA TAREA 3.9: detectar_ciclo compara de uno en uno
+    MARCADO `slow`: detectar_ciclo compara de uno en uno
     con np.allclose y recorrer dos millones de pasos asi cuesta 80 s, la
     segunda factura mas grande de la suite. La CI lo sigue ejecutando en
     los push a main. La comprobacion barata del mismo hecho -que el
@@ -68,7 +68,7 @@ def test_ciclo_medido_y_publicado():
 
 @pytest.mark.parametrize("r,periodo", [(3.2, 2), (3.5, 4)])
 def test_floyd_encuentra_un_ciclo_de_longitud_CONOCIDA(r, periodo):
-    """El companero rapido de test_ciclo_medido_y_publicado (tarea 3.9).
+    """El companero rapido de test_ciclo_medido_y_publicado.
 
     Aquel comprueba que una orbita caotica NO cicla en dos millones de
     pasos, que es lo que hay que publicar, pero cuesta 80 s y no verifica
@@ -83,7 +83,7 @@ def test_floyd_encuentra_un_ciclo_de_longitud_CONOCIDA(r, periodo):
 @pytest.mark.parametrize("sistema", ["logistico", "lorenz"])
 @pytest.mark.parametrize("n_bytes", [1, 2, 3, 4, 100, 1021])
 def test_el_keystream_mide_exactamente_lo_que_se_le_pide(sistema, n_bytes):
-    """Caso borde de la tarea 3.9, primera mitad: un
+    """Caso borde, primera mitad: un
     keystream mas corto que la imagen no se puede truncar en silencio.
 
     La primera linea de defensa es que no ocurra: `keystream` devuelve
@@ -109,7 +109,7 @@ def test_un_keystream_corto_da_error_y_no_cifra_a_medias():
     difusion un keystream mas corto que los datos, tiene que ser un error
     CLARO y no un cifrado truncado.
 
-    Es el tercero de los errores tipicos de la tarea 3.6: un
+    Es uno de los errores tipicos: un
     keystream regenerado con otra longitud desalinea el flujo desde el
     primer byte, y el sintoma -ruido- es identico al de un descifrado
     correcto de datos cifrados. Silencio aqui es el fallo silencioso del
@@ -127,7 +127,7 @@ def test_un_keystream_corto_da_error_y_no_cifra_a_medias():
 
 
 def test_el_modulo_avisa_si_la_orbita_cicla(caplog):
-    """Caso borde de la tarea 3.9: ciclo mas corto que
+    """Caso borde: ciclo mas corto que
     la imagen, aviso explicito.
 
     Cualquier orbita en float64 es periodica, y eso no se puede resolver:
