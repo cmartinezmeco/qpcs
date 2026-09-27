@@ -111,9 +111,6 @@ def test_encuentra_los_50_hz(senal_sintetica):
     assert abs(pico_freq - verdad["pico_hz"]) <= df
 
 
-# --- casos borde de la tarea 4.8 ---------------------------------------
-
-
 def test_alfa_de_ruido_blanco_es_cero_con_la_funcion_del_modulo(rng):
     """Caso borde de la tarea 4.8: alfa ajustado sobre ruido blanco tiene
     que salir ~0, no un valor espurio. A diferencia del test de mas

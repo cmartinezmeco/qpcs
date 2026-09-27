@@ -109,9 +109,6 @@ def test_la_varianza_baja_pero_no_se_desploma(senal_sintetica):
     assert var_despues >= var_antes / 10.0
 
 
-# --- casos borde de la tarea 4.8 ---------------------------------------
-
-
 def test_sin_picos_que_filtrar_el_notch_no_hace_nada(rng):
     """Caso borde de la tarea 4.8: sin picos detectados, el filtro no
     falla y no aplica ningun notch. Lo unico que queda es el paso alto,

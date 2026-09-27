@@ -84,9 +84,6 @@ def test_ruido_potencia_alfa_positivo_decrece_con_la_frecuencia():
     assert potencia_baja > potencia_alta
 
 
-# --- casos borde de la tarea 4.8 ---------------------------------------
-
-
 def test_un_canal_muerto_se_detecta_y_se_avisa(tmp_path, caplog):
     """Caso borde de la tarea 4.8: un canal muerto (todo ceros) se carga
     sin problemas y recorre la cadena entera sin fallar -espectro plano,
