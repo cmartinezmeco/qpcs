@@ -38,7 +38,6 @@ UMBRAL_PICO: float = 3.0
 EPSILON_PA: float = 1e-9  # el mismo epsilon que la tarea 1.6
 BITS_BAJOS: int = 4  # cuantos bits por muestra se conservan al digitalizar
 
-# --- ANADIDO EN LA TAREA 4.6 (min-entropia) ----------------------------
 # Los dos parametros que gobiernan la estimacion de min-entropia. Van aqui
 # y no dentro de entropia.py por la convencion del modulo: todo parametro
 # que cambie una cifra publicada es parte del contrato. Son ANADIDOS, no

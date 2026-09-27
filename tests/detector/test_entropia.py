@@ -234,9 +234,6 @@ def test_se_devuelve_el_minimo(rng):
     assert est.intervalo_confianza == 1.0 - ALFA_SP80090B
 
 
-# --- casos borde (tarea 4.8) --------------------------------------------
-
-
 def test_una_senal_de_diez_muestras_da_un_error_claro():
     """Caso borde de la tarea 4.8: no se puede estimar entropia con eso, y
     el mensaje tiene que decir cuantas muestras harian falta."""
