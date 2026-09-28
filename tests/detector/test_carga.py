@@ -69,7 +69,7 @@ def test_ruido_potencia_alfa_cero_no_colorea():
 def test_ruido_potencia_alfa_positivo_decrece_con_la_frecuencia():
     """El test central de esta funcion: la PSD del ruido coloreado debe
     decrecer con la frecuencia. No comprueba el valor exacto de alfa
-    (eso lo hace ajustar_alfa en la tarea 4.4): comprueba que la
+    (eso lo comprueba ajustar_alfa): comprueba que la
     tendencia tiene el signo correcto, contra la teoria y no contra
     otra implementacion."""
     rng = np.random.default_rng(7)
@@ -84,11 +84,8 @@ def test_ruido_potencia_alfa_positivo_decrece_con_la_frecuencia():
     assert potencia_baja > potencia_alta
 
 
-# --- casos borde de la tarea 4.8 ---------------------------------------
-
-
 def test_un_canal_muerto_se_detecta_y_se_avisa(tmp_path, caplog):
-    """Caso borde de la tarea 4.8: un canal muerto (todo ceros) se carga
+    """Caso borde: un canal muerto (todo ceros) se carga
     sin problemas y recorre la cadena entera sin fallar -espectro plano,
     cero picos, filtro que no quita nada- hasta que la min-entropia sale
     cero. Tiene que avisar al cargarlo, cuando todavia se puede cambiar

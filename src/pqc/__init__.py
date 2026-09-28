@@ -4,7 +4,7 @@ Espejo de src/qkd/__init__.py: la frontera estable del modulo 2.
 
 Esta lista es la frontera DE VERDAD, no una version reducida de ella: incluye
 todo lo que consumen de fuera el dashboard, `scripts/make_pqc_plots.py` y los
-tests. Antes se quedaba en las funciones de cada tarea mientras esos tres
+tests. Antes se quedaba en las funciones principales mientras esos tres
 consumidores importaban otros nueve nombres directamente de `pqc.benchmark`,
 `pqc.kem` y `pqc.sig` (RUTA_JSON, cargar_json, abrir_kem...), asi que la frase
 de arriba era falsa y `test_api_publica_existe` daba una sensacion de

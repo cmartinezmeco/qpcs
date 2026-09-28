@@ -1,6 +1,6 @@
 # tests/pqc/conftest.py
 #
-# Fixtures compartidas de la suite PQC (Fase 2). Misma politica anti-parpadeo
+# Fixtures compartidas de la suite PQC. Misma politica anti-parpadeo
 # que tests/qkd/conftest.py: semilla fija SIEMPRE, tolerancias derivadas,
 # prohibido el retry.
 #

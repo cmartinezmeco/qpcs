@@ -1,4 +1,4 @@
-"""tests/chaos/test_metrics.py - tarea 3.7, las metricas de calidad.
+"""tests/chaos/test_metrics.py - las metricas de calidad.
 
 Cada valor esperado se comprueba contra su DERIVACION, no contra el
 numero que sale del propio codigo: si la formula y el test salieran del
@@ -244,7 +244,7 @@ def test_chi2_de_metrics_y_de_keystream_son_el_mismo_estadistico():
 
 
 def test_la_cuantizacion_ingenua_falla_el_chi2_y_la_buena_no():
-    """El gemelo del test de la tarea 3.4, desde el lado de las metricas:
+    """El gemelo del test de cuantizacion del keystream, desde el lado de las metricas:
     int(x*256) hereda el sesgo de la densidad invariante
     rho(x) = 1/(pi sqrt(x(1-x))) y su histograma es rechazado por goleada;
     quedarse con los bits bajos no."""

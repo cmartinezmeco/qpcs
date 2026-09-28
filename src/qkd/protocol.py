@@ -22,8 +22,8 @@ QBER_THRESHOLD = 0.11
 
 # Bits objetivo de muestra publica para estimar el QBER cuando no se pide
 # una sample_fraction concreta. 800 basta para estabilizar la sigma
-# binomial sin sacrificar demasiada clave final con N grandes (Gonzalo,
-# tarea 2.x). Acotado entre 2% (N masivo) y 40% (N pequeno).
+# binomial sin sacrificar demasiada clave final con N grandes.
+# Acotado entre 2% (N masivo) y 40% (N pequeno).
 _MUESTRA_QBER_OBJETIVO = 800
 _MUESTRA_FRACCION_MIN = 0.02
 _MUESTRA_FRACCION_MAX = 0.40
@@ -150,7 +150,7 @@ def run_until_qber(
 ) -> QberEstimate:
     """Version corta de la cadena, solo hasta la estimacion del QBER.
 
-    La usan los tests de la tarea 1.4, que no necesitan llegar hasta Cascade.
+    La usan los tests del QBER, que no necesitan llegar hasta Cascade.
     Usa siempre el backend numpy: es el unico donde Eve (intercept-resend)
     esta modelada, y el unico viable en tiempo para los barridos de 40 000
     fotones que hacen estos tests (ver run_bb84 en bb84.py).

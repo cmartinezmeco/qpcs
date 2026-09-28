@@ -1,4 +1,4 @@
-"""dashboard/qkd_app.py — tareas 1.9, 2.9, 3.10 y 4.9 (Carlos). Dashboard Streamlit.
+"""dashboard/qkd_app.py — Dashboard Streamlit.
 
 Arranque local:
 
@@ -17,22 +17,19 @@ run_until_qber y run_bb84 tal y como los exporta el paquete qkd, y las
 funciones de `pqc` (shor, kem, hybrid, sig, benchmark) tal y como las exporta
 el paquete pqc. Queda UNA sola excepcion documentada, la tabla de sifting, que
 reproduce los tres sorteos iniciales de run_bb84 para poder ensenar los fotones
-descartados (ver _datos_sifting). La otra excepcion que habia aqui -el
-histograma de fases de Shor, que se ejecutaba a mano porque medir_fase_15
-devuelve una sola fase por llamada- ya no hace falta: esa logica vive ahora en
+descartados (ver _datos_sifting). El histograma de fases de Shor sale de
 `shor.histograma_fases_15`, que es lo que consume _muestrear_fases.
 
-UN SOLO FICHERO, CUATRO MODULOS (tareas 2.9, 3.10 y 4.9)
--------------------------------------------------------
+UN SOLO FICHERO, CUATRO MODULOS
+-------------------------------
 El panel del modulo 2 (PQC + Shor) vive aqui dentro, en su propia pestana, y no
 en un dashboard/pqc_app.py aparte. La alternativa -pasar a una app multipagina
 de Streamlit- obliga a mover ficheros a un directorio pages/ y a cambiar el
-comando de arranque, y el criterio de cierre de la Fase 1 dice que el dashboard
-arranca con `docker compose up`: no se toca. Con st.tabs los dos modulos
-conviven sin que el de QKD cambie de comportamiento.
+comando de arranque, y el dashboard arranca con `docker compose up`. Con
+st.tabs los dos modulos conviven sin que el de QKD cambie de comportamiento.
 
 El modulo 3 (caos determinista) entra igual, como tercera pestana de nivel
-superior, y reutiliza tal cual el sistema visual del rediseno: styles.css,
+superior, y reutiliza tal cual el sistema visual: styles.css,
 _cabecera_seccion y _preparar_ejes. Ni una linea de logica de cifrado vive
 aqui: todo sale de `chaos` tal y como lo exporta el paquete. La unica
 excepcion, documentada donde se usa, es el ayudante privado
@@ -41,8 +38,8 @@ PERMUTADA PERO NO DIFUNDIDA -un estado intermedio que cifrar_imagen no
 devuelve- sin reimplementar la receta de la orbita y arriesgarse a que se
 separe de la del cifrado.
 
-CUIDADO CON MATHTEXT (aprendido en la Fase 1)
---------------------------------------------
+CUIDADO CON MATHTEXT
+--------------------
 En las figuras de este fichero NO se usa notacion LaTeX de Matplotlib
 ($\\sigma$ y compania): la cache LRU de mathtext no es thread-safe y revienta
 cuando Streamlit renderiza en un hilo de servidor. Se usan caracteres Unicode
@@ -120,7 +117,7 @@ if str(plt.get_backend()).casefold() != "agg":
 # infinito.
 N_FILAS_TABLA = 40
 
-# --- Constantes del modulo 2 (tarea 2.9) -----------------------------------
+# --- Constantes del modulo 2 ----------------------------------------------
 # Mecanismos que ofrece el desplegable. Nomenclatura NIST obligatoria (FIPS
 # 203/204): nunca "Kyber"/"Dilithium". El indice 1 es el nivel NIST 3, el
 # recomendado y el que mide el benchmark.
@@ -137,7 +134,7 @@ SHOTS_FASE = 2048
 # Cuantos bytes en hexadecimal se ensenan de cada artefacto binario.
 BYTES_PREVIA = 16
 
-# --- Constantes del modulo 4 (tarea 4.9) -----------------------------------
+# --- Constantes del modulo 4 ----------------------------------------------
 # Ancho de linea del volcado hexadecimal que se DESCARGA. Son unos 450 000
 # digitos: en una sola linea el fichero es incomodo de abrir, y en renglones
 # de 64 se lee como cualquier volcado hexadecimal de toda la vida. Los saltos
@@ -150,7 +147,7 @@ ANCHO_HEX = 64
 # muy ancha.
 VISTA_HEX = 320
 
-# --- Constantes del modulo 3 (tarea 3.10) ----------------------------------
+# --- Constantes del modulo 3 ----------------------------------------------
 # Clave por defecto de la demostracion. r = 3.99 es caotico sin ambiguedad y
 # esta lejos de la ventana de periodo 3 en 3.83, que es la trampa del modulo.
 X0_DEMO = 0.4
@@ -433,8 +430,8 @@ def _cifrar_y_firmar(
 
     Devuelve tambien la clave privada del KEM porque el receptor de la demo la
     necesita para descifrar. Las claves viven en memoria durante la ejecucion y
-    nada mas: la gestion de claves persistente esta explicitamente fuera de la
-    Fase 2.
+    nada mas: la gestion de claves persistente esta explicitamente fuera del
+    alcance del modulo.
     """
     clave_publica, clave_privada = kem_generar(mecanismo_kem)
     sobre = cifrar_mensaje(clave_publica, mensaje.encode(), mecanismo_kem)
@@ -443,7 +440,7 @@ def _cifrar_y_firmar(
 
 
 # ---------------------------------------------------------------------------
-# Modulo 3: caos determinista (tarea 3.10). El motivo de la cache aqui es el
+# Modulo 3: caos determinista. El motivo de la cache aqui es el
 # tercero de los tres del fichero, y el mas fisico: cifrar una imagen de
 # 512x512 son 262 144 vueltas de un bucle secuencial de Python en cada una de
 # las dos pasadas de difusion, mas tres millones de iteraciones del mapa para
@@ -665,8 +662,8 @@ def _imagen_subida(fichero) -> np.ndarray | None:
 
 @dataclass(frozen=True)
 class AnalisisDetector:
-    """Resultado tipado del analisis completo de la pestana del modulo 4
-    (tarea 4.9). Reemplaza a un dict[str, object]: con un dataclass,
+    """Resultado tipado del analisis completo de la pestana del modulo 4.
+    Reemplaza a un dict[str, object]: con un dataclass,
     mypy --strict sabe el tipo exacto de cada campo sin necesitar
     ningun type: ignore en el resto del bloque de la pestana.
     """
@@ -828,14 +825,12 @@ tab_qkd, tab_pqc, tab_chaos, tab_detector = st.tabs(
 )
 
 # ===========================================================================
-# PESTANA 1 - Modulo QKD (Fase 1, tarea 1.9).
+# PESTANA 1 - Modulo QKD.
 #
-# DONDE VIVEN LOS CONTROLES. Hasta ahora los parametros de BB84 estaban en la
-# barra lateral, y hacia falta una nota aclarando que solo afectaban a este
-# modulo: el panel tiene cuatro y la barra lateral se lee como global. Ahora
-# estan dentro de la pestana, a la izquierda de las figuras que gobiernan,
-# que es donde los modulos 3 y 4 pusieron los suyos desde el principio. La
-# barra lateral ya no existe.
+# DONDE VIVEN LOS CONTROLES. Los parametros de BB84 estan dentro de la
+# pestana, a la izquierda de las figuras que gobiernan, igual que en los
+# modulos 3 y 4: el panel tiene cuatro modulos y una barra lateral se
+# leeria como global. No hay barra lateral.
 # ===========================================================================
 
 with tab_qkd:
@@ -1091,7 +1086,7 @@ with tab_qkd:
     _mostrar_flujo_qkd(r)
 
 # ===========================================================================
-# PESTANA 2 - Modulo PQC + Shor (Fase 2, tarea 2.9). Tres sub-pestanas: la
+# PESTANA 2 - Modulo PQC + Shor. Tres sub-pestanas: la
 # amenaza (Shor), la defensa (cripto real) y su coste medido (benchmark), que
 # es el arco entero del modulo 2.
 # ===========================================================================
@@ -1170,7 +1165,7 @@ with tab_pqc:
             # Limitacion conocida, y se dice en la interfaz en vez de esconder
             # la opcion: factorizar 21 necesita su propio oraculo compilado
             # (c_amod21, 5 qubits de trabajo). Queda documentado como trabajo
-            # pendiente en el README, igual que se decidio en la tarea 2.3.
+            # pendiente en el README.
             with col_res, st.container(border=True):
                 st.subheader("Resultado")
                 st.info(
@@ -1641,7 +1636,7 @@ with tab_pqc:
 
 
 # ===========================================================================
-# PESTANA 3 - Modulo de caos determinista (Fase 3, tarea 3.10).
+# PESTANA 3 - Modulo de caos determinista.
 #
 # El aviso que gobierna el modulo entero va ARRIBA DEL TODO y no en un pie
 # de pagina: este es el unico modulo del repositorio cuyas metricas salen
@@ -1689,10 +1684,8 @@ with tab_chaos:
     )
 
     # -----------------------------------------------------------------------
-    # Controles. Van DENTRO de la pestana y no en la barra lateral: la lateral
-    # es de BB84 desde la Fase 1 y su cabecera lo dice, asi que meter aqui los
-    # parametros de otro modulo obligaria a leer dos sitios para entender una
-    # sola figura.
+    # Controles. Van DENTRO de la pestana, junto a la figura que gobiernan:
+    # asi no hay que leer dos sitios para entender una sola figura.
     # -----------------------------------------------------------------------
 
     col_control, col_diagnostico = st.columns([2, 3], gap="large")
@@ -2118,8 +2111,8 @@ with tab_chaos:
 """)
 
 # ===========================================================================
-# PESTANA 4 - Modulo 4: ruido de detectores y extraccion de entropia
-# (tarea 4.9). Mismo patron que las pestanas 2 y 3: reutiliza styles.css,
+# PESTANA 4 - Modulo 4: ruido de detectores y extraccion de entropia.
+# Mismo patron que las pestanas 2 y 3: reutiliza styles.css,
 # _cabecera_seccion y _preparar_ejes.
 # ===========================================================================
 
@@ -2315,8 +2308,8 @@ with tab_detector:
             # El formateador logaritmico por defecto de matplotlib genera
             # etiquetas MathText ($10^{...}$), y la cache de mathtext no
             # es segura entre los hilos de sesiones concurrentes de
-            # Streamlit (el mismo fallo que la Fase 2 documento con el
-            # benchmark en escala logaritmica). Se
+            # Streamlit (el mismo fallo que con el benchmark en
+            # escala logaritmica). Se
             # sustituye por texto plano con FuncFormatter.
             formateador_log = FuncFormatter(
                 lambda valor, _pos: (f"{valor:g}" if valor != 0 else "0")

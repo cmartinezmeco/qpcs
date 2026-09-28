@@ -1,13 +1,13 @@
 """src/detector/extraccion.py - destilar bits uniformes con Toeplitz.
 
-Reutiliza qkd.privacy_amplify, el mismo extractor de la tarea 1.6. El
+Reutiliza qkd.privacy_amplify, el mismo extractor del modulo 1. El
 leftover hash lemma no sabe de donde viene la min-entropia, solo necesita
 saber cuanta hay: por eso el mismo codigo sirve para destilar una clave
 de BB84 y para destilar entropia de un detector.
 
 ell = floor(n * H_min - 2 log2(1/eps))
 
-Es la misma formula de la tarea 1.6 SIN el termino leak_ec: alli se
+Es la misma formula del modulo 1 SIN el termino leak_ec: alli se
 restaban los bits que Cascade publicaba por el canal, y aqui no hay canal
 publico que filtre nada.
 
@@ -21,9 +21,9 @@ aritmetica cuadrase. Lo que se reutiliza es privacy_amplify, que es el
 extractor de verdad; el peaje del leftover hash lemma se
 escribe aqui, en tres lineas, con su propio nombre.
 
-LA CUENTA DE UNIDADES, QUE ES LA TRAMPA DE ESTA TAREA
-------------------------------------------------------
-Los estimadores de la 4.6 devuelven min-entropia por SIMBOLO (hasta 4 bits
+LA CUENTA DE UNIDADES
+---------------------
+Los estimadores de entropia.py devuelven min-entropia por SIMBOLO (hasta 4 bits
 con BITS_BAJOS = 4) y la formula de arriba esta escrita con la min-entropia
 por BIT. Las dos son la misma cifra vista con distinta unidad:
 
@@ -47,7 +47,7 @@ import numpy as np
 # qkd_privacy.privacy_amplify(...) mas abajo. Asi el test
 # test_usa_el_extractor_del_modulo_1 puede parchear
 # qkd.privacy.privacy_amplify y comprobar que el cambio se ve aqui, que es
-# la unica forma de DEMOSTRAR que se reutiliza el extractor de la tarea 1.6
+# la unica forma de DEMOSTRAR que se reutiliza el extractor del modulo 1
 # y no una copia local con el mismo nombre.
 from qkd import privacy as qkd_privacy
 
@@ -81,7 +81,7 @@ def _longitud_segura(n_bits: int, h_min_por_bit: float, epsilon: float) -> int:
     El termino 2 log2(1/eps) es el peaje del leftover hash lemma: unos 60
     bits con eps = 1e-9, constante, ridiculo frente a un millon de bits de
     entrada, e imprescindible para poder decir "eps-seguro" con propiedad.
-    Es literalmente el mismo peaje que paga la tarea 1.6.
+    Es literalmente el mismo peaje que paga el modulo 1.
 
     Devuelve 0 cuando la fuente no sostiene nada (H_min = 0, o tan poca
     entropia que no cubre ni el peaje): la extraccion tiene que quedarse
@@ -103,7 +103,7 @@ def _semilla_urandom(n_bits: int) -> Bits:
     y el resultado dejaria de estar garantizado. Por eso no hay
     parametro `semilla` en toda
     esta cadena, al reves que en la senal sintetica de los tests. Mismo
-    criterio que las claves de ML-KEM de la fase 2.
+    criterio que las claves de ML-KEM del modulo 2.
 
     La semilla es PUBLICA: el lema vale aunque el atacante conozca la
     funcion hash. Lo que no puede conocer es la entrada.
@@ -167,7 +167,7 @@ def extraer(
 
     La semilla de Toeplitz se genera con os.urandom y NO se siembra: tiene
     que ser independiente de la fuente, o el leftover hash lemma deja de
-    aplicar. Mismo criterio que las claves de ML-KEM en la fase 2.
+    aplicar. Mismo criterio que las claves de ML-KEM en el modulo 2.
 
     La cadena completa es: los simbolos se despliegan en bits, la longitud
     segura sale de ell = floor(n * H_min - 2 log2(1/eps)), y esos n bits se
@@ -175,14 +175,14 @@ def extraer(
     semilla. Los dos estadisticos de validacion (monobit y chi2 de bytes)
     se calculan sobre la salida y viajan en el resultado: son condiciones
     NECESARIAS, no suficientes. Lo que garantiza
-    que la salida sea buena es la estimacion conservadora de la 4.6 mas el
+    que la salida sea buena es la estimacion conservadora de min-entropia mas el
     leftover hash lemma, no que estos dos numeros salgan bonitos.
 
     Args:
         simbolos: los bits digitalizados (salida de entropia.digitalizar).
         estimacion: el resultado de entropia.estimar_entropia sobre esos
             mismos simbolos.
-        epsilon: parametro de seguridad. El mismo 1e-9 que la tarea 1.6.
+        epsilon: parametro de seguridad. El mismo 1e-9 que el modulo 1.
 
     Returns:
         ResultadoExtraccion con los bits finales y su validacion.

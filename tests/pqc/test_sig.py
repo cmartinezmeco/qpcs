@@ -1,4 +1,4 @@
-"""tests/pqc/test_sig.py - tarea 2.6 (ML-DSA, firma post-cuantica real).
+"""tests/pqc/test_sig.py - ML-DSA, firma post-cuantica real.
 
 Firmar un mensaje de verdad con ML-DSA-65 y, sobre todo, comprobar que lo que
 NO deberia verificar no verifica. Un test que solo firma y verifica no prueba
@@ -127,7 +127,7 @@ def test_tamanos_fips_204():
 
     Contrastar con los 32 + 64 de Ed25519 (test_classical.py): la firma
     post-cuantica pesa ~50 veces mas. Ese es el numero honesto que el
-    benchmark de la tarea 2.7 tiene que poner sobre la mesa.
+    benchmark tiene que poner sobre la mesa.
     """
     res = firmar(b"para medir", "ML-DSA-65")
     assert len(res.clave_publica) == PK_65

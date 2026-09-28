@@ -1,12 +1,9 @@
 """tests/detector/conftest.py - fixtures compartidas del modulo detector.
 
-La senal sintetica es la pieza mas importante de esta tarea: sin ella, las
-tareas 4.3 a 4.7 no pueden escribir un solo test
-hasta que la 4.2 traiga datos reales. Con ella, Gonzalo y Marco pueden
-desarrollarse en paralelo desde el primer dia.
+La senal sintetica permite probar toda la cadena con una verdad conocida,
+sin depender de los datos reales.
 
-Semilla fija siempre, nunca np.random.default_rng() a pelo (regla
-heredada de la Fase 1).
+Semilla fija siempre, nunca np.random.default_rng() a pelo.
 """
 
 from __future__ import annotations

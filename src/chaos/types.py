@@ -73,7 +73,7 @@ class ClaveCaotica:
 
 @dataclass(frozen=True)
 class DiagnosticoCaos:
-    """Salida de la tarea 3.3. Es lo que decide si la clave sirve."""
+    """Diagnostico de caos. Es lo que decide si la clave sirve."""
 
     lyapunov: float  # exponente medido
     n_iteraciones: int  # con cuantas se midio
@@ -100,7 +100,7 @@ class ImagenCifrada:
 
 @dataclass(frozen=True)
 class MetricasImagen:
-    """Salida de la tarea 3.7. Una fila de la tabla comparativa."""
+    """Metricas de una imagen. Una fila de la tabla comparativa."""
 
     etiqueta: str  # "caotico", "AES-256-GCM", "contador"
     entropia: float

@@ -1,4 +1,4 @@
-"""API publica del paquete detector (Fase 4: ruido de detectores, extraccion
+"""API publica del paquete detector (ruido de detectores, extraccion
 de entropia). Solo lo que se exporta aqui es "publico"; el resto son
 detalles de implementacion.
 """

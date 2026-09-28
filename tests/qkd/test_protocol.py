@@ -1,4 +1,4 @@
-# tests/qkd/test_protocol.py — el test de integracion de la tarea 1.7:
+# tests/qkd/test_protocol.py — el test de integracion:
 # la cadena completa QRNG -> BB84 -> QBER -> Cascade -> privacidad.
 
 import numpy as np
@@ -67,12 +67,12 @@ def test_barrido_de_eve(p):
     comportamiento correcto: la formula absorbe la ineficiencia de la
     reconciliacion sin mentir.
 
-    p = 0.42 (no 0.4) desde la optimizacion de sample_fraction (tarea
-    2.x, Gonzalo): al sacrificar menos bits en la muestra del QBER (~800
-    en vez de 0.2*sifted_len), queda mas clave real disponible y el caso
-    limite se desplaza. Se comprobo con un barrido fino (0.38 a 0.46,
-    misma semilla) que en p = 0.4 y 0.38 ya SALE clave (ell > 0) y que
-    el aborto por longitud reaparece a partir de p ~ 0.42; es una
+    p = 0.42 (no 0.4) por la optimizacion de sample_fraction: al
+    sacrificar menos bits en la muestra del QBER (~800 en vez de
+    0.2*sifted_len), queda mas clave real disponible y el caso limite se
+    desplaza. Se comprobo con un barrido fino (0.38 a 0.46, misma
+    semilla) que en p = 0.4 y 0.38 ya SALE clave (ell > 0) y que el
+    aborto por longitud reaparece a partir de p ~ 0.42; es una
     consecuencia esperada de la mejora, no una regresion.
     """
     r = run_protocol(

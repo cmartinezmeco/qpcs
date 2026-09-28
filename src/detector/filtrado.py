@@ -33,7 +33,7 @@ def filtrar(senal: Senal, fs: float, picos_hz: tuple[float, ...]) -> Espectro:
     Args:
         senal: la senal cruda.
         fs: frecuencia de muestreo en Hz.
-        picos_hz: las frecuencias de interferencia detectadas en 4.4,
+        picos_hz: las frecuencias de interferencia detectadas en identificacion.py,
             a eliminar con notch.
 
     Returns:

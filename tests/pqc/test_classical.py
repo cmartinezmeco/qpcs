@@ -1,4 +1,4 @@
-"""tests/pqc/test_classical.py - tarea 2.4.
+"""tests/pqc/test_classical.py - cripto clasica de referencia.
 
 La linea base clasica (RSA-OAEP/PSS, X25519, Ed25519) contra la que se compara
 la PQC. Se prueba por PROPIEDADES, nunca contra valores fijos: estas claves no
@@ -114,8 +114,8 @@ def test_rsa_pss_rechaza_clave_publica_ajena(par_rsa, par_rsa_ajeno):
 def test_rsa_pss_devuelve_false_y_no_lanza(par_rsa):
     """Ante una firma basura devuelve False; la InvalidSignature no escapa.
 
-    El contrato de la funcion es bool, igual que `sig.verificar` de la 2.6,
-    para que el benchmark (2.7) cronometre las dos con el mismo codigo.
+    El contrato de la funcion es bool, igual que `sig.verificar`,
+    para que el benchmark cronometre las dos con el mismo codigo.
     """
     publica, _ = par_rsa
     resultado = rsa_verificar_pss(publica, b"lo que sea", b"\x00" * 384)
@@ -175,7 +175,7 @@ def test_x25519_pares_distintos_dan_secretos_distintos():
 
 def test_x25519_tamanos_raw():
     """32 bytes por clave (RFC 7748). Contrastar con los 1184 de ML-KEM-768:
-    ese salto es el coste en bytes que mide el benchmark de la tarea 2.7."""
+    ese salto es el coste en bytes que mide el benchmark."""
     publica, privada = x25519_generar()
     assert len(publica) == 32
     assert len(privada) == 32

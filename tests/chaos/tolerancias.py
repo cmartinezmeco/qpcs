@@ -1,6 +1,6 @@
 """tests/chaos/tolerancias.py - las tolerancias de los tests, DERIVADAS.
 
-Regla heredada de la Fase 1 y repetida en cada fase desde entonces: todo
+Regla del proyecto: todo
 umbral estadistico se escribe con su sigma calculada. Un
 assert abs(x - 0.996) < 0.01 sin justificacion se devuelve en revision.
 

@@ -1,4 +1,4 @@
-"""src/qkd/qrng.py — tarea 1.2 (Gonzalo). Generacion cuantica de bits."""
+"""src/qkd/qrng.py — Generacion cuantica de bits."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ class QRNG:  # Importar con "from .qrng import QRNG"
             # Para no encender el simulador de Qiskit sin necesidad.
             return np.empty(0, dtype=np.uint8)
 
-        # CAMINO RAPIDO: NumPy para las graficas de Carlos
+        # CAMINO RAPIDO: NumPy para las graficas
         if self._backend_type == "numpy":
             return self._rng.integers(0, 2, size=n, dtype=np.uint8)
 

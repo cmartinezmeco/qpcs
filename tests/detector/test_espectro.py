@@ -83,11 +83,8 @@ def test_parseval(rng):
     np.testing.assert_allclose(potencia_espectral, varianza_teorica, rtol=0.1)
 
 
-# --- casos borde de la tarea 4.8 ---------------------------------------
-
-
 def test_nperseg_mayor_que_la_senal_da_un_error_explicito(rng):
-    """Caso borde de la tarea 4.8: ValueError explicito, no truncar.
+    """Caso borde: ValueError explicito, no truncar.
 
     scipy.signal.welch, ante un nperseg mayor que la senal, avisa por
     warnings y lo RECORTA a la longitud de la senal. El resultado sale con

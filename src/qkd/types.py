@@ -1,6 +1,6 @@
 """src/qkd/types.py - contratos del modulo QKD.
 
-Este fichero es la frontera entre Gonzalo, Marco y yo. Nadie lo cambia sin
+Este fichero es la frontera entre las piezas del modulo. Nadie lo cambia sin
 avisar al equipo: si alguien devuelve algo distinto de lo que hay aqui, el
 codigo de los demas deja de compilar.
 """
@@ -38,7 +38,7 @@ class SiftedKeys:
 
 @dataclass(frozen=True)
 class QberEstimate:
-    """Salida de la estimacion de errores (tarea 1.4)."""
+    """Salida de la estimacion de errores."""
 
     qber: float  # fraccion de errores en la muestra
     n_sample: int  # bits sacrificados (ya publicos, descartados)
@@ -48,7 +48,7 @@ class QberEstimate:
 
 @dataclass(frozen=True)
 class ReconciliationResult:
-    """Salida de Cascade (tarea 1.5). leak_ec es el campo critico."""
+    """Salida de Cascade. leak_ec es el campo critico."""
 
     alice: Bits
     bob: Bits  # tras el exito, bob == alice

@@ -1,4 +1,4 @@
-"""src/pqc/shor.py - tareas 2.2 / 2.3 (Gonzalo). Algoritmo de Shor para N=15.
+"""src/pqc/shor.py - Algoritmo de Shor para N=15.
 
 Shor factoriza N reduciendo el problema a HALLAR EL ORDEN de un entero a
 modulo N: el menor r > 0 tal que a^r == 1 (mod N). La parte cuantica es la
@@ -6,9 +6,7 @@ estimacion de fase (QPE) sobre el operador "multiplicar por a mod N", que
 devuelve una fase s/r; de ahi, por fracciones continuas, sale r; y con r par y
 a^(r/2) != -1 (mod N), gcd(a^(r/2) +/- 1, N) da un factor no trivial.
 
-N=15 es el caso didactico historico (primer Shor experimental, IBM 2001) y es
-REQUISITO DURO de esta tarea. N=21 es el objetivo firme, con plan B
-documentado; no hace falta bloquearse en el.
+N=15 es el caso didactico historico (primer Shor experimental, IBM 2001).
 
 Convencion del proyecto: todo lo estocastico recibe un np.random.Generator
 EXPLICITO (la eleccion de la base `a` y el muestreo de shots), nunca

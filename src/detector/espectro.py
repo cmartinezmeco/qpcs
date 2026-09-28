@@ -37,8 +37,8 @@ def densidad_espectral(
         espectral, y K para poder reportar el error relativo.
 
     Raises:
-        ValueError: si nperseg no cabe en la senal. Anadido como caso
-            borde en la tarea 4.8: scipy.signal.welch, en ese caso, avisa
+        ValueError: si nperseg no cabe en la senal.
+            scipy.signal.welch, en ese caso, avisa
             por warnings y RECORTA nperseg a la longitud de la senal, de
             modo que la resolucion en frecuencia del resultado no es la
             que dice el contrato y el K devuelto seria mentira. Mejor
@@ -54,8 +54,7 @@ def densidad_espectral(
 
     freqs, psd = signal.welch(senal, fs=fs, nperseg=nperseg)
 
-    # BUG ENCONTRADO EN LA TAREA 4.8 (Marco) y ARREGLADO AQUI EN LA 4.9:
-    # aqui se devolvia int(nperseg) en vez del numero real de tramos K.
+    # Se devuelve el numero real de tramos K, no nperseg.
     # types.py documenta AnalisisEspectral.n_tramos como "K de Welch,
     # para el error relativo", y el error relativo de cada punto de la
     # PSD es ~1/sqrt(K): con K=nperseg en vez del K real, ese error

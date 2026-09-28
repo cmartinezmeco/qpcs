@@ -1,4 +1,4 @@
-"""scripts/check_chaos_determinism.py — tarea 3.9 (Carlos). Harness de determinismo.
+"""scripts/check_chaos_determinism.py — Harness de determinismo.
 
 Comprueba que el modulo de caos produce EXACTAMENTE los mismos bytes en dos
 entornos distintos (el venv local y el contenedor):

@@ -32,8 +32,8 @@ ENV OQS_INSTALL_PATH=/opt/_oqs
 
 WORKDIR /app
 
-# requirements-dev.txt (ruff/black/mypy) entra en la imagen a partir de la
-# Fase 2: la CI ya no instala nada en el runner, corre el lint y los tipos
+# requirements-dev.txt (ruff/black/mypy) entra en la imagen porque la CI
+# no instala nada en el runner: corre el lint y los tipos
 # DENTRO del contenedor (ver .github/workflows/ci.yml), asi que las
 # herramientas tienen que vivir aqui. Es la misma imagen que usa el dashboard;
 # el peso extra de las herramientas de dev es despreciable.
@@ -71,10 +71,7 @@ RUN groupadd --gid 1000 qpcs \
 USER qpcs
 
 # El CMD por defecto levanta el dashboard, que es lo que el Quick Start del
-# README promete con "docker run --rm -it -p 8501:8501 qpcs". Durante mucho
-# tiempo apunto a un placeholder de la Fase 1 que solo imprimia una linea y
-# terminaba, asi que el contenedor arrancaba y se cerraba sin dashboard;
-# nadie lo detecto hasta que la CI empezo a comprobar el arranque de verdad.
+# README promete con "docker run --rm -it -p 8501:8501 qpcs".
 # El servicio "app" de docker-compose.yml repite el mismo comando con las
 # mismas banderas (--server.address=0.0.0.0 es obligatoria: ver su
 # comentario).
