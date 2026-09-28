@@ -1,6 +1,6 @@
 # tests/qkd/conftest.py
 #
-# Fixtures compartidas de la suite QKD (tarea 1.7). Politica contra los tests
+# Fixtures compartidas de la suite QKD. Politica contra los tests
 # que parpadean:
 #   1. Semilla fija SIEMPRE: np.random.default_rng(42), nunca default_rng()
 #      sin argumento.

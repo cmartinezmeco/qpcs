@@ -1,10 +1,10 @@
-"""tests/detector/test_entropia.py - tarea 4.6 (min-entropia, SP 800-90B).
+"""tests/detector/test_entropia.py - min-entropia (SP 800-90B).
 
 Todo se compara contra la TEORIA, no contra otra implementacion: la
 entropia de una fuente cuya distribucion se conoce se sabe de antemano, y
 es ese numero el que aparece en los asserts. Las tolerancias se derivan
 del tamano de muestra y de la cota de confianza del estandar, nunca se
-eligen a ojo (regla heredada de la Fase 1).
+eligen a ojo.
 """
 
 from __future__ import annotations
@@ -143,7 +143,7 @@ def test_min_entropia_es_MENOR_que_shannon(rng):
 
 
 def test_markov_caza_lo_que_los_otros_no(rng):
-    """EL test de la tarea. Se construye una fuente CORRELACIONADA cuya
+    """EL test del estimador de Markov. Se construye una fuente CORRELACIONADA cuya
     distribucion marginal es uniforme: el estimador del valor mas comun
     dira que tiene entropia maxima, y el de Markov dira la verdad.
 
@@ -234,11 +234,8 @@ def test_se_devuelve_el_minimo(rng):
     assert est.intervalo_confianza == 1.0 - ALFA_SP80090B
 
 
-# --- casos borde (tarea 4.8) --------------------------------------------
-
-
 def test_una_senal_de_diez_muestras_da_un_error_claro():
-    """Caso borde de la tarea 4.8: no se puede estimar entropia con eso, y
+    """Caso borde: no se puede estimar entropia con eso, y
     el mensaje tiene que decir cuantas muestras harian falta."""
     simbolos = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=np.uint8)
     with pytest.raises(ValueError, match="no se puede estimar min-entropia"):
@@ -274,7 +271,7 @@ def test_una_fuente_constante_tiene_entropia_cero():
 
 
 def test_una_fuente_uniforme_perfecta_conserva_casi_toda_la_capacidad(rng):
-    """Caso borde de la tarea 4.8: con una fuente uniforme perfecta la
+    """Caso borde: con una fuente uniforme perfecta la
     estimacion tiene que quedarse cerca del maximo del alfabeto. Lo que se
     pierde despues en la extraccion (el peaje de 60 bits) se comprueba en
     test_extraccion.py."""
@@ -334,7 +331,7 @@ def test_markov_es_conservador_cuando_no_hay_con_que_acotar():
 
 
 def test_las_constantes_de_la_46_son_parte_del_contrato():
-    """Mismo motivo que test_scaffold con las siete de la tarea 4.1: si
+    """Mismo motivo que test_scaffold con las constantes del contrato: si
     alguien las cambia, cambian todas las cifras de min-entropia
     publicadas, y tiene que saltar aqui."""
     assert ALFA_SP80090B == 0.01

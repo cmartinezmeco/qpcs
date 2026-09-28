@@ -1,10 +1,10 @@
-"""scripts/make_detector_plots.py - tarea 4.9 (Carlos). Figuras del modulo 4.
+"""scripts/make_detector_plots.py - Figuras del modulo 4.
 
 Regenera TODAS las figuras del modulo con un solo comando:
 
     python scripts/make_detector_plots.py
 
-Reglas de la tarea, heredadas de las tres fases anteriores:
+Reglas de las figuras:
   - Cuatro figuras, ni una mas. Salida versionada en docs/img/ (PNG,
     dpi=150, fondo blanco).
   - Sin titulo dentro de la figura: el titulo va en el pie del README.
@@ -19,7 +19,7 @@ Reglas de la tarea, heredadas de las tres fases anteriores:
     se comparan por MD5 bit a bit como las de los tres modulos previos:
     solo se compara que el fichero se REGENERA sin error.
 
-Igual que en la Fase 3 (script make_chaos_plots.py, ver su cabecera): los
+Igual que make_chaos_plots.py (ver su cabecera): los
 scripts SI pueden imprimir. Este imprime las cifras que van a los pies de
 figura del README.
 """
@@ -62,17 +62,16 @@ def figura_1_espectro_anotado() -> None:
     picos de interferencia marcados. La figura estrella del modulo:
     ensena los cuatro tipos de ruido en una sola imagen.
 
-    NOTA HONESTA (tarea 4.9, encontrado al revisar esta figura): con
+    NOTA: con
     los datos reales, el primer punto valido del espectro (0.244 Hz)
     cae DENTRO del rango de ajuste RANGO_ALFA convertido a Hz (0.05,
     5.0), y es casi el doble del segundo punto -- es el mismo punto
-    que detectar_picos() marca como interferencia (informe de Marco,
-    tarea 4.8: "la deriva residual del primer bin"). ajustar_alfa()
+    que detectar_picos() marca como interferencia ("la deriva
+    residual del primer bin"). ajustar_alfa()
     tiene una mascara para excluir picos antes de ajustar, pero con
     solo ~20 puntos en el rango y un filtro de mediana de ventana 11,
     es posible que ese punto extremo en el borde de la ventana no se
-    filtre bien. NO se ha tocado ajustar_alfa() (tarea 4.4, de Gonzalo,
-    ya mergeada): no hay evidencia de que sea un bug y no un limite
+    filtre bien. No hay evidencia de que sea un bug y no un limite
     conocido del filtro de mediana con pocos puntos. Se documenta aqui
     y en el print() de esta funcion en vez de ocultarlo.
     """
@@ -80,8 +79,7 @@ def figura_1_espectro_anotado() -> None:
     freqs, psd, k = densidad_espectral(senal, fs, NPERSEG)
     picos = detectar_picos(freqs, psd, UMBRAL_PICO)
 
-    # BUG DE LA TAREA 4.4 ARREGLADO EN ESTA MISMA RAMA (ver el commit
-    # anterior a este script): RANGO_ALFA esta documentado en types.py
+    # RANGO_ALFA esta documentado en types.py
     # como fraccion de Nyquist, pero ajustar_alfa lo compara contra Hz.
     # rango_alfa_en_hz hace la conversion.
     rango_hz = rango_alfa_en_hz(RANGO_ALFA, fs)

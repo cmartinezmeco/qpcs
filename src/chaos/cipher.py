@@ -198,8 +198,8 @@ def cifrar_imagen(img: Imagen, clave: ClaveCaotica) -> ImagenCifrada:
     misma imagen con la misma clave da exactamente el mismo resultado.
     Es una limitacion real y documentada, no un descuido: es
     lo que hace que reutilizar la clave con dos imagenes sea catastrofico,
-    igual que reutilizar un one-time pad. El baseline AES-256-GCM de la
-    tarea 3.8 si lleva nonce fresco, y esa diferencia es parte de la tabla.
+    igual que reutilizar un one-time pad. El baseline AES-256-GCM
+    si lleva nonce fresco, y esa diferencia es parte de la tabla.
 
     Args:
         img: imagen uint8, cualquier forma (alto, ancho).
@@ -261,7 +261,7 @@ def descifrar_imagen(cifrada: ImagenCifrada, clave: ClaveCaotica) -> Imagen:
     No comprueba hash_plano ni lanza si la clave es incorrecta: un cifrado
     sin autenticacion no puede distinguir "clave equivocada" de "cifrado
     manipulado", y fingir que si es justamente la diferencia con AES-GCM
-    que la tabla de la tarea 3.8 tiene que hacer visible. Con la clave
+    que la tabla comparativa tiene que hacer visible. Con la clave
     equivocada devuelve ruido, y quien quiera verificar compara el
     SHA-256 del resultado con cifrada.hash_plano.
 

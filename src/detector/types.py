@@ -35,15 +35,14 @@ RANGO_ALFA: tuple[float, float] = (1e-4, 1e-2)
 # fondo es ~4.5%, asi que 5 sigma son ~1.22x. Se usa 3x por margen.
 UMBRAL_PICO: float = 3.0
 
-EPSILON_PA: float = 1e-9  # el mismo epsilon que la tarea 1.6
+EPSILON_PA: float = 1e-9  # el mismo epsilon que el modulo 1
 BITS_BAJOS: int = 4  # cuantos bits por muestra se conservan al digitalizar
 
-# --- ANADIDO EN LA TAREA 4.6 (min-entropia) ----------------------------
 # Los dos parametros que gobiernan la estimacion de min-entropia. Van aqui
 # y no dentro de entropia.py por la convencion del modulo: todo parametro
 # que cambie una cifra publicada es parte del contrato. Son ANADIDOS, no
 # cambios: ninguna constante anterior se toca, asi que no invalidan
-# ninguna figura ni ningun resultado de las tareas 4.1-4.5.
+# ninguna figura ni ningun resultado anterior.
 
 # Nivel de significacion de las cotas de confianza de SP 800-90B. El
 # estandar escribe 2.576 en 6.3.1, que es el cuantil 0.995 de la normal,
@@ -62,7 +61,7 @@ MUESTRAS_POR_CELDA: int = 5
 
 @dataclass(frozen=True)
 class AnalisisEspectral:
-    """Salida de las tareas 4.3 y 4.4."""
+    """Salida del analisis espectral y la identificacion de ruido."""
 
     frecuencias: Espectro
     psd: Espectro
@@ -76,7 +75,7 @@ class AnalisisEspectral:
 
 @dataclass(frozen=True)
 class EstimacionEntropia:
-    """Salida de la tarea 4.6. Se toma el MINIMO de los tres."""
+    """Salida de la estimacion de min-entropia. Se toma el MINIMO de los tres."""
 
     h_mas_comun: float  # estimador del valor mas comun
     h_colision: float  # estimador de colision
@@ -88,7 +87,7 @@ class EstimacionEntropia:
 
 @dataclass(frozen=True)
 class ResultadoExtraccion:
-    """Salida de la tarea 4.7."""
+    """Salida de la extraccion de Toeplitz."""
 
     bits: Bits
     n_entrada: int  # bits que entraron

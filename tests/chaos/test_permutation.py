@@ -1,4 +1,4 @@
-"""tests/chaos/test_permutation.py - tarea 3.5, la permutacion.
+"""tests/chaos/test_permutation.py - la permutacion.
 
 La permutacion mueve pixeles y NO altera valores: eso es lo que la hace
 util (rompe la correlacion espacial) y lo que la hace insuficiente por si
@@ -121,7 +121,7 @@ def test_permutacion_de_referencia_almacenada():
     """Detecta un cambio de comportamiento de NumPy o del generador de
     orbitas. El valor no se "arregla" regenerandolo: si esto falla, o ha
     cambiado orbita_logistica o ha cambiado argsort, y las dos cosas son
-    noticia (misma logica que el vector de keystream de la tarea 3.4).
+    noticia (misma logica que el vector de referencia del keystream).
 
     El hash se toma sobre "<i8" explicito y no sobre el dtype nativo:
     int64 nativo es little-endian en x86 y big-endian en otras

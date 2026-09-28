@@ -1,4 +1,4 @@
-"""src/pqc/types.py - contratos del modulo PQC (Fase 2)."""
+"""src/pqc/types.py - contratos del modulo PQC."""
 
 from __future__ import annotations
 

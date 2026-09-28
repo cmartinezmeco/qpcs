@@ -36,7 +36,7 @@ def orbita_logistica(x0: float, r: float, n: int) -> Orbita:
             extremos son puntos fijos: con x0 = 0 la orbita es 0 para
             siempre, y con x0 = 1 el primer paso la lleva a 0 y se queda
             ahi. En los dos casos el "keystream" seria un byte repetido.
-            Es uno de los ocho casos borde de la tarea 3.9, y aqui es un
+            Aqui es un
             ValueError y no un assert porque con
             python -O los assert desaparecen y la validacion con ellos.
     """
@@ -44,7 +44,7 @@ def orbita_logistica(x0: float, r: float, n: int) -> Orbita:
     # DECLARADO CAOTICO: la derivada del mapa en x = 0 vale r, asi que el
     # promedio de ln|f'| da ln(4) = 1.386 > UMBRAL_LYAPUNOV para r = 4. Es
     # decir, el punto fijo mas degenerado del mapa pasaria la validacion de
-    # la tarea 3.3 con nota. Medido antes de anadir esta linea.
+    # caos con nota.
     if not 0.0 < x0 < 1.0:
         raise ValueError(
             f"x0 = {x0} fuera de (0, 1): 0 y 1 son puntos fijos del mapa "

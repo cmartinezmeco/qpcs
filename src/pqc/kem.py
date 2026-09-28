@@ -1,4 +1,4 @@
-"""src/pqc/kem.py - tarea 2.5 (Marco). ML-KEM en crudo via liboqs.
+"""src/pqc/kem.py - ML-KEM en crudo via liboqs.
 
 KEM = Key Encapsulation Mechanism. ML-KEM (FIPS 203, antes "Kyber") es el
 mecanismo post-cuantico de acuerdo de clave: el emisor "encapsula" un secreto
@@ -11,7 +11,7 @@ Convencion de nomenclatura NIST: SIEMPRE "ML-KEM-768", nunca "Kyber768". Ver
 `abrir_kem` para el patron de context manager, que es OBLIGATORIO.
 
 Aqui no entra ningun np.random.Generator: liboqs usa su propio CSPRNG y las
-claves deben ser impredecibles. Los tests (tarea 2.5) validan la propiedad de
+claves deben ser impredecibles. Los tests validan la propiedad de
 correccion (el secreto encapsulado coincide con el desencapsulado), no valores
 fijos sembrados.
 
@@ -42,7 +42,7 @@ def abrir_kem(
     Fuera del `with` el objeto ya ha liberado su clave secreta y usarlo es un
     error. `kem_generar` y `kem_encapsular` siguen exactamente este patron.
 
-    `clave_privada` es el unico anadido de la tarea 2.5 sobre la firma del
+    `clave_privada` es el unico anadido sobre la firma del
     esqueleto: liboqs IMPORTA la clave secreta al construir el objeto, no
     despues, asi que el receptor de `kem_desencapsular` no tiene otra forma de
     recuperar su par. Con el valor por defecto (None) el comportamiento es el
@@ -101,7 +101,7 @@ def kem_desencapsular(
 
     El receptor reabre su KEM importando la clave privada que le devolvio
     `kem_generar` y desencapsula. Debe devolver el MISMO secreto que obtuvo
-    `kem_encapsular` (propiedad de correccion que testea la tarea 2.5).
+    `kem_encapsular` (propiedad de correccion que comprueban los tests).
 
     OJO con lo que esta funcion NO hace: si el ciphertext viene manipulado,
     ML-KEM no lanza ningun error, devuelve un secreto de 32 bytes DISTINTO. Es

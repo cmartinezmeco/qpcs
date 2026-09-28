@@ -38,14 +38,13 @@ def test_las_constantes_del_contrato_no_se_han_movido():
 
 
 def test_lo_que_consumen_el_dashboard_y_los_scripts_es_publico():
-    """La otra mitad del contrato de la API (tarea 3.9).
+    """La otra mitad del contrato de la API.
 
     No basta con que exista lo declarado en __all__: hace falta que este
     declarado lo que se usa desde FUERA del paquete. Estos son los nombres
     que importan la tercera pestana del dashboard y los tres scripts del
     modulo. Sin este test se puede renombrar cualquiera de ellos con la
-    suite entera en verde y el dashboard roto, que es como la Fase 2
-    descubrio que le faltaba media API publica.
+    suite entera en verde y el dashboard roto.
     """
     consumidos_fuera = (
         # dashboard/qkd_app.py (pestana 3)

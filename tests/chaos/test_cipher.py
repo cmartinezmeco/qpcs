@@ -1,4 +1,4 @@
-"""tests/chaos/test_cipher.py - tarea 3.6, el cifrado completo.
+"""tests/chaos/test_cipher.py - el cifrado completo.
 
 El round-trip exacto es EL test del modulo. Lo demas de este fichero mide
 lo que el esquema hace de verdad, no lo que se le supone: hay una
@@ -349,7 +349,7 @@ def test_el_hash_del_plano_permite_verificar_el_descifrado():
 
 
 def test_cifra_512x512_en_menos_de_dos_segundos():
-    """Criterio de cierre de la tarea 3.6. La cota es del enunciado; el
+    """La cota de 2 segundos es la de referencia; el
     tiempo real en el venv de referencia esta en torno a 0.4 s, asi que
     hay margen de sobra para el contenedor."""
 
