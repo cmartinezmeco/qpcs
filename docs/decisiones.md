@@ -663,8 +663,7 @@ para hacerlo bien.
 
 ### Lo que sí queda montado para no enterarse tarde
 
-`.github/dependabot.yml` abre un *pull request* mensual por cada actualización, y
-la CI ejecuta `pip-audit` en cada vuelta y deja el informe en el resumen de la
+La CI ejecuta `pip-audit` en cada vuelta y deja el informe en el resumen de la
 ejecución. Ese paso **no tumba la CI a propósito**: si lo hiciera, hoy mismo
 estaría en rojo y las dos únicas salidas serían subir a ciegas o silenciar el
 paso. Las dos son peores que leer el informe.
