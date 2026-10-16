@@ -250,10 +250,6 @@ jobs:
       # trabajo detras y no algo que se hace para poner un paso en verde.
       # Que falle aqui obligaria a elegir entre subir a ciegas o silenciar el
       # paso, y las dos salidas son peores que leer el informe.
-      #
-      # Lo que convierte esto en un proceso y no en un log que nadie mira es
-      # .github/dependabot.yml: Dependabot abre un pull request por cada
-      # actualizacion y esa CI si es vinculante.
       - name: Avisos de seguridad de las dependencias (informativo)
         continue-on-error: true
         run: |
