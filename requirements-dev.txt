@@ -6,7 +6,7 @@ pytest==9.0.3
 # dentro del contenedor como todo lo demas. Va aqui y
 # no en requirements.txt porque es herramienta de desarrollo, igual que
 # ruff/mypy: el dashboard no la necesita para funcionar.
-pytest-cov==5.0.0
+pytest-cov==7.1.0
 # pip-audit: cruza las
 # versiones instaladas contra la base de avisos de seguridad de Python. Va
 # aqui y no en requirements.txt porque el dashboard no la necesita para
