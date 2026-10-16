@@ -1,6 +1,6 @@
 qiskit==1.0.2
 qiskit-aer==0.13.3
-numpy==1.26.4
+numpy==2.4.6
 scipy==1.13.0
 matplotlib==3.8.4
 # pylatexenc: dependencia OPCIONAL del dibujante
@@ -18,7 +18,7 @@ streamlit==1.33.0
 pyarrow==16.1.0
 # numba: retirada, cero usos en todo el repositorio
 # (`grep -rn numba src/ tests/ scripts/ dashboard/`). numpy se
-# mantiene fijado explicitamente en numpy==1.26.4 arriba, asi que la
+# mantiene fijado explicitamente en numpy==2.4.6 arriba, asi que la
 # resolucion de dependencias no cambia; lo unico que se pierde es la
 # atadura adicional que numba imponia sobre el rango de numpy.
 #
