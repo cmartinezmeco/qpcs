@@ -672,6 +672,7 @@ class AnalisisDetector:
     fs: float
     frecuencias: np.ndarray
     psd: np.ndarray
+    psd_filtrada: np.ndarray | None
     k_tramos: int
     picos: tuple[float, ...]
     rango_hz: tuple[float, float]
@@ -2122,7 +2123,7 @@ with tab_detector:
         "Ruido de detectores y extracción de entropía",
         "Se extrae min-entropía de ruido físico real de un detector de "
         "CMS (CERN Open Data), y se destila con el mismo extractor de "
-        "Toeplitz que la tarea 1.6 usa para BB84.",
+        "Toeplitz que el módulo 1 usa para BB84.",
     )
 
     st.markdown(
@@ -2190,6 +2191,7 @@ with tab_detector:
         float,
         np.ndarray,
         np.ndarray,
+        np.ndarray | None,
         int,
         tuple[float, ...],
         tuple[float, float],
@@ -2224,8 +2226,14 @@ with tab_detector:
         fano = factor_fano(senal)
         suelo_blanco = float(np.median(psd[len(psd) // 2 :]))
 
+        psd_filtrada: np.ndarray | None = None
         if aplicar_filtro:
             senal_para_digitalizar = filtrar(senal, fs, picos)
+            # Mismo NPERSEG que el espectro original, para que las dos
+            # curvas compartan rejilla de frecuencias en el grafico.
+            _, psd_filtrada, _ = densidad_espectral(
+                senal_para_digitalizar.astype(np.int32), fs, NPERSEG
+            )
         else:
             senal_para_digitalizar = senal.astype(np.float64)
 
@@ -2238,6 +2246,7 @@ with tab_detector:
             fs,
             freqs,
             psd,
+            psd_filtrada,
             k_tramos,
             picos,
             rango_hz,
@@ -2257,15 +2266,16 @@ with tab_detector:
         fs=_resultado_cacheado[1],
         frecuencias=_resultado_cacheado[2],
         psd=_resultado_cacheado[3],
-        k_tramos=_resultado_cacheado[4],
-        picos=_resultado_cacheado[5],
-        rango_hz=_resultado_cacheado[6],
-        alfa=_resultado_cacheado[7],
-        alfa_error=_resultado_cacheado[8],
-        fano=_resultado_cacheado[9],
-        suelo_blanco=_resultado_cacheado[10],
-        estimacion=_resultado_cacheado[11],
-        resultado=_resultado_cacheado[12],
+        psd_filtrada=_resultado_cacheado[4],
+        k_tramos=_resultado_cacheado[5],
+        picos=_resultado_cacheado[6],
+        rango_hz=_resultado_cacheado[7],
+        alfa=_resultado_cacheado[8],
+        alfa_error=_resultado_cacheado[9],
+        fano=_resultado_cacheado[10],
+        suelo_blanco=_resultado_cacheado[11],
+        estimacion=_resultado_cacheado[12],
+        resultado=_resultado_cacheado[13],
         bits_bajos=bits_bajos_ui,
     )
 
@@ -2273,13 +2283,37 @@ with tab_detector:
         with st.container(border=True):
             st.subheader("Espectro de potencia (Welch)")
             fig_espectro, ax_espectro = plt.subplots(figsize=(7.2, 4.2))
-            mascara_valida = (analisis.frecuencias > 0) & (analisis.psd > 0)
+            # Fuera el bin de Nyquist: Welch unilateral lo deja a la mitad
+            # y dibuja una caida vertical que no pertenece a la senal.
+            mascara_valida = (
+                (analisis.frecuencias > 0)
+                & (analisis.frecuencias < analisis.fs / 2)
+                & (analisis.psd > 0)
+            )
             ax_espectro.loglog(
                 analisis.frecuencias[mascara_valida],
                 analisis.psd[mascara_valida],
                 lw=1.0,
                 color=COLOR_TINTA,
+                label="sin filtrar",
             )
+            psd_max = float(analisis.psd[mascara_valida].max())
+            if analisis.psd_filtrada is not None:
+                mascara_filtrada = (
+                    (analisis.frecuencias > 0)
+                    & (analisis.frecuencias < analisis.fs / 2)
+                    & (analisis.psd_filtrada > 0)
+                )
+                ax_espectro.loglog(
+                    analisis.frecuencias[mascara_filtrada],
+                    analisis.psd_filtrada[mascara_filtrada],
+                    lw=1.0,
+                    color=COLOR_TEAL,
+                    label="filtrada (notch + paso alto)",
+                )
+                psd_max = max(
+                    psd_max, float(analisis.psd_filtrada[mascara_filtrada].max())
+                )
             f_min, f_max = analisis.rango_hz
             if analisis.alfa != 0.0:
                 mascara_ajuste = (
@@ -2299,11 +2333,29 @@ with tab_detector:
                         a_const / f_recta**analisis.alfa,
                         "--",
                         lw=1.6,
-                        color=COLOR_TEAL,
+                        color=COLOR_MUTED,
+                        label=f"ajuste 1/f^α, α = {analisis.alfa:.3f}",
                     )
-            for pico in analisis.picos:
-                ax_espectro.axvline(pico, ls="-", lw=0.9, color=COLOR_ERROR, alpha=0.5)
-            ax_espectro.set_xlabel("frecuencia (Hz)")
+            for i, pico in enumerate(analisis.picos):
+                idx_pico = int(np.argmin(np.abs(analisis.frecuencias - pico)))
+                ax_espectro.loglog(
+                    analisis.frecuencias[idx_pico],
+                    analisis.psd[idx_pico],
+                    "o",
+                    ms=8,
+                    mfc="none",
+                    mec=COLOR_ERROR,
+                    mew=1.5,
+                    label="pico detectado" if i == 0 else "_nolegend_",
+                )
+            # Techo del eje Y a 4 veces el maximo: deja hueco a la leyenda
+            # para que no tape las curvas.
+            ax_espectro.set_ylim(top=4 * psd_max)
+            ax_espectro.legend(loc="upper right", ncol=2, fontsize=8, frameon=False)
+            # fs = 1000 es una convencion (ver data/FUENTE.md): la muestra
+            # es una secuencia de eventos, no una serie temporal, asi que
+            # el eje no son hercios fisicos.
+            ax_espectro.set_xlabel("frecuencia (ciclos por cada 1000 eventos)")
             ax_espectro.set_ylabel("densidad espectral")
             # El formateador logaritmico por defecto de matplotlib genera
             # etiquetas MathText ($10^{...}$), y la cache de mathtext no
@@ -2331,7 +2383,7 @@ with tab_detector:
             plt.close(fig_espectro)
 
             picos_texto = (
-                ", ".join(f"{p:.3g} Hz" for p in analisis.picos)
+                ", ".join(f"{p:.3g}" for p in analisis.picos)
                 if analisis.picos
                 else "sin picos detectados"
             )
